@@ -8,6 +8,9 @@ declare global {
   }
 }
 
+// Approximate conversion rate from MAD to USD for PayPal processing
+const MAD_TO_USD_RATE = 0.1; 
+
 export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onNavigate: (p: string) => void, addToast: any }) => {
   const [amount, setAmount] = useState<number>(100);
   const [currentBalance, setCurrentBalance] = useState(0);
@@ -65,10 +68,13 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
                             height: 48
                         },
                         createOrder: (data: any, actions: any) => {
+                            // Convert DH amount to USD for PayPal gateway
+                            const usdAmount = (amount * MAD_TO_USD_RATE).toFixed(2);
+
                             return actions.order.create({
                                 purchase_units: [{
                                     amount: {
-                                        value: amount.toFixed(2),
+                                        value: usdAmount,
                                         currency_code: 'USD'
                                     },
                                     description: `Moon Night Wallet Top Up`
@@ -77,6 +83,7 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
                         },
                         onApprove: async (data: any, actions: any) => {
                             const details = await actions.order.capture();
+                            // Process as DH (amount) in database
                             await handleTopUpSuccess(details.id);
                         },
                         onError: (err: any) => {
@@ -98,7 +105,7 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
 
   const handleTopUpSuccess = async (txnId: string) => {
       try {
-          // Update profile balance
+          // Update profile balance (in DH)
           const newBalance = currentBalance + amount;
           const { error } = await supabase.from('profiles').update({ wallet_balance: newBalance }).eq('id', session.user.id);
           

@@ -9,6 +9,9 @@ declare global {
   }
 }
 
+// Approximate conversion rate from MAD to USD for PayPal processing
+const MAD_TO_USD_RATE = 0.1; 
+
 export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast }: { 
   cart: CartItem[], 
   session: any,
@@ -72,16 +75,14 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
 
   // Render PayPal Buttons
   useEffect(() => {
-      // Cleanup function to avoid race conditions
       let isCancelled = false;
 
       if (paymentMethod === 'paypal' && paypalLoaded && !isGuest && cart.length > 0 && !showSuccess) {
           const container = document.getElementById('paypal-checkout-container');
           
           if (container) {
-              container.innerHTML = ''; // Always clear first
+              container.innerHTML = ''; // Clear previous buttons
               
-              // Small timeout to ensure DOM is ready and layout is stable
               setTimeout(() => {
                 if (isCancelled) return;
                 
@@ -95,23 +96,27 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
                             height: 48
                         },
                         createOrder: (data: any, actions: any) => {
+                            // Convert DH to USD for PayPal
+                            const usdAmount = (finalTotal * MAD_TO_USD_RATE).toFixed(2);
+                            
                             return actions.order.create({
                                 purchase_units: [{
                                     amount: {
-                                        value: finalTotal.toFixed(2),
+                                        value: usdAmount,
                                         currency_code: 'USD'
                                     },
-                                    description: `Moon Night Order - ${cart.length} items`
+                                    description: `Moon Night Order`
                                 }]
                             });
                         },
                         onApprove: async (data: any, actions: any) => {
                             const details = await actions.order.capture();
+                            // Pass the details but the amount recorded in DB is in DH (finalTotal)
                             await processOrder('PayPal', details.id);
                         },
                         onError: (err: any) => {
                             console.error("PayPal Error:", err);
-                            addToast('Payment Failed', 'Transaction could not be completed. Try again.', 'error');
+                            addToast('Payment Failed', 'Transaction could not be completed.', 'error');
                         }
                     }).render('#paypal-checkout-container');
                 } catch (e) {
@@ -178,12 +183,11 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
 
       // Update Coupon Usage if applicable
       if (appliedCoupon) {
-          await supabase.rpc('increment_coupon_usage', { coupon_id: appliedCoupon.id });
-          // Fallback simple update if RPC not present
+          // Ideally use RPC, but direct update for simplicity if RPC missing
           await supabase.from('coupons').update({ usage_count: appliedCoupon.usage_count + 1 }).eq('id', appliedCoupon.id);
       }
 
-      // Create Order
+      // Create Order in Database (Always in DH)
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -346,7 +350,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
                             </div>
                         )}
 
-                        {/* Payment Area - Added specific z-index and min-height for PC stability */}
+                        {/* Payment Area */}
                         <div className="relative z-10 min-h-[150px]">
                             {paymentMethod === 'wallet' ? (
                                 <button 
@@ -373,4 +377,4 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
        </div>
     </div>
   );
-}
+};
