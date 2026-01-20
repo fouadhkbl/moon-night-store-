@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, Order } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogOut } from 'lucide-react';
+import { Gamepad2, Wallet, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck } from 'lucide-react';
 
 export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession }: { session: any, addToast: any, onSignOut: () => void, onNavigate: (p: string) => void, setSession: (s: any) => void }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -137,6 +137,90 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                            ))}
                        </div>
                    )}
+                </div>
+             )}
+             {activeTab === 'wallet' && (
+                <div className="space-y-8 animate-slide-up">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       {/* Premium Card Design */}
+                       <div className="relative h-64 bg-gradient-to-br from-blue-700 via-indigo-900 to-[#0b0e14] rounded-[2.5rem] p-8 text-white shadow-[0_20px_60px_rgba(29,78,216,0.3)] overflow-hidden group border border-blue-500/20">
+                           <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
+                           <div className="absolute bottom-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
+                           
+                           <div className="relative z-10 flex flex-col justify-between h-full">
+                               <div className="flex justify-between items-start">
+                                   <div className="flex items-center gap-2">
+                                       <div className="w-10 h-6 bg-yellow-400/20 rounded-md border border-yellow-400/40 backdrop-blur-md"></div>
+                                       <CreditCard className="w-5 h-5 opacity-60" />
+                                   </div>
+                                   <span className="font-mono text-[10px] font-black opacity-60 tracking-[0.2em] uppercase">MOON NIGHT ELITE</span>
+                               </div>
+                               <div>
+                                   <p className="text-[10px] text-blue-200 mb-1 font-black uppercase tracking-widest">Available Balance</p>
+                                   <h2 className="text-5xl font-black italic tracking-tighter text-white drop-shadow-lg">{profile?.wallet_balance?.toFixed(2)} <span className="text-xl opacity-70">DH</span></h2>
+                               </div>
+                               <div className="flex justify-between items-end">
+                                   <div>
+                                       <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-1">Card Holder</p>
+                                       <p className="font-bold tracking-widest uppercase font-mono text-sm">{profile?.username || 'GUEST USER'}</p>
+                                   </div>
+                                   <div className="text-right">
+                                       <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-1">Status</p>
+                                       <p className="font-bold tracking-widest uppercase text-xs flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-green-400" /> Active</p>
+                                   </div>
+                               </div>
+                           </div>
+                       </div>
+
+                       {/* Quick Actions */}
+                       <div className="flex flex-col gap-4">
+                           <button onClick={() => onNavigate('topup')} className="flex-1 bg-[#1e232e] border border-gray-800 hover:border-blue-500 hover:bg-blue-600/10 p-6 rounded-[2rem] flex items-center gap-6 transition-all group shadow-2xl">
+                               <div className="bg-blue-600 p-4 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+                                   <Plus className="w-6 h-6" />
+                               </div>
+                               <div className="text-left">
+                                   <h4 className="text-white font-black uppercase italic tracking-tighter text-xl">Top Up Funds</h4>
+                                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest group-hover:text-blue-400 transition-colors">Instant Deposit via PayPal</p>
+                               </div>
+                           </button>
+                           <button className="flex-1 bg-[#1e232e] border border-gray-800 hover:border-yellow-500 hover:bg-yellow-600/10 p-6 rounded-[2rem] flex items-center gap-6 transition-all group shadow-2xl">
+                               <div className="bg-yellow-500 p-4 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+                                   <ArrowUpRight className="w-6 h-6" />
+                               </div>
+                               <div className="text-left">
+                                   <h4 className="text-white font-black uppercase italic tracking-tighter text-xl">Withdraw</h4>
+                                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest group-hover:text-yellow-400 transition-colors">Transfer to Bank Account</p>
+                               </div>
+                           </button>
+                       </div>
+                   </div>
+
+                   {/* Transaction History (Mock using orders) */}
+                   <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-2xl">
+                       <div className="flex items-center gap-3 mb-8">
+                           <div className="p-2 bg-[#0b0e14] rounded-xl text-gray-400"><History className="w-5 h-5" /></div>
+                           <h3 className="font-black text-white text-2xl italic uppercase tracking-tighter">Recent Movements</h3>
+                       </div>
+                       
+                       {orders.length === 0 ? (
+                           <p className="text-gray-600 uppercase text-[10px] font-black tracking-widest py-10 text-center border-2 border-dashed border-gray-800 rounded-3xl">No transactions found.</p>
+                       ) : (
+                           <div className="space-y-3">
+                               {orders.slice(0, 5).map(o => (
+                                   <div key={o.id} className="p-5 bg-[#0b0e14] rounded-2xl flex justify-between items-center border border-gray-800 hover:border-gray-700 transition-all">
+                                       <div className="flex items-center gap-4">
+                                           <div className="p-3 rounded-xl bg-red-500/10 text-red-500"><ArrowDownLeft className="w-4 h-4" /></div>
+                                           <div>
+                                               <p className="font-black text-white uppercase tracking-tighter text-sm">Purchase #{o.id.slice(0,4)}</p>
+                                               <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Moon Night Store</p>
+                                           </div>
+                                       </div>
+                                       <p className="font-black text-white italic text-lg tracking-tighter">- {o.total_amount.toFixed(2)} DH</p>
+                                   </div>
+                               ))}
+                           </div>
+                       )}
+                   </div>
                 </div>
              )}
           </div>

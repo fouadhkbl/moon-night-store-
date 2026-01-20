@@ -11,6 +11,7 @@ import { ProductDetailsModal } from './components/Shop/ProductDetailsModal';
 import { HomePage } from './pages/HomePage';
 import { CartPage } from './pages/CartPage';
 import { Dashboard } from './pages/Dashboard';
+import { TopUpPage } from './pages/TopUpPage';
 import { Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -212,6 +213,14 @@ const App: React.FC = () => {
             onNavigate={handleNavigate} 
             onClearCart={handleClearCart}
             addToast={addToast}
+          />
+        )}
+
+        {currentPage === 'topup' && (
+          <TopUpPage 
+            session={session} 
+            onNavigate={handleNavigate} 
+            addToast={addToast} 
           />
         )}
         
