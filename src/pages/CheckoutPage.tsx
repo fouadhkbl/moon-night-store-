@@ -350,7 +350,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
                             </div>
                         )}
 
-                        {/* Payment Area */}
+                        {/* Payment Area - Fixed Width for Desktop */}
                         <div className="relative z-10 min-h-[150px]">
                             {paymentMethod === 'wallet' ? (
                                 <button 
@@ -362,7 +362,9 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
                                 </button>
                             ) : (
                                 <>
-                                    <div id="paypal-checkout-container" className="w-full relative z-10 clear-both"></div>
+                                    <div className="flex justify-center w-full">
+                                        <div id="paypal-checkout-container" className="w-full md:max-w-xs relative z-10"></div>
+                                    </div>
                                     {!paypalLoaded && (
                                         <div className="w-full h-14 bg-gray-800 rounded-lg animate-pulse flex items-center justify-center text-gray-500 text-xs uppercase tracking-widest absolute top-0 left-0">
                                             Loading Payment Gateway...

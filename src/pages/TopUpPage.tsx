@@ -231,8 +231,10 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
                                    <CreditCard className="w-4 h-4 text-gray-500" />
                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">PayPal & Debit/Credit Cards</span>
                                </div>
-                               {/* Added specific styling to ensure visibility on desktop */}
-                               <div id="paypal-topup-container" className="w-full space-y-4 relative z-10 clear-both"></div>
+                               {/* Centered PayPal Container for PC */}
+                               <div className="flex justify-center w-full">
+                                    <div id="paypal-topup-container" className="w-full md:max-w-xs relative z-10"></div>
+                               </div>
                                {!paypalLoaded && (
                                    <div className="w-full h-14 bg-gray-800 rounded-lg animate-pulse flex items-center justify-center text-gray-500 text-xs uppercase tracking-widest absolute top-10 left-0">
                                        Loading Secure Payment...
@@ -250,4 +252,4 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
        </div>
     </div>
   );
-}
+};
