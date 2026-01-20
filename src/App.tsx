@@ -16,7 +16,7 @@ import { Loader2 } from 'lucide-react';
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState('home'); // Sets Home page as default
+  const [currentPage, setCurrentPage] = useState('home'); 
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);

@@ -30,15 +30,31 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount }) => {
       }
 
       const fetchProfile = async () => {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+        // Retry logic to handle race condition where auth is ready but profile insert is lagging
+        let attempts = 0;
+        let data = null;
+        
+        while (attempts < 3 && !data) {
+             const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+              
+             if (profileData) {
+                 data = profileData;
+             } else {
+                 await new Promise(r => setTimeout(r, 500)); // Wait 500ms before retry
+                 attempts++;
+             }
+        }
+        
         if (data) setProfile(data);
       };
+      
       fetchProfile();
       
+      // Subscribe to profile changes for avatar updates
       const channel = supabase.channel('public:profiles')
           .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${session.user.id}` }, payload => {
               setProfile(payload.new as Profile);
@@ -47,7 +63,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount }) => {
           
       return () => { supabase.removeChannel(channel); }
     }
-  }, [session, isGuest]);
+  }, [session?.user?.id, isGuest]); // Depend specifically on user ID to force re-run on auth change
 
   return (
     <nav className="sticky top-0 z-50 bg-[#0b0e14] border-b border-gray-800 h-16 flex items-center shadow-lg">
