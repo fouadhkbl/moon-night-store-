@@ -273,18 +273,24 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
       if (!window.confirm(warningMessage)) return;
       
       // Manual Cascade: Delete orders first
+      // NOTE: Even with DB Cascade, we try this. If RLS blocks it, the error below catches the DB Constraint.
+      // If the User runs the new db_setup.sql, the constraints will just work.
       if (userOrders.length > 0) {
           const { error: orderError } = await supabase.from('orders').delete().eq('user_id', userId);
           if (orderError) {
-             addToast('Error', 'Failed to delete user history: ' + orderError.message, 'error');
-             return;
+             // Just log, don't stop. If DB cascade is setup, the next step works.
+             console.warn("Manual order delete failed (RLS?):", orderError);
           }
       }
 
       const { error } = await supabase.from('profiles').delete().eq('id', userId);
       
       if (error) {
-          addToast('Error', 'Could not delete user: ' + error.message, 'error');
+          if (error.message.includes("violates foreign key constraint")) {
+              addToast('Database Error', 'Please run the updated "db_setup.sql" in Supabase Query Editor to fix foreign key constraints.', 'error');
+          } else {
+              addToast('Error', 'Could not delete user: ' + error.message, 'error');
+          }
       } else {
           addToast('Deleted', 'User profile removed.', 'success');
           fetchData();
