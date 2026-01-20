@@ -1,5 +1,5 @@
 -- ==============================================================================
--- MOON NIGHT COMPLETE DATABASE SETUP (V12 - POLICY FIXES)
+-- MOON NIGHT COMPLETE DATABASE SETUP (V13 - FULL CASCADE FIX)
 -- Run this in the Supabase SQL Editor to fix Foreign Key constraints and Policies.
 -- ==============================================================================
 
@@ -56,10 +56,20 @@ create table if not exists public.cart_items (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- MIGRATION: Ensure Cart Items user_id cascade
+do $$
+begin
+  if exists (select 1 from information_schema.table_constraints where constraint_name = 'cart_items_user_id_fkey' and table_name = 'cart_items') then
+    alter table public.cart_items drop constraint cart_items_user_id_fkey;
+  end if;
+  alter table public.cart_items add constraint cart_items_user_id_fkey foreign key (user_id) references public.profiles(id) on delete cascade;
+end;
+$$;
+
 -- 5. ORDERS TABLE (Modified with Cascade)
 create table if not exists public.orders (
   id uuid default uuid_generate_v4() primary key,
-  user_id uuid references public.profiles(id) on delete cascade not null, -- Added Cascade
+  user_id uuid references public.profiles(id) on delete cascade not null,
   total_amount decimal(10, 2) not null,
   status text default 'pending', 
   payment_method text,
@@ -72,15 +82,12 @@ alter table public.orders add column if not exists status text default 'pending'
 alter table public.orders add column if not exists payment_method text;
 alter table public.orders add column if not exists transaction_id text;
 
--- CRITICAL FIX: Update Orders Foreign Key to Cascade Delete (Migration)
+-- MIGRATION: Update Orders Foreign Key to Cascade Delete
 do $$
 begin
-  -- Check if constraint exists and doesn't have cascade (simplified check: just drop and recreate to be safe)
   if exists (select 1 from information_schema.table_constraints where constraint_name = 'orders_user_id_fkey' and table_name = 'orders') then
     alter table public.orders drop constraint orders_user_id_fkey;
   end if;
-  
-  -- Add the correct constraint with ON DELETE CASCADE
   alter table public.orders add constraint orders_user_id_fkey foreign key (user_id) references public.profiles(id) on delete cascade;
 end;
 $$;
@@ -115,6 +122,17 @@ create table if not exists public.order_messages (
   message text not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- MIGRATION: Update Order Messages Sender Foreign Key to Cascade Delete
+do $$
+begin
+  if exists (select 1 from information_schema.table_constraints where constraint_name = 'order_messages_sender_id_fkey' and table_name = 'order_messages') then
+    alter table public.order_messages drop constraint order_messages_sender_id_fkey;
+  end if;
+  -- Constraint: If sender (profile) is deleted, delete the message.
+  alter table public.order_messages add constraint order_messages_sender_id_fkey foreign key (sender_id) references public.profiles(id) on delete cascade;
+end;
+$$;
 
 -- 9. SECURITY POLICIES
 alter table public.profiles enable row level security;

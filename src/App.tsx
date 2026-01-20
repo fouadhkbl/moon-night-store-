@@ -21,6 +21,7 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState('home'); 
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [toasts, setToasts] = useState<any[]>([]);
@@ -66,8 +67,18 @@ const App: React.FC = () => {
   const handleNavigate = (page: string) => { 
     window.scrollTo(0,0); 
     setCurrentPage(page);
-    if (page !== 'shop') setSelectedCategory(null);
-    if (page !== 'dashboard') setTargetOrderId(null); // Clear target if navigating away
+    if (page !== 'shop') {
+        setSelectedCategory(null);
+        setSearchQuery('');
+    }
+    if (page !== 'dashboard') setTargetOrderId(null);
+  };
+
+  const handleSearch = (query: string) => {
+      setSearchQuery(query);
+      setSelectedCategory(null); // Clear category to search all
+      setCurrentPage('shop');
+      window.scrollTo(0, 0);
   };
 
   const handleViewOrder = (orderId: string) => {
@@ -169,13 +180,14 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-white font-sans flex flex-col selection:bg-blue-600 selection:text-white">
-      <Navbar session={session} onNavigate={handleNavigate} cartCount={cart.length} />
+      <Navbar session={session} onNavigate={handleNavigate} cartCount={cart.length} onSearch={handleSearch} />
       
       <main className="flex-grow">
         {currentPage === 'home' && (
           <HomePage 
             onNavigate={handleNavigate} 
             onSelectCategory={setSelectedCategory} 
+            onSearch={handleSearch}
           />
         )}
         
@@ -184,19 +196,21 @@ const App: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-24 gap-8">
                <div>
                   <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-none mb-3">SYSTEM SHOP</h1>
-                  <p className="text-gray-600 text-[12px] uppercase tracking-[0.4em] font-black">{selectedCategory ? `Department: ${selectedCategory}` : 'All Global Inventory'}</p>
+                  <p className="text-gray-600 text-[12px] uppercase tracking-[0.4em] font-black">
+                      {searchQuery ? `Searching: "${searchQuery}"` : (selectedCategory ? `Department: ${selectedCategory}` : 'All Global Inventory')}
+                  </p>
                </div>
                <div className="flex items-center gap-4 overflow-x-auto pb-6 scrollbar-hide max-w-full">
                   <button 
-                    onClick={() => setSelectedCategory(null)}
-                    className={`px-8 py-4 rounded-2xl text-[11px] font-black uppercase transition-all whitespace-nowrap tracking-[0.2em] shadow-2xl ${!selectedCategory ? 'bg-blue-600 text-white' : 'bg-[#1e232e] text-gray-400 hover:text-white border border-gray-800'}`}
+                    onClick={() => { setSelectedCategory(null); setSearchQuery(''); }}
+                    className={`px-8 py-4 rounded-2xl text-[11px] font-black uppercase transition-all whitespace-nowrap tracking-[0.2em] shadow-2xl ${!selectedCategory && !searchQuery ? 'bg-blue-600 text-white' : 'bg-[#1e232e] text-gray-400 hover:text-white border border-gray-800'}`}
                   >
                     ALL DEPTS
                   </button>
                   {Object.values(GameCategory).map((cat: string) => (
                     <button 
                       key={cat}
-                      onClick={() => setSelectedCategory(cat)}
+                      onClick={() => { setSelectedCategory(cat); setSearchQuery(''); }}
                       className={`px-8 py-4 rounded-2xl text-[11px] font-black uppercase transition-all whitespace-nowrap tracking-[0.2em] shadow-2xl ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-[#1e232e] text-gray-400 hover:text-white border border-gray-800'}`}
                     >
                       {cat.toUpperCase()}
@@ -207,6 +221,7 @@ const App: React.FC = () => {
             
             <ShopGrid 
               category={selectedCategory} 
+              searchQuery={searchQuery}
               onProductClick={(p) => setSelectedProduct(p)} 
             />
           </div>

@@ -3,19 +3,28 @@ import { supabase } from '../../supabaseClient';
 import { Product } from '../../types';
 import { ShoppingCart, Plus } from 'lucide-react';
 
-export const ShopGrid = ({ category, onProductClick }: { category: string | null, onProductClick: (p: Product) => void }) => {
+export const ShopGrid = ({ category, searchQuery, onProductClick }: { category: string | null, searchQuery: string, onProductClick: (p: Product) => void }) => {
    const [products, setProducts] = useState<Product[]>([]);
    const [isLoading, setIsLoading] = useState(true);
 
    useEffect(() => {
      setIsLoading(true);
      let query = supabase.from('products').select('*');
-     if (category) query = query.eq('category', category);
+     
+     if (category) {
+         query = query.eq('category', category);
+     }
+     
+     if (searchQuery) {
+         // Filter by Name OR Category using ILIKE for case-insensitive matching
+         query = query.or(`name.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
+     }
+
      query.then(({ data }) => { 
        if (data) setProducts(data); 
        setIsLoading(false);
      }); 
-   }, [category]);
+   }, [category, searchQuery]);
 
    if (isLoading) return (
      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -26,17 +35,19 @@ export const ShopGrid = ({ category, onProductClick }: { category: string | null
    );
 
    if (products.length === 0) return (
-     <div className="py-40 text-center">
+     <div className="py-40 text-center animate-fade-in">
        <div className="bg-[#1e232e] w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-10 text-gray-800 border border-gray-800 shadow-3xl">
          <ShoppingCart className="w-16 h-16" />
        </div>
        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">No Supply Found</h3>
-       <p className="text-gray-600 text-[11px] font-black uppercase tracking-[0.4em] mt-4"> restocking system scheduled.</p>
+       <p className="text-gray-600 text-[11px] font-black uppercase tracking-[0.4em] mt-4">
+           {searchQuery ? `No items match "${searchQuery}"` : "Restocking system scheduled."}
+       </p>
      </div>
    );
 
    return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 animate-slide-up">
          {products.map(p => (
              <div 
                key={p.id} 

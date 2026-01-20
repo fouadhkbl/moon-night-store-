@@ -255,31 +255,28 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
   };
 
   const handleDeleteUser = async (userId: string) => {
-      // Check for active orders
+      // Check for ACTIVE (Pending) orders only
       const userOrders = orders.filter(o => o.user_id === userId);
-      const hasActiveOrders = userOrders.some(o => o.status === 'pending' || o.status === 'completed');
+      const hasActiveOrders = userOrders.some(o => o.status === 'pending');
       
       if (hasActiveOrders) {
-          addToast("Blocked", "Cannot delete user with Active or Completed orders. Orders must be Canceled first.", "error");
+          addToast("Blocked", "User has Active/Pending orders. Cancel them first to proceed.", "error");
           return;
       }
 
-      // Warning message logic
+      // Warning message logic for History (Completed/Canceled)
       let warningMessage = 'DANGER: This will delete the user profile and wallet balance. Continue?';
       if (userOrders.length > 0) {
-          warningMessage = `WARNING: This user has ${userOrders.length} order(s) in history. Deleting the user will permanently remove these orders too. \n\nAre you sure you want to proceed?`;
+          warningMessage = `WARNING: This user has ${userOrders.length} Completed/Canceled order(s). \n\nDeleting this user will PERMANENTLY delete their entire order history and revenue data. \n\nAre you sure?`;
       }
 
       if (!window.confirm(warningMessage)) return;
       
       // Manual Cascade: Delete orders first
-      // NOTE: Even with DB Cascade, we try this. If RLS blocks it, the error below catches the DB Constraint.
-      // If the User runs the new db_setup.sql, the constraints will just work.
       if (userOrders.length > 0) {
           const { error: orderError } = await supabase.from('orders').delete().eq('user_id', userId);
           if (orderError) {
-             // Just log, don't stop. If DB cascade is setup, the next step works.
-             console.warn("Manual order delete failed (RLS?):", orderError);
+             console.warn("Manual order delete failed, relying on DB cascade:", orderError);
           }
       }
 

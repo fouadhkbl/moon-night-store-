@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Search, User, Menu, LayoutDashboard } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, LayoutDashboard, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Profile } from '../types';
 
@@ -7,11 +7,14 @@ interface NavbarProps {
   session: any;
   onNavigate: (page: string) => void;
   cartCount: number;
+  onSearch: (query: string) => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount }) => {
+const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearch }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const isGuest = session?.user?.id === 'guest-user-123';
 
   useEffect(() => {
@@ -30,7 +33,6 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount }) => {
       }
 
       const fetchProfile = async () => {
-        // Retry logic to handle race condition where auth is ready but profile insert is lagging
         let attempts = 0;
         let data = null;
         
@@ -44,7 +46,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount }) => {
              if (profileData) {
                  data = profileData;
              } else {
-                 await new Promise(r => setTimeout(r, 500)); // Wait 500ms before retry
+                 await new Promise(r => setTimeout(r, 500)); 
                  attempts++;
              }
         }
@@ -54,7 +56,6 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount }) => {
       
       fetchProfile();
       
-      // Subscribe to profile changes for avatar updates
       const channel = supabase.channel('public:profiles')
           .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${session.user.id}` }, payload => {
               setProfile(payload.new as Profile);
@@ -63,12 +64,20 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount }) => {
           
       return () => { supabase.removeChannel(channel); }
     }
-  }, [session?.user?.id, isGuest]); // Depend specifically on user ID to force re-run on auth change
+  }, [session?.user?.id, isGuest]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (searchTerm.trim()) {
+          onSearch(searchTerm);
+          setIsMobileSearchOpen(false);
+      }
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-[#0b0e14] border-b border-gray-800 h-16 flex items-center shadow-lg">
-      <div className="container mx-auto px-4 flex justify-between items-center">
-        <div className="flex items-center gap-4">
+      <div className="container mx-auto px-4 flex justify-between items-center relative h-full">
+        <div className="flex items-center gap-4 relative z-10">
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)} 
             className="lg:hidden text-gray-400 hover:text-white"
@@ -85,21 +94,29 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount }) => {
           </div>
         </div>
 
-        <div className="hidden lg:flex flex-1 max-w-2xl mx-8 relative">
-          <input
-            type="text"
-            placeholder="Search Game..."
-            className="w-full bg-[#1e232e] text-gray-300 rounded-md py-2 px-4 pl-10 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-gray-700"
-          />
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-          <button className="absolute right-0 top-0 h-full px-4 bg-blue-600 rounded-r-md text-white hover:bg-blue-700 transition">
-            <Search className="w-4 h-4" />
-          </button>
-        </div>
+        {/* Search Bar - Desktop (Centered) */}
+        <form onSubmit={handleSearchSubmit} className="hidden lg:flex absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg z-0">
+          <div className="relative w-full">
+            <input
+              type="text"
+              placeholder="Search Game, Item, or Category..."
+              className="w-full bg-[#1e232e] text-gray-300 rounded-md py-2 pl-4 pr-12 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-gray-700 font-medium placeholder:text-gray-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <button type="submit" className="absolute right-0 top-0 h-full px-4 bg-blue-600 rounded-r-md text-white hover:bg-blue-700 transition">
+              <Search className="w-4 h-4" />
+            </button>
+          </div>
+        </form>
 
-        <div className="flex items-center gap-4">
-          <button className="lg:hidden p-2 text-gray-400">
-            <Search className="w-5 h-5" />
+        <div className="flex items-center gap-4 relative z-10">
+          {/* Mobile Search Toggle */}
+          <button 
+            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+            className="lg:hidden p-2 text-gray-400 hover:text-white"
+          >
+            {isMobileSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
           </button>
 
           <button 
@@ -142,9 +159,29 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount }) => {
                 <LayoutDashboard className="w-4 h-4" /> My Profile
                 </button>
             </div>
-            </div>
+          </div>
         </div>
       </div>
+
+      {/* Mobile Search Bar Overlay */}
+      {isMobileSearchOpen && (
+          <div className="absolute top-16 left-0 w-full bg-[#0b0e14] p-4 border-b border-gray-800 lg:hidden animate-slide-up">
+              <form onSubmit={handleSearchSubmit} className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="w-full bg-[#1e232e] text-white rounded-lg py-3 px-4 pl-10 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-gray-700"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    autoFocus
+                  />
+                  <Search className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
+                  <button type="submit" className="absolute right-2 top-2 p-1.5 bg-blue-600 rounded-md text-white">
+                      <Search className="w-4 h-4" />
+                  </button>
+              </form>
+          </div>
+      )}
     </nav>
   );
 };

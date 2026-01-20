@@ -2,7 +2,8 @@ import React from 'react';
 import { ChevronRight, Star, Coins, Zap, Sword, ArrowUpCircle, Gift } from 'lucide-react';
 import { GameCategory } from '../types';
 
-export const HomePage = ({ onNavigate, onSelectCategory }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void }) => {
+export const HomePage = ({ onNavigate, onSelectCategory }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void, onSearch: (q: string) => void }) => {
+
   return (
     <div className="animate-fade-in">
       <section className="relative h-[750px] flex items-center overflow-hidden">
@@ -27,12 +28,13 @@ export const HomePage = ({ onNavigate, onSelectCategory }: { onNavigate: (p: str
             <p className="text-base md:text-xl text-gray-400 mb-12 leading-relaxed font-bold uppercase tracking-[0.2em] max-w-xl opacity-80">
               Elite gaming inventory, instant fulfillment, and 24/7 security since 2014.
             </p>
+            
             <div className="flex flex-wrap gap-6">
               <button 
                 onClick={() => onNavigate('shop')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-16 py-6 rounded-3xl font-black text-2xl transition-all transform hover:scale-105 active:scale-95 shadow-[0_20px_60px_rgba(37,99,235,0.4)] flex items-center gap-4 uppercase tracking-tighter"
+                className="bg-transparent border-2 border-gray-700 hover:border-white hover:bg-white hover:text-black text-white px-12 py-4 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter"
               >
-                Browse Shop <ChevronRight className="w-8 h-8" />
+                Browse Full Shop <ChevronRight className="w-5 h-5" />
               </button>
             </div>
           </div>
