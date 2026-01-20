@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../../supabaseClient';
-import { Product } from '../../../types';
+import { supabase } from '../../supabaseClient';
+import { Product } from '../../types';
 import { ShoppingCart, Plus } from 'lucide-react';
 
 export const ShopGrid = ({ category, onProductClick }: { category: string | null, onProductClick: (p: Product) => void }) => {

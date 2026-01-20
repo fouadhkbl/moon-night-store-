@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronRight, Star, Coins, Zap, Sword, ArrowUpCircle, Gift } from 'lucide-react';
-import { GameCategory } from '../../types';
+import { GameCategory } from '../types';
 
 export const HomePage = ({ onNavigate, onSelectCategory }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void }) => {
   return (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DollarSign, Loader2, Save, X, Check } from 'lucide-react';
-import { Profile, Product, GameCategory } from '../../../types';
+import { Profile, Product, GameCategory } from '../../types';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number) => void }) => {
   const [amount, setAmount] = useState(user.wallet_balance);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '../../../supabaseClient';
+import { supabase } from '../../supabaseClient';
 import { LogIn, Loader2, UserPlus } from 'lucide-react';
 
 export const LoginForm = ({ onAuthSuccess, onToggle }: { onAuthSuccess: (s: any) => void, onToggle: () => void }) => {
