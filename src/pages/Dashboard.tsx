@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, Order, OrderItem, OrderMessage } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, Box, MessageSquare, Send, X, Clock, Check, Eye } from 'lucide-react';
+import { Gamepad2, Wallet, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, Box, MessageSquare, Send, X, Clock, Check, Eye, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
 
 // --- ORDER DETAILS & CHAT MODAL ---
 const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
@@ -33,10 +33,15 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
 
         fetchDetails();
 
-        // Subscribe to new messages
+        // Subscribe to new messages (filtered to ignore our own optimistic updates if needed, though simple dedupe works via ID usually)
         const channel = supabase.channel(`order_chat:${order.id}`)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_messages', filter: `order_id=eq.${order.id}` }, (payload) => {
-                setMessages(prev => [...prev, payload.new as OrderMessage]);
+                const newMsg = payload.new as OrderMessage;
+                // Only add if we don't already have a message with this ID (prevents duplication from optimistic update if IDs match, though temporary IDs differ)
+                setMessages(prev => {
+                    if (prev.some(m => m.id === newMsg.id)) return prev;
+                    return [...prev, newMsg];
+                });
                 scrollToBottom();
             })
             .subscribe();
@@ -52,12 +57,38 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
         e.preventDefault();
         if (!newMessage.trim()) return;
 
-        await supabase.from('order_messages').insert({
+        const msgText = newMessage.trim();
+        setNewMessage(''); // Clear input immediately
+
+        // Optimistic Update: Add message to UI immediately before DB confirms
+        const tempId = `temp-${Date.now()}`;
+        const optimisicMsg: OrderMessage = {
+            id: tempId,
             order_id: order.id,
             sender_id: currentUser.id,
-            message: newMessage.trim()
-        });
-        setNewMessage('');
+            message: msgText,
+            created_at: new Date().toISOString()
+        };
+
+        setMessages(prev => [...prev, optimisicMsg]);
+        scrollToBottom();
+
+        // Send to Database
+        const { data, error } = await supabase.from('order_messages').insert({
+            order_id: order.id,
+            sender_id: currentUser.id,
+            message: msgText
+        }).select().single();
+
+        if (error) {
+            // Revert on error (remove the temp message)
+            console.error("Failed to send", error);
+            setMessages(prev => prev.filter(m => m.id !== tempId));
+            // Optional: Show error toast here
+        } else if (data) {
+            // Replace temp message with real one (mostly for ID consistency)
+            setMessages(prev => prev.map(m => m.id === tempId ? data : m));
+        }
     };
 
     if (loading) return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80"><div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>;
@@ -70,12 +101,20 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
                 <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Order #{order.id.slice(0,6)}</h3>
-                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                            order.status === 'completed' ? 'bg-green-500/10 text-green-500' : 
-                            order.status === 'canceled' ? 'bg-red-500/10 text-red-500' :
-                            'bg-yellow-500/10 text-yellow-500'
-                        }`}>
-                            {order.status}
+                    </div>
+
+                    {/* Status Badge - Prominent */}
+                    <div className={`p-4 rounded-xl mb-6 border flex items-center gap-3 ${
+                        order.status === 'completed' ? 'bg-green-500/10 border-green-500/30 text-green-500' : 
+                        order.status === 'canceled' ? 'bg-red-500/10 border-red-500/30 text-red-500' :
+                        'bg-yellow-500/10 border-yellow-500/30 text-yellow-500'
+                    }`}>
+                        {order.status === 'completed' && <CheckCircle className="w-6 h-6" />}
+                        {order.status === 'canceled' && <X className="w-6 h-6" />}
+                        {order.status === 'pending' && <Clock className="w-6 h-6 animate-pulse" />}
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Current Status</p>
+                            <p className="text-lg font-black uppercase tracking-tighter">{order.status}</p>
                         </div>
                     </div>
 
@@ -209,6 +248,19 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const handleDeleteOrder = async (e: React.MouseEvent, orderId: string) => {
+    e.stopPropagation(); // Prevent opening modal
+    if (!window.confirm("Are you sure you want to remove this canceled order from your history?")) return;
+    
+    const { error } = await supabase.from('orders').delete().eq('id', orderId);
+    if (error) {
+        addToast("Error", "Could not delete order.", "error");
+    } else {
+        addToast("Deleted", "Order removed from history.", "success");
+        setOrders(prev => prev.filter(o => o.id !== orderId));
+    }
+  };
+
   if (isGuest && authMode === 'login') return (
     <div className="py-20 container mx-auto px-4">
       <LoginForm 
@@ -303,27 +355,37 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                            {orders.map(o => (
                                <div key={o.id} onClick={() => setSelectedOrder(o)} className="p-6 bg-[#0b0e14] rounded-3xl flex flex-col md:flex-row justify-between items-center border border-gray-800 hover:border-blue-500/50 cursor-pointer transition-all shadow-xl group">
                                    <div className="flex-1">
-                                     <p className="font-black text-white uppercase tracking-tighter text-lg leading-none mb-1 group-hover:text-blue-400 transition-colors">Trade #{o.id.slice(0,8)}</p>
+                                     <div className="flex items-center gap-3 mb-1">
+                                        <p className="font-black text-white uppercase tracking-tighter text-lg leading-none group-hover:text-blue-400 transition-colors">Trade #{o.id.slice(0,8)}</p>
+                                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
+                                                  o.status === 'completed' ? 'bg-green-500/10 text-green-500 border-green-500/30' : 
+                                                  o.status === 'canceled' ? 'bg-red-500/10 text-red-500 border-red-500/30' : 
+                                                  'bg-yellow-500/10 text-yellow-500 border-yellow-500/30'
+                                              }`}>
+                                            {o.status}
+                                        </span>
+                                     </div>
                                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{new Date(o.created_at).toLocaleDateString()}</p>
                                    </div>
                                    
                                    <div className="flex items-center gap-6 mt-4 md:mt-0 w-full md:w-auto justify-between md:justify-end">
                                        <div className="text-right">
                                           <p className="font-black text-green-400 italic text-2xl tracking-tighter leading-none">{o.total_amount.toFixed(2)} DH</p>
-                                          <div className="flex items-center gap-2 justify-end mt-1">
-                                              <p className={`text-[9px] font-black uppercase tracking-widest ${
-                                                  o.status === 'completed' ? 'text-green-500' : 
-                                                  o.status === 'canceled' ? 'text-red-500' : 
-                                                  'text-gray-600'
-                                              }`}>Status: {o.status}</p>
-                                              {o.status === 'pending' && <Clock className="w-3 h-3 text-yellow-500 animate-pulse"/>}
-                                              {o.status === 'canceled' && <X className="w-3 h-3 text-red-500"/>}
-                                              {o.status === 'completed' && <Check className="w-3 h-3 text-green-500"/>} 
-                                          </div>
                                        </div>
-                                       <button className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl transition-all shadow-lg flex-shrink-0 group-hover:scale-110">
-                                           <Eye className="w-5 h-5" />
-                                       </button>
+                                       <div className="flex items-center gap-2">
+                                            {o.status === 'canceled' && (
+                                                <button 
+                                                    onClick={(e) => handleDeleteOrder(e, o.id)}
+                                                    className="bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white p-3 rounded-xl transition-all shadow-lg border border-red-500/20"
+                                                    title="Remove canceled order"
+                                                >
+                                                    <Trash2 className="w-5 h-5" />
+                                                </button>
+                                            )}
+                                            <button className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl transition-all shadow-lg flex-shrink-0 group-hover:scale-110">
+                                                <Eye className="w-5 h-5" />
+                                            </button>
+                                       </div>
                                    </div>
                                </div>
                            ))}

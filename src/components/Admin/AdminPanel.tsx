@@ -25,7 +25,12 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 
         const channel = supabase.channel(`admin_chat:${order.id}`)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_messages', filter: `order_id=eq.${order.id}` }, (payload) => {
-                setMessages(prev => [...prev, payload.new as OrderMessage]);
+                const newMsg = payload.new as OrderMessage;
+                // De-dupe optimistic updates
+                setMessages(prev => {
+                    if (prev.some(m => m.id === newMsg.id)) return prev;
+                    return [...prev, newMsg];
+                });
                 scrollToBottom();
             })
             .subscribe();
@@ -38,12 +43,35 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newMessage.trim()) return;
-        await supabase.from('order_messages').insert({
+
+        const msgText = newMessage.trim();
+        setNewMessage(''); // Clear input
+
+        // Optimistic Update
+        const tempId = `temp-admin-${Date.now()}`;
+        const optimisicMsg: OrderMessage = {
+            id: tempId,
             order_id: order.id,
             sender_id: currentUser.id,
-            message: newMessage.trim()
-        });
-        setNewMessage('');
+            message: msgText,
+            created_at: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, optimisicMsg]);
+        scrollToBottom();
+
+        // Send to DB
+        const { data, error } = await supabase.from('order_messages').insert({
+            order_id: order.id,
+            sender_id: currentUser.id,
+            message: msgText
+        }).select().single();
+
+        if (error) {
+            console.error("Failed to send", error);
+            setMessages(prev => prev.filter(m => m.id !== tempId));
+        } else if (data) {
+             setMessages(prev => prev.map(m => m.id === tempId ? data : m));
+        }
     };
 
     const handleUpdateStatus = async (newStatus: string) => {
@@ -227,8 +255,32 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
   };
 
   const handleDeleteUser = async (userId: string) => {
-      if (!window.confirm('DANGER: This will delete the user profile and wallet balance. Continue?')) return;
+      // Check for active orders
+      const userOrders = orders.filter(o => o.user_id === userId);
+      const hasActiveOrders = userOrders.some(o => o.status === 'pending' || o.status === 'completed');
       
+      if (hasActiveOrders) {
+          addToast("Blocked", "Cannot delete user with Active or Completed orders. Orders must be Canceled first.", "error");
+          return;
+      }
+
+      // Warning message logic
+      let warningMessage = 'DANGER: This will delete the user profile and wallet balance. Continue?';
+      if (userOrders.length > 0) {
+          warningMessage = `WARNING: This user has ${userOrders.length} order(s) in history. Deleting the user will permanently remove these orders too. \n\nAre you sure you want to proceed?`;
+      }
+
+      if (!window.confirm(warningMessage)) return;
+      
+      // Manual Cascade: Delete orders first
+      if (userOrders.length > 0) {
+          const { error: orderError } = await supabase.from('orders').delete().eq('user_id', userId);
+          if (orderError) {
+             addToast('Error', 'Failed to delete user history: ' + orderError.message, 'error');
+             return;
+          }
+      }
+
       const { error } = await supabase.from('profiles').delete().eq('id', userId);
       
       if (error) {
