@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Wallet, ArrowLeft, CreditCard, Check, AlertCircle, TrendingUp, ShieldCheck } from 'lucide-react';
+import { Wallet, ArrowLeft, Check, AlertCircle, TrendingUp, ShieldCheck, CreditCard } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -39,20 +39,20 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
   const handleAmountChange = (val: number) => {
       let newAmount = val;
       if (newAmount > 1000) newAmount = 1000;
-      if (newAmount < 0) newAmount = 0;
       setAmount(newAmount);
   };
 
   useEffect(() => {
-      if (paypalLoaded && !isSuccess && amount > 0) {
+      // Only render if amount is valid (>= 10 based on UI limits)
+      if (paypalLoaded && !isSuccess && amount >= 10) {
           const container = document.getElementById('paypal-topup-container');
           if (container) {
               container.innerHTML = '';
               try {
                   window.paypal.Buttons({
                       style: {
-                          layout: 'vertical', // Changed to vertical to show Debit/Credit card button prominently
-                          color:  'gold',
+                          layout: 'vertical',
+                          color:  'blue', // Matches the user's requested style
                           shape:  'rect',
                           label:  'pay'
                       },
@@ -80,6 +80,10 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
                   console.error("PayPal Render Error", e);
               }
           }
+      } else if (paypalLoaded && amount < 10) {
+          // Clear container if amount is invalid
+          const container = document.getElementById('paypal-topup-container');
+          if (container) container.innerHTML = '';
       }
   }, [paypalLoaded, isSuccess, amount]);
 
@@ -91,12 +95,13 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
           
           if (error) throw error;
 
-          // Optional: Record transaction in orders table as a "Top Up"
+          // Record transaction in orders table with Transaction ID
           await supabase.from('orders').insert({
               user_id: session.user.id,
               total_amount: amount,
               status: 'completed',
-              payment_method: 'PayPal TopUp'
+              payment_method: 'PayPal TopUp',
+              transaction_id: txnId
           });
 
           setIsSuccess(true);
@@ -173,7 +178,7 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
                          min="10" 
                          max="1000" 
                          step="10"
-                         value={amount}
+                         value={amount < 10 ? 10 : amount}
                          onChange={(e) => setAmount(Number(e.target.value))}
                          className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-600 mb-4"
                        />
@@ -200,11 +205,23 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
                    </div>
                    
                    <div className="relative z-0 min-h-[150px]">
-                       <div id="paypal-topup-container" className="w-full space-y-4"></div>
-                       {!paypalLoaded && (
-                           <div className="w-full h-14 bg-gray-800 rounded-lg animate-pulse flex items-center justify-center text-gray-500 text-xs uppercase tracking-widest">
-                               Loading Secure Payment...
+                       {amount < 10 ? (
+                           <div className="w-full h-14 bg-red-900/20 border border-red-500/20 rounded-lg flex items-center justify-center text-red-400 text-xs font-bold uppercase tracking-widest">
+                               Minimum deposit is 10 DH
                            </div>
+                       ) : (
+                           <>
+                               <div className="flex items-center gap-2 mb-4 justify-center">
+                                   <CreditCard className="w-4 h-4 text-gray-500" />
+                                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">PayPal & Debit/Credit Cards</span>
+                               </div>
+                               <div id="paypal-topup-container" className="w-full space-y-4"></div>
+                               {!paypalLoaded && (
+                                   <div className="w-full h-14 bg-gray-800 rounded-lg animate-pulse flex items-center justify-center text-gray-500 text-xs uppercase tracking-widest">
+                                       Loading Secure Payment...
+                                   </div>
+                               )}
+                           </>
                        )}
                    </div>
                    

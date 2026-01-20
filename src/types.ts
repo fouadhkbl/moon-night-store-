@@ -45,6 +45,17 @@ export interface OrderItem {
   product?: Product;
 }
 
+export interface Coupon {
+  id: string;
+  code: string;
+  discount_type: 'percent' | 'fixed';
+  discount_value: number;
+  max_uses: number | null;
+  usage_count: number;
+  expires_at: string | null;
+  is_active: boolean;
+}
+
 export enum GameCategory {
   COINS = 'Coins',
   TOP_UP = 'Top Up',

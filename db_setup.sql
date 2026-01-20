@@ -1,18 +1,19 @@
 -- ==============================================================================
--- MOON NIGHT COMPLETE DATABASE SETUP (V9 - OAUTH ENHANCED)
+-- MOON NIGHT COMPLETE DATABASE SETUP (V10 - PAYPAL ENHANCED)
 -- Run this in the Supabase SQL Editor to sync your DB with Google/Discord data.
 -- ==============================================================================
 
 -- 1. Enable UUID extension (Required for ID generation)
 create extension if not exists "uuid-ossp";
 
--- 2. RESET SHOP TABLES
-drop table if exists public.order_items;
-drop table if exists public.cart_items;
-drop table if exists public.products cascade;
+-- 2. RESET SHOP TABLES (Optional: Comment out if you want to keep data)
+-- drop table if exists public.order_items;
+-- drop table if exists public.cart_items;
+-- drop table if exists public.products cascade;
+-- drop table if exists public.coupons;
 
 -- 3. PRODUCTS TABLE (Re-created with Platform and Trending support)
-create table public.products (
+create table if not exists public.products (
   id uuid default uuid_generate_v4() primary key,
   name text not null,
   description text,
@@ -72,7 +73,7 @@ end;
 $$;
 
 -- 5. CART ITEMS TABLE
-create table public.cart_items (
+create table if not exists public.cart_items (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   product_id uuid references public.products(id) on delete cascade not null,
@@ -87,15 +88,17 @@ create table if not exists public.orders (
   total_amount decimal(10, 2) not null,
   status text default 'pending', 
   payment_method text,
+  transaction_id text, -- Added transaction_id column
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- Ensure Orders columns exist
 alter table public.orders add column if not exists status text default 'pending';
 alter table public.orders add column if not exists payment_method text;
+alter table public.orders add column if not exists transaction_id text;
 
 -- 7. ORDER ITEMS TABLE
-create table public.order_items (
+create table if not exists public.order_items (
   id uuid default uuid_generate_v4() primary key,
   order_id uuid references public.orders(id) on delete cascade not null,
   product_id uuid references public.products(id), 
@@ -103,18 +106,33 @@ create table public.order_items (
   price_at_purchase decimal(10, 2) not null
 );
 
--- 8. SECURITY POLICIES (RLS - Row Level Security)
+-- 8. COUPONS TABLE
+create table if not exists public.coupons (
+  id uuid default uuid_generate_v4() primary key,
+  code text not null unique,
+  discount_type text not null check (discount_type in ('percent', 'fixed')),
+  discount_value decimal(10, 2) not null,
+  max_uses int default null,
+  usage_count int default 0,
+  expires_at timestamp with time zone,
+  is_active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 9. SECURITY POLICIES (RLS - Row Level Security)
 alter table public.profiles enable row level security;
 alter table public.products enable row level security;
 alter table public.cart_items enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
+alter table public.coupons enable row level security;
 
 -- Clean up old policies to ensure clean slate
 drop policy if exists "Profiles are viewable by everyone" on public.profiles;
 drop policy if exists "Users can insert their own profile" on public.profiles;
 drop policy if exists "Users can update their own profile" on public.profiles;
 drop policy if exists "Enable update for admin panel on profiles" on public.profiles;
+drop policy if exists "Enable delete for admin panel on profiles" on public.profiles;
 drop policy if exists "Products are viewable by everyone" on public.products;
 drop policy if exists "Enable insert for admin panel" on public.products;
 drop policy if exists "Enable update for admin panel" on public.products;
@@ -127,10 +145,15 @@ drop policy if exists "Users can view own orders" on public.orders;
 drop policy if exists "Users can create orders" on public.orders;
 drop policy if exists "Users can view own order items" on public.order_items;
 drop policy if exists "Users can create order items" on public.order_items;
+drop policy if exists "Coupons are viewable by everyone" on public.coupons;
+drop policy if exists "Enable insert for admin panel coupons" on public.coupons;
+drop policy if exists "Enable update for admin panel coupons" on public.coupons;
+drop policy if exists "Enable delete for admin panel coupons" on public.coupons;
 
 -- PROFILES POLICIES
 create policy "Profiles are viewable by everyone" on public.profiles for select using (true);
 create policy "Enable update for admin panel on profiles" on public.profiles for update using (true);
+create policy "Enable delete for admin panel on profiles" on public.profiles for delete using (true);
 create policy "Users can insert their own profile" on public.profiles for insert with check (auth.uid() = id);
 
 -- PRODUCTS (Public Read, Admin Write)
@@ -157,7 +180,13 @@ create policy "Users can create order items" on public.order_items for insert wi
   exists ( select 1 from public.orders where orders.id = order_items.order_id and orders.user_id = auth.uid() )
 );
 
--- 9. AUTOMATION TRIGGERS
+-- COUPONS (Public Read for validation, Admin Write)
+create policy "Coupons are viewable by everyone" on public.coupons for select using (true);
+create policy "Enable insert for admin panel coupons" on public.coupons for insert with check (true);
+create policy "Enable update for admin panel coupons" on public.coupons for update using (true);
+create policy "Enable delete for admin panel coupons" on public.coupons for delete using (true);
+
+-- 10. AUTOMATION TRIGGERS
 
 -- Handle updated_at automatically
 create or replace function public.handle_updated_at()
@@ -240,7 +269,7 @@ select
 from auth.users
 on conflict (id) do nothing;
 
--- 10. SEED DATA (Only if empty)
+-- 11. SEED DATA (Only if empty)
 insert into public.products (name, description, price, category, image_url, is_trending, platform) 
 select 'Fortnite V-Bucks (13500)', 'Top up your V-Bucks instantly. Compatible with all platforms.', 79.99, 'Top Up', 'https://images.unsplash.com/photo-1589241062272-c0a000071964?auto=format&fit=crop&w=600&q=80', true, 'Multi'
 where not exists (select 1 from public.products);

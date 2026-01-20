@@ -206,11 +206,9 @@ const App: React.FC = () => {
         {currentPage === 'cart' && (
           <CartPage 
             cart={cart} 
-            session={session}
             onUpdateQty={handleUpdateCartQty} 
             onRemove={handleRemoveFromCart} 
             onNavigate={handleNavigate} 
-            onClearCart={handleClearCart}
             addToast={addToast}
           />
         )}

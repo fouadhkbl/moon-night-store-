@@ -1,19 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key } from 'lucide-react';
-import { ProductFormModal, BalanceEditorModal } from './AdminModals';
+import { Product, Profile, Coupon } from '../../types';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket } from 'lucide-react';
+import { ProductFormModal, BalanceEditorModal, CouponFormModal } from './AdminModals';
 
 export const AdminPanel = ({ session, addToast }: { session: any, addToast: any }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users'>('stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons'>('stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Modal States
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   
   const [providerFilter, setProviderFilter] = useState<'all' | 'email' | 'google' | 'discord'>('all');
 
@@ -24,9 +29,13 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
     const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (pData) setProducts(pData);
 
-    // Fetch Profiles (Users)
+    // Fetch Profiles
     const { data: userData } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
     if (userData) setProfiles(userData);
+
+    // Fetch Coupons
+    const { data: cData } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+    if (cData) setCoupons(cData);
 
     // Fetch Real Stats
     const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
@@ -39,6 +48,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // --- PRODUCT HANDLERS ---
   const handleDeleteProduct = async (id: string) => {
     if (!window.confirm('WARNING: Are you sure you want to delete this product forever?')) return;
     const { error } = await supabase.from('products').delete().eq('id', id);
@@ -61,7 +71,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
         if (error) throw error;
         addToast('Created', 'Added to shop.', 'success');
       }
-      setIsModalOpen(false);
+      setIsProductModalOpen(false);
       setEditingProduct(null);
       fetchData();
     } catch (err: any) {
@@ -69,6 +79,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
     }
   };
 
+  // --- USER HANDLERS ---
   const handleUpdateBalance = async (userId: string, newBalance: number) => {
     const { error } = await supabase.from('profiles').update({ wallet_balance: newBalance }).eq('id', userId);
     if (!error) {
@@ -80,6 +91,49 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+      if (!window.confirm('DANGER: This will delete the user profile and wallet balance. Continue?')) return;
+      
+      const { error } = await supabase.from('profiles').delete().eq('id', userId);
+      
+      if (error) {
+          addToast('Error', 'Could not delete user: ' + error.message, 'error');
+      } else {
+          addToast('Deleted', 'User profile removed.', 'success');
+          fetchData();
+      }
+  };
+
+  // --- COUPON HANDLERS ---
+  const handleSaveCoupon = async (couponData: Partial<Coupon>) => {
+      try {
+          if (couponData.id) {
+              const { error } = await supabase.from('coupons').update(couponData).eq('id', couponData.id);
+              if (error) throw error;
+              addToast('Updated', 'Coupon updated.', 'success');
+          } else {
+              const { error } = await supabase.from('coupons').insert(couponData);
+              if (error) throw error;
+              addToast('Created', 'Coupon created.', 'success');
+          }
+          setIsCouponModalOpen(false);
+          setEditingCoupon(null);
+          fetchData();
+      } catch (err: any) {
+          addToast('Error', err.message, 'error');
+      }
+  };
+
+  const handleDeleteCoupon = async (id: string) => {
+      if (!window.confirm('Delete this coupon?')) return;
+      const { error } = await supabase.from('coupons').delete().eq('id', id);
+      if (!error) {
+          addToast('Deleted', 'Coupon removed.', 'success');
+          fetchData();
+      }
+  };
+
+  // --- FILTERS ---
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -92,6 +146,8 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
     if (providerFilter === 'all') return matchesSearch;
     return matchesSearch && u.auth_provider === providerFilter;
   });
+  
+  const filteredCoupons = coupons.filter(c => c.code.includes(searchQuery.toUpperCase()));
 
   const ProviderIcon = ({ provider }: { provider?: string }) => {
     if (provider === 'google') return (
@@ -121,6 +177,9 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
           </button>
           <button onClick={() => setActiveSection('users')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'users' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
             <Users className="w-4 h-4" /> Users
+          </button>
+          <button onClick={() => setActiveSection('coupons')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'coupons' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+            <Ticket className="w-4 h-4" /> Coupons
           </button>
         </div>
       </div>
@@ -164,7 +223,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
                 <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
              </div>
              <button 
-                onClick={() => { setEditingProduct(null); setIsModalOpen(true); }}
+                onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl uppercase text-xs tracking-widest"
              >
                 <PlusCircle className="w-5 h-5" /> Add Product
@@ -186,7 +245,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
                       </div>
                    </div>
                    <div className="grid grid-cols-2 gap-3 mt-auto">
-                      <button onClick={() => { setEditingProduct(p); setIsModalOpen(true); }} className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-black py-4 rounded-2xl transition-all text-[10px] uppercase tracking-widest border border-gray-700">
+                      <button onClick={() => { setEditingProduct(p); setIsProductModalOpen(true); }} className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-black py-4 rounded-2xl transition-all text-[10px] uppercase tracking-widest border border-gray-700">
                          <Edit2 className="w-4 h-4" /> Edit
                       </button>
                       <button onClick={() => handleDeleteProduct(p.id)} className="flex items-center justify-center gap-2 bg-red-900/10 hover:bg-red-900/30 text-red-500 font-black py-4 rounded-2xl transition-all text-[10px] uppercase tracking-widest border border-red-500/20">
@@ -238,8 +297,14 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
                       </div>
                    </div>
                    <div className="flex items-center justify-between bg-[#0b0e14] p-4 rounded-2xl border border-gray-800">
-                      <div><p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Solde</p><p className="text-lg font-black text-yellow-400 italic tracking-tighter leading-none mt-1">{u.wallet_balance.toFixed(2)} DH</p></div>
-                      <button onClick={() => setEditingUser(u)} className="p-3 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl transition-all border border-blue-500/20 shadow-lg active:scale-90"><Edit2 className="w-4 h-4" /></button>
+                      <div>
+                          <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Solde</p>
+                          <p className="text-lg font-black text-yellow-400 italic tracking-tighter leading-none mt-1">{u.wallet_balance.toFixed(2)} DH</p>
+                      </div>
+                      <div className="flex gap-2">
+                          <button onClick={() => setEditingUser(u)} className="p-3 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl transition-all border border-blue-500/20 shadow-lg active:scale-90"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteUser(u.id)} className="p-3 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-red-500/20 shadow-lg active:scale-90"><Trash2 className="w-4 h-4" /></button>
+                      </div>
                    </div>
                 </div>
              ))}
@@ -248,12 +313,86 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
         </div>
       )}
 
-      {isModalOpen && (activeSection === 'products') && (
+      {activeSection === 'coupons' && (
+          <div className="space-y-6 animate-slide-up">
+              <div className="flex justify-between items-center gap-4">
+                   <div className="relative flex-1">
+                        <input 
+                            type="text" 
+                            placeholder="Search coupons..." 
+                            className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-purple-500 outline-none transition-all shadow-xl"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
+                        <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
+                   </div>
+                   <button 
+                        onClick={() => { setEditingCoupon(null); setIsCouponModalOpen(true); }}
+                        className="bg-purple-600 hover:bg-purple-700 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl uppercase text-xs tracking-widest"
+                    >
+                        <PlusCircle className="w-5 h-5" /> Create Coupon
+                   </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredCoupons.map(coupon => (
+                      <div key={coupon.id} className={`bg-[#1e232e] p-6 rounded-3xl border border-gray-800 shadow-xl flex flex-col justify-between hover:border-purple-500/40 transition-all ${!coupon.is_active ? 'opacity-50 grayscale' : ''}`}>
+                          <div className="flex justify-between items-start mb-4">
+                               <div>
+                                   <div className="bg-[#0b0e14] border border-gray-800 rounded-lg px-3 py-1 inline-block mb-2">
+                                        <span className="font-mono text-purple-400 font-black tracking-widest">{coupon.code}</span>
+                                   </div>
+                                   <p className="text-2xl font-black text-white italic tracking-tighter">
+                                       {coupon.discount_type === 'percent' ? `${coupon.discount_value}% OFF` : `-${coupon.discount_value} DH`}
+                                   </p>
+                               </div>
+                               <Ticket className="w-8 h-8 text-purple-600" />
+                          </div>
+                          
+                          <div className="space-y-2 mb-6">
+                               <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800 pb-2">
+                                   <span>Uses</span>
+                                   <span className="text-white">{coupon.usage_count} / {coupon.max_uses || '∞'}</span>
+                               </div>
+                               <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                   <span>Expires</span>
+                                   <span className={coupon.expires_at && new Date(coupon.expires_at) < new Date() ? "text-red-400" : "text-white"}>
+                                       {coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString() : 'Never'}
+                                   </span>
+                               </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 mt-auto">
+                              <button onClick={() => { setEditingCoupon(coupon); setIsCouponModalOpen(true); }} className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-black py-3 rounded-xl transition-all text-[10px] uppercase tracking-widest border border-gray-700">
+                                  <Edit2 className="w-3 h-3" /> Edit
+                              </button>
+                              <button onClick={() => handleDeleteCoupon(coupon.id)} className="flex items-center justify-center gap-2 bg-red-900/10 hover:bg-red-900/30 text-red-500 font-black py-3 rounded-xl transition-all text-[10px] uppercase tracking-widest border border-red-500/20">
+                                  <Trash2 className="w-3 h-3" /> Delete
+                              </button>
+                          </div>
+                      </div>
+                  ))}
+                  {filteredCoupons.length === 0 && (
+                      <div className="col-span-full py-10 text-center text-gray-500 font-black uppercase tracking-widest border-2 border-dashed border-gray-800 rounded-3xl">No coupons found.</div>
+                  )}
+              </div>
+          </div>
+      )}
+
+      {isProductModalOpen && (activeSection === 'products') && (
         <ProductFormModal 
           product={editingProduct} 
-          onClose={() => { setIsModalOpen(false); setEditingProduct(null); }} 
+          onClose={() => { setIsProductModalOpen(false); setEditingProduct(null); }} 
           onSave={handleSaveProduct} 
         />
+      )}
+      
+      {isCouponModalOpen && (activeSection === 'coupons') && (
+          <CouponFormModal 
+             coupon={editingCoupon}
+             onClose={() => { setIsCouponModalOpen(false); setEditingCoupon(null); }}
+             onSave={handleSaveCoupon}
+          />
       )}
 
       {editingUser && (

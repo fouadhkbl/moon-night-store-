@@ -10,6 +10,7 @@ import { ShopGrid } from './components/Shop/ShopGrid';
 import { ProductDetailsModal } from './components/Shop/ProductDetailsModal';
 import { HomePage } from './pages/HomePage';
 import { CartPage } from './pages/CartPage';
+import { CheckoutPage } from './pages/CheckoutPage';
 import { Dashboard } from './pages/Dashboard';
 import { TopUpPage } from './pages/TopUpPage';
 import { Loader2 } from 'lucide-react';
@@ -207,9 +208,17 @@ const App: React.FC = () => {
         {currentPage === 'cart' && (
           <CartPage 
             cart={cart} 
-            session={session}
             onUpdateQty={handleUpdateCartQty} 
             onRemove={handleRemoveFromCart} 
+            onNavigate={handleNavigate} 
+            addToast={addToast}
+          />
+        )}
+
+        {currentPage === 'checkout' && (
+          <CheckoutPage 
+            cart={cart}
+            session={session}
             onNavigate={handleNavigate} 
             onClearCart={handleClearCart}
             addToast={addToast}
