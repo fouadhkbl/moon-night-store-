@@ -1,6 +1,22 @@
 import React, { useState } from 'react';
 import { supabase } from '../../supabaseClient';
-import { LogIn, Loader2, UserPlus, ArrowRight, Gamepad2 } from 'lucide-react';
+import { LogIn, Loader2, UserPlus, ArrowRight, Gamepad2, ShieldAlert } from 'lucide-react';
+
+const getFriendlyErrorMessage = (errorMsg: string) => {
+  if (!errorMsg) return 'An unexpected system error occurred.';
+  const msg = errorMsg.toString().toLowerCase();
+  
+  // Specific Supabase Error Mapping
+  if (msg.includes('email rate limit exceeded')) return 'Security: Too many attempts. Please wait 60 seconds.';
+  if (msg.includes('rate limit')) return 'System busy. Please try again in a minute.';
+  if (msg.includes('invalid login credentials')) return 'Invalid email address or password.';
+  if (msg.includes('user already registered')) return 'This email is already linked to an account.';
+  if (msg.includes('weak_password')) return 'Password must be at least 6 characters.';
+  if (msg.includes('signup_disabled')) return 'New registrations are currently disabled.';
+  if (msg.includes('anonymous_provider_disabled')) return 'Guest access is disabled.';
+  
+  return errorMsg;
+};
 
 const AuthLayout = ({ children, title, subtitle, image, imageOverlay }: { children: React.ReactNode, title: string, subtitle: string, image: string, imageOverlay: React.ReactNode }) => (
   <div className="w-full max-w-6xl mx-auto bg-[#1e232e] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row min-h-[600px] border border-gray-800 animate-fade-in">
@@ -40,7 +56,7 @@ export const LoginForm = ({ onAuthSuccess, onToggle }: { onAuthSuccess: (s: any)
       if (loginError) throw loginError;
       if (data.session) onAuthSuccess(data.session);
     } catch (err: any) {
-      setError(err.message || 'Login failed. Check credentials.');
+      setError(getFriendlyErrorMessage(err.message));
     } finally {
       setLoading(false);
     }
@@ -61,7 +77,7 @@ export const LoginForm = ({ onAuthSuccess, onToggle }: { onAuthSuccess: (s: any)
       });
       if (error) throw error;
     } catch (error: any) {
-      setError(error.message);
+      setError(getFriendlyErrorMessage(error.message));
       setLoading(false);
     }
   };
@@ -81,7 +97,17 @@ export const LoginForm = ({ onAuthSuccess, onToggle }: { onAuthSuccess: (s: any)
         </>
       }
     >
-      {error && <div className="p-4 bg-red-900/20 border border-red-500/50 text-red-500 rounded-xl mb-6 text-[10px] font-black uppercase tracking-widest text-center animate-pulse">{error}</div>}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 mb-6 flex items-center gap-3 animate-fade-in">
+           <div className="bg-red-500/20 p-2 rounded-lg flex-shrink-0">
+              <ShieldAlert className="w-5 h-5 text-red-500" />
+           </div>
+           <div>
+              <p className="text-[10px] font-black uppercase text-red-500 tracking-widest leading-none mb-0.5">Access Denied</p>
+              <p className="text-xs text-red-400 font-bold">{error}</p>
+           </div>
+        </div>
+      )}
       
       <form onSubmit={handleLogin} className="space-y-6">
         <div>
@@ -175,7 +201,7 @@ export const SignupForm = ({ addToast, onAuthSuccess, onToggle }: { addToast: an
          onToggle(); // Go to login
       }
     } catch (err: any) {
-      setError(err.message || 'Signup failed.');
+      setError(getFriendlyErrorMessage(err.message));
     } finally {
       setLoading(false);
     }
@@ -196,7 +222,7 @@ export const SignupForm = ({ addToast, onAuthSuccess, onToggle }: { addToast: an
       });
       if (error) throw error;
     } catch (error: any) {
-      setError(error.message);
+      setError(getFriendlyErrorMessage(error.message));
       setLoading(false);
     }
   };
@@ -216,7 +242,17 @@ export const SignupForm = ({ addToast, onAuthSuccess, onToggle }: { addToast: an
         </>
       }
     >
-        {error && <div className="p-4 bg-red-900/20 border border-red-500/50 text-red-500 rounded-xl mb-6 text-[10px] font-black uppercase tracking-widest text-center animate-pulse">{error}</div>}
+        {error && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 mb-6 flex items-center gap-3 animate-fade-in">
+            <div className="bg-red-500/20 p-2 rounded-lg flex-shrink-0">
+                <ShieldAlert className="w-5 h-5 text-red-500" />
+            </div>
+            <div>
+                <p className="text-[10px] font-black uppercase text-red-500 tracking-widest leading-none mb-0.5">Registration Error</p>
+                <p className="text-xs text-red-400 font-bold">{error}</p>
+            </div>
+            </div>
+        )}
 
         <form onSubmit={handleSignup} className="space-y-6">
             <div>
