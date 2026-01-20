@@ -1,0 +1,5 @@
+{
+  "name": "Moon Night",
+  "description": "A premium gaming marketplace for coins, items, and top-ups featuring a dark-themed UI, real-time Supabase database integration, PayPal payments, and an admin dashboard.",
+  "requestFramePermissions": []
+}
