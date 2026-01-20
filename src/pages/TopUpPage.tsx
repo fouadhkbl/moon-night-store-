@@ -43,48 +43,57 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
   };
 
   useEffect(() => {
-      // Only render if amount is valid (>= 10 based on UI limits)
+      let isCancelled = false;
+
+      // Only render if amount is valid
       if (paypalLoaded && !isSuccess && amount >= 10) {
           const container = document.getElementById('paypal-topup-container');
+          
           if (container) {
               container.innerHTML = '';
-              try {
-                  window.paypal.Buttons({
-                      style: {
-                          layout: 'vertical',
-                          color:  'blue', // Matches the user's requested style
-                          shape:  'rect',
-                          label:  'pay'
-                      },
-                      createOrder: (data: any, actions: any) => {
-                          return actions.order.create({
-                              purchase_units: [{
-                                  amount: {
-                                      value: amount.toFixed(2),
-                                      currency_code: 'MAD'
-                                  },
-                                  description: `Moon Night Wallet Top Up`
-                              }]
-                          });
-                      },
-                      onApprove: async (data: any, actions: any) => {
-                          const details = await actions.order.capture();
-                          await handleTopUpSuccess(details.id);
-                      },
-                      onError: (err: any) => {
-                          console.error("PayPal Error:", err);
-                          addToast('Payment Failed', 'The transaction could not be completed.', 'error');
-                      }
-                  }).render('#paypal-topup-container');
-              } catch (e) {
-                  console.error("PayPal Render Error", e);
-              }
+              
+              setTimeout(() => {
+                 if(isCancelled) return;
+                 
+                 try {
+                    window.paypal.Buttons({
+                        style: {
+                            layout: 'vertical',
+                            color:  'blue', 
+                            shape:  'rect',
+                            label:  'pay',
+                            height: 48
+                        },
+                        createOrder: (data: any, actions: any) => {
+                            return actions.order.create({
+                                purchase_units: [{
+                                    amount: {
+                                        value: amount.toFixed(2),
+                                        currency_code: 'USD'
+                                    },
+                                    description: `Moon Night Wallet Top Up`
+                                }]
+                            });
+                        },
+                        onApprove: async (data: any, actions: any) => {
+                            const details = await actions.order.capture();
+                            await handleTopUpSuccess(details.id);
+                        },
+                        onError: (err: any) => {
+                            console.error("PayPal Error:", err);
+                            addToast('Payment Failed', 'The transaction could not be completed.', 'error');
+                        }
+                    }).render('#paypal-topup-container');
+                 } catch (e) {
+                    console.error("PayPal Render Error", e);
+                 }
+              }, 100);
           }
       } else if (paypalLoaded && amount < 10) {
-          // Clear container if amount is invalid
           const container = document.getElementById('paypal-topup-container');
           if (container) container.innerHTML = '';
       }
+      return () => { isCancelled = true; };
   }, [paypalLoaded, isSuccess, amount]);
 
   const handleTopUpSuccess = async (txnId: string) => {
@@ -215,9 +224,10 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
                                    <CreditCard className="w-4 h-4 text-gray-500" />
                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">PayPal & Debit/Credit Cards</span>
                                </div>
-                               <div id="paypal-topup-container" className="w-full space-y-4"></div>
+                               {/* Added specific styling to ensure visibility on desktop */}
+                               <div id="paypal-topup-container" className="w-full space-y-4 relative z-10 clear-both"></div>
                                {!paypalLoaded && (
-                                   <div className="w-full h-14 bg-gray-800 rounded-lg animate-pulse flex items-center justify-center text-gray-500 text-xs uppercase tracking-widest">
+                                   <div className="w-full h-14 bg-gray-800 rounded-lg animate-pulse flex items-center justify-center text-gray-500 text-xs uppercase tracking-widest absolute top-10 left-0">
                                        Loading Secure Payment...
                                    </div>
                                )}
@@ -233,4 +243,4 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
        </div>
     </div>
   );
-};
+}

@@ -72,43 +72,55 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
 
   // Render PayPal Buttons
   useEffect(() => {
+      // Cleanup function to avoid race conditions
+      let isCancelled = false;
+
       if (paymentMethod === 'paypal' && paypalLoaded && !isGuest && cart.length > 0 && !showSuccess) {
           const container = document.getElementById('paypal-checkout-container');
+          
           if (container) {
-              container.innerHTML = '';
-              try {
-                  window.paypal.Buttons({
-                      style: {
-                          layout: 'vertical',
-                          color:  'blue',
-                          shape:  'rect',
-                          label:  'pay'
-                      },
-                      createOrder: (data: any, actions: any) => {
-                          return actions.order.create({
-                              purchase_units: [{
-                                  amount: {
-                                      value: finalTotal.toFixed(2),
-                                      currency_code: 'MAD'
-                                  },
-                                  description: `Moon Night Order - ${cart.length} items`
-                              }]
-                          });
-                      },
-                      onApprove: async (data: any, actions: any) => {
-                          const details = await actions.order.capture();
-                          await processOrder('PayPal', details.id);
-                      },
-                      onError: (err: any) => {
-                          console.error("PayPal Error:", err);
-                          addToast('Payment Failed', 'Transaction could not be completed.', 'error');
-                      }
-                  }).render('#paypal-checkout-container');
-              } catch (e) {
-                  console.error("PayPal Render Error", e);
-              }
+              container.innerHTML = ''; // Always clear first
+              
+              // Small timeout to ensure DOM is ready and layout is stable
+              setTimeout(() => {
+                if (isCancelled) return;
+                
+                try {
+                    window.paypal.Buttons({
+                        style: {
+                            layout: 'vertical',
+                            color:  'blue',
+                            shape:  'rect',
+                            label:  'pay',
+                            height: 48
+                        },
+                        createOrder: (data: any, actions: any) => {
+                            return actions.order.create({
+                                purchase_units: [{
+                                    amount: {
+                                        value: finalTotal.toFixed(2),
+                                        currency_code: 'USD'
+                                    },
+                                    description: `Moon Night Order - ${cart.length} items`
+                                }]
+                            });
+                        },
+                        onApprove: async (data: any, actions: any) => {
+                            const details = await actions.order.capture();
+                            await processOrder('PayPal', details.id);
+                        },
+                        onError: (err: any) => {
+                            console.error("PayPal Error:", err);
+                            addToast('Payment Failed', 'Transaction could not be completed. Try again.', 'error');
+                        }
+                    }).render('#paypal-checkout-container');
+                } catch (e) {
+                    console.error("PayPal Render Error", e);
+                }
+              }, 100);
           }
       }
+      return () => { isCancelled = true; };
   }, [paymentMethod, paypalLoaded, finalTotal, isGuest, cart.length, showSuccess]);
 
   const handleApplyCoupon = async () => {
@@ -167,8 +179,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
       // Update Coupon Usage if applicable
       if (appliedCoupon) {
           await supabase.rpc('increment_coupon_usage', { coupon_id: appliedCoupon.id });
-          // Note: If you don't have an RPC, you can just do an update, though RPC is safer for concurrency.
-          // Fallback simple update:
+          // Fallback simple update if RPC not present
           await supabase.from('coupons').update({ usage_count: appliedCoupon.usage_count + 1 }).eq('id', appliedCoupon.id);
       }
 
@@ -298,7 +309,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
            </div>
 
            {/* Right Column: Payment Method */}
-           <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl relative">
+           <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl relative z-0">
                 <h3 className="text-white font-black uppercase tracking-widest text-sm mb-6">Select Payment Method</h3>
                 
                 {isGuest ? (
@@ -335,7 +346,8 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
                             </div>
                         )}
 
-                        <div className="relative z-0 min-h-[100px]">
+                        {/* Payment Area - Added specific z-index and min-height for PC stability */}
+                        <div className="relative z-10 min-h-[150px]">
                             {paymentMethod === 'wallet' ? (
                                 <button 
                                     onClick={() => processOrder('Wallet')}
@@ -346,9 +358,9 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
                                 </button>
                             ) : (
                                 <>
-                                    <div id="paypal-checkout-container" className="w-full relative z-0"></div>
+                                    <div id="paypal-checkout-container" className="w-full relative z-10 clear-both"></div>
                                     {!paypalLoaded && (
-                                        <div className="w-full h-14 bg-gray-800 rounded-lg animate-pulse flex items-center justify-center text-gray-500 text-xs uppercase tracking-widest">
+                                        <div className="w-full h-14 bg-gray-800 rounded-lg animate-pulse flex items-center justify-center text-gray-500 text-xs uppercase tracking-widest absolute top-0 left-0">
                                             Loading Payment Gateway...
                                         </div>
                                     )}
@@ -361,4 +373,4 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
        </div>
     </div>
   );
-};
+}
