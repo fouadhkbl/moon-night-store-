@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Zap, Minus, Plus, ShoppingCart } from 'lucide-react';
-import { Product } from '../../types';
+import { Product } from '../../../types';
 
 export const ProductDetailsModal = ({ product, onClose, onAddToCart }: { product: Product, onClose: () => void, onAddToCart: (p: Product, qty: number) => void }) => {
   const [quantity, setQuantity] = useState(1);

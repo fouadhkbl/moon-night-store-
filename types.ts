@@ -19,6 +19,7 @@ export interface Profile {
   wallet_balance: number;
   vip_level: number;
   vip_points: number;
+  auth_provider?: string;
 }
 
 export interface CartItem {

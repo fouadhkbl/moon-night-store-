@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../supabaseClient';
-import { Product, Profile } from '../../types';
+import { supabase } from '../../../supabaseClient';
+import { Product, Profile } from '../../../types';
 import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal } from './AdminModals';
 
