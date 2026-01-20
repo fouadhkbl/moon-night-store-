@@ -119,13 +119,23 @@ create table if not exists public.coupons (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 9. SECURITY POLICIES (RLS - Row Level Security)
+-- 9. ORDER MESSAGES TABLE (NEW FOR CHAT)
+create table if not exists public.order_messages (
+  id uuid default uuid_generate_v4() primary key,
+  order_id uuid references public.orders(id) on delete cascade not null,
+  sender_id uuid references public.profiles(id) not null,
+  message text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 10. SECURITY POLICIES (RLS - Row Level Security)
 alter table public.profiles enable row level security;
 alter table public.products enable row level security;
 alter table public.cart_items enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
 alter table public.coupons enable row level security;
+alter table public.order_messages enable row level security;
 
 -- Clean up old policies to ensure clean slate
 drop policy if exists "Profiles are viewable by everyone" on public.profiles;
@@ -143,12 +153,19 @@ drop policy if exists "Users can update own cart" on public.cart_items;
 drop policy if exists "Users can delete from own cart" on public.cart_items;
 drop policy if exists "Users can view own orders" on public.orders;
 drop policy if exists "Users can create orders" on public.orders;
+drop policy if exists "Enable view for admin panel orders" on public.orders;
+drop policy if exists "Enable update for admin panel orders" on public.orders;
 drop policy if exists "Users can view own order items" on public.order_items;
 drop policy if exists "Users can create order items" on public.order_items;
+drop policy if exists "Enable view for admin panel order items" on public.order_items;
 drop policy if exists "Coupons are viewable by everyone" on public.coupons;
 drop policy if exists "Enable insert for admin panel coupons" on public.coupons;
 drop policy if exists "Enable update for admin panel coupons" on public.coupons;
 drop policy if exists "Enable delete for admin panel coupons" on public.coupons;
+drop policy if exists "Users can view own order messages" on public.order_messages;
+drop policy if exists "Users can insert own order messages" on public.order_messages;
+drop policy if exists "Admin can view all messages" on public.order_messages;
+drop policy if exists "Admin can insert messages" on public.order_messages;
 
 -- PROFILES POLICIES
 create policy "Profiles are viewable by everyone" on public.profiles for select using (true);
@@ -168,17 +185,34 @@ create policy "Users can insert into own cart" on public.cart_items for insert w
 create policy "Users can update own cart" on public.cart_items for update using (auth.uid() = user_id);
 create policy "Users can delete from own cart" on public.cart_items for delete using (auth.uid() = user_id);
 
--- ORDERS (Private)
+-- ORDERS (Private + Admin)
 create policy "Users can view own orders" on public.orders for select using (auth.uid() = user_id);
 create policy "Users can create orders" on public.orders for insert with check (auth.uid() = user_id);
+create policy "Enable view for admin panel orders" on public.orders for select using (true);
+create policy "Enable update for admin panel orders" on public.orders for update using (true);
 
--- ORDER ITEMS (Private)
+-- ORDER ITEMS (Private + Admin)
 create policy "Users can view own order items" on public.order_items for select using (
   exists ( select 1 from public.orders where orders.id = order_items.order_id and orders.user_id = auth.uid() )
 );
 create policy "Users can create order items" on public.order_items for insert with check (
   exists ( select 1 from public.orders where orders.id = order_items.order_id and orders.user_id = auth.uid() )
 );
+create policy "Enable view for admin panel order items" on public.order_items for select using (true);
+
+-- ORDER MESSAGES (Private + Admin)
+create policy "Users can view own order messages" on public.order_messages for select using (
+  exists ( select 1 from public.orders where orders.id = order_messages.order_id and orders.user_id = auth.uid() )
+);
+create policy "Users can insert own order messages" on public.order_messages for insert with check (
+  auth.uid() = sender_id AND
+  exists ( select 1 from public.orders where orders.id = order_messages.order_id and orders.user_id = auth.uid() )
+);
+-- NOTE: For production, you'd want a dedicated 'is_admin' column on profiles. 
+-- For this setup, we allow reading all messages if you aren't the owner (Admin simulation) or relying on simple rules.
+create policy "Admin can view all messages" on public.order_messages for select using (true); 
+create policy "Admin can insert messages" on public.order_messages for insert with check (true);
+
 
 -- COUPONS (Public Read for validation, Admin Write)
 create policy "Coupons are viewable by everyone" on public.coupons for select using (true);
@@ -186,7 +220,7 @@ create policy "Enable insert for admin panel coupons" on public.coupons for inse
 create policy "Enable update for admin panel coupons" on public.coupons for update using (true);
 create policy "Enable delete for admin panel coupons" on public.coupons for delete using (true);
 
--- 10. AUTOMATION TRIGGERS
+-- 11. AUTOMATION TRIGGERS
 
 -- Handle updated_at automatically
 create or replace function public.handle_updated_at()
@@ -269,7 +303,7 @@ select
 from auth.users
 on conflict (id) do nothing;
 
--- 11. SEED DATA (Only if empty)
+-- 12. SEED DATA (Only if empty)
 insert into public.products (name, description, price, category, image_url, is_trending, platform) 
 select 'Fortnite V-Bucks (13500)', 'Top up your V-Bucks instantly. Compatible with all platforms.', 79.99, 'Top Up', 'https://images.unsplash.com/photo-1589241062272-c0a000071964?auto=format&fit=crop&w=600&q=80', true, 'Multi'
 where not exists (select 1 from public.products);

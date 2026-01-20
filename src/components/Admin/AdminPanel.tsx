@@ -1,14 +1,141 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile, Coupon } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket } from 'lucide-react';
+import { Product, Profile, Coupon, Order, OrderMessage } from '../../types';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal } from './AdminModals';
 
+// --- ADMIN ORDER & CHAT MODAL ---
+const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
+    const [messages, setMessages] = useState<OrderMessage[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [status, setStatus] = useState(order.status);
+    const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        const fetchMessages = async () => {
+            const { data } = await supabase.from('order_messages').select('*').eq('order_id', order.id).order('created_at', { ascending: true });
+            if (data) setMessages(data);
+            scrollToBottom();
+        };
+        fetchMessages();
+
+        const channel = supabase.channel(`admin_chat:${order.id}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_messages', filter: `order_id=eq.${order.id}` }, (payload) => {
+                setMessages(prev => [...prev, payload.new as OrderMessage]);
+                scrollToBottom();
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [order.id]);
+
+    useEffect(() => { scrollToBottom(); }, [messages]);
+
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newMessage.trim()) return;
+        await supabase.from('order_messages').insert({
+            order_id: order.id,
+            sender_id: currentUser.id,
+            message: newMessage.trim()
+        });
+        setNewMessage('');
+    };
+
+    const handleUpdateStatus = async (newStatus: string) => {
+        await supabase.from('orders').update({ status: newStatus }).eq('id', order.id);
+        setStatus(newStatus);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-5xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
+                {/* Info Side */}
+                <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto">
+                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-4">Order #{order.id.slice(0,6)}</h3>
+                    
+                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Customer</p>
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">{order.profile?.username?.charAt(0)}</div>
+                            <div>
+                                <p className="text-white font-bold text-sm">{order.profile?.username}</p>
+                                <p className="text-xs text-gray-500">{order.profile?.email}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Order Status</p>
+                        <div className="flex gap-2">
+                             <button onClick={() => handleUpdateStatus('pending')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Pending</button>
+                             <button onClick={() => handleUpdateStatus('completed')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'completed' ? 'bg-green-500 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Completed</button>
+                             <button onClick={() => handleUpdateStatus('canceled')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'canceled' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Canceled</button>
+                        </div>
+                    </div>
+
+                    <div className="mb-6">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Transaction ID</p>
+                        <p className="text-white font-mono text-xs break-all bg-[#0b0e14] p-2 rounded-lg border border-gray-800">{order.transaction_id || 'N/A'}</p>
+                    </div>
+
+                    <div className="mt-auto">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Amount</p>
+                        <p className="text-3xl font-black text-yellow-400 italic tracking-tighter">{order.total_amount.toFixed(2)} DH</p>
+                    </div>
+                    
+                    <button onClick={onClose} className="mt-8 w-full py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:bg-gray-800 transition uppercase text-xs font-black tracking-widest">Close</button>
+                </div>
+
+                {/* Chat Side */}
+                <div className="w-full md:w-7/12 flex flex-col h-full bg-[#1e232e]">
+                    <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-[#1e232e]">
+                        <span className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2"><MessageSquare className="w-4 h-4 text-purple-500"/> Live Chat with Customer</span>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0b0e14]/30 custom-scrollbar">
+                         {messages.length === 0 && <p className="text-center text-gray-600 text-xs py-10 uppercase font-bold tracking-widest">No messages yet.</p>}
+                         {messages.map(msg => {
+                             const isMe = msg.sender_id === currentUser.id;
+                             return (
+                                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                     <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${isMe ? 'bg-purple-600 text-white rounded-tr-none' : 'bg-[#2a303c] text-white border border-gray-700 rounded-tl-none'}`}>
+                                         {msg.message}
+                                     </div>
+                                 </div>
+                             );
+                         })}
+                         <div ref={messagesEndRef} />
+                    </div>
+
+                    <form onSubmit={handleSendMessage} className="p-4 bg-[#1e232e] border-t border-gray-800 flex gap-2">
+                        <input 
+                            type="text" 
+                            className="flex-1 bg-[#0b0e14] border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-purple-500 outline-none"
+                            placeholder="Message user..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                        />
+                        <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-xl transition-all" disabled={!newMessage.trim()}>
+                            <Send className="w-5 h-5" />
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const AdminPanel = ({ session, addToast }: { session: any, addToast: any }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons'>('stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders'>('stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,6 +146,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
   const [providerFilter, setProviderFilter] = useState<'all' | 'email' | 'google' | 'discord'>('all');
 
@@ -37,10 +165,17 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
     const { data: cData } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
     if (cData) setCoupons(cData);
 
+    // Fetch Orders with Profiles
+    const { data: oData } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
+    if (oData) setOrders(oData);
+
     // Fetch Real Stats
     const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-    const { data: ordersData, count: orderCount } = await supabase.from('orders').select('total_amount', { count: 'exact' });
-    const totalRevenue = ordersData?.reduce((acc, curr) => acc + Number(curr.total_amount), 0) || 0;
+    const { count: orderCount } = await supabase.from('orders').select('*', { count: 'exact', head: true });
+    
+    // Calculate Revenue manually from orders fetched (or use a separate rpc call for efficiency in prod)
+    // Only count non-canceled orders for revenue
+    const totalRevenue = oData?.reduce((acc, curr) => curr.status !== 'canceled' ? acc + Number(curr.total_amount) : acc, 0) || 0;
 
     setStats({ users: userCount || 0, orders: orderCount || 0, revenue: totalRevenue });
     setIsLoading(false);
@@ -149,6 +284,11 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
   
   const filteredCoupons = coupons.filter(c => c.code.includes(searchQuery.toUpperCase()));
 
+  const filteredOrders = orders.filter(o => 
+      o.id.includes(searchQuery) || 
+      o.profile?.username?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const ProviderIcon = ({ provider }: { provider?: string }) => {
     if (provider === 'google') return (
       <svg className="w-3 h-3" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /></svg>
@@ -171,6 +311,9 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
         <div className="flex w-full md:w-auto bg-[#1e232e] p-1.5 rounded-2xl border border-gray-800 shadow-xl overflow-x-auto scrollbar-hide">
           <button onClick={() => setActiveSection('stats')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'stats' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
             <BarChart3 className="w-4 h-4" /> Stats
+          </button>
+          <button onClick={() => setActiveSection('orders')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'orders' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+            <ClipboardList className="w-4 h-4" /> Orders
           </button>
           <button onClick={() => setActiveSection('products')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'products' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
             <Package className="w-4 h-4" /> Shop
@@ -207,6 +350,67 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
               <h3 className="text-4xl font-black text-white italic tracking-tighter">{products.length}</h3>
            </div>
         </div>
+      )}
+
+      {activeSection === 'orders' && (
+          <div className="space-y-6 animate-slide-up">
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Search orders by ID or User..." 
+                  className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none transition-all shadow-xl"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+                <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
+             </div>
+
+             <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
+                 {filteredOrders.length === 0 ? <p className="text-center py-12 text-gray-500 font-black uppercase tracking-widest">No orders found</p> : (
+                     <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
+                                <tr>
+                                    <th className="p-6">Order ID</th>
+                                    <th className="p-6">User</th>
+                                    <th className="p-6">Amount</th>
+                                    <th className="p-6">Date</th>
+                                    <th className="p-6">Status</th>
+                                    <th className="p-6">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-800">
+                                {filteredOrders.map(o => (
+                                    <tr key={o.id} className="hover:bg-[#151a23] transition-colors">
+                                        <td className="p-6 font-mono text-xs text-blue-400">{o.id.slice(0,8)}...</td>
+                                        <td className="p-6 text-white font-bold text-xs">{o.profile?.username || 'Unknown'}</td>
+                                        <td className="p-6 font-black text-yellow-400 italic text-sm">{o.total_amount.toFixed(2)} DH</td>
+                                        <td className="p-6 text-gray-500 text-xs font-mono">{new Date(o.created_at).toLocaleDateString()}</td>
+                                        <td className="p-6">
+                                            <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${
+                                                o.status === 'completed' ? 'bg-green-500/10 text-green-500' : 
+                                                o.status === 'canceled' ? 'bg-red-500/10 text-red-500' : 
+                                                'bg-yellow-500/10 text-yellow-500'
+                                            }`}>
+                                                {o.status}
+                                            </span>
+                                        </td>
+                                        <td className="p-6">
+                                            <button 
+                                              onClick={() => setSelectedOrder(o)}
+                                              className="bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-purple-500/30"
+                                            >
+                                                Manage / Chat
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                     </div>
+                 )}
+             </div>
+          </div>
       )}
 
       {activeSection === 'products' && (
@@ -401,6 +605,14 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
           onClose={() => setEditingUser(null)} 
           onSave={handleUpdateBalance} 
         />
+      )}
+
+      {selectedOrder && (
+          <AdminOrderModal
+            order={selectedOrder}
+            currentUser={profiles.find(p => p.id === session.user.id) || profiles[0]} // Fallback for safety, assuming admin is logged in
+            onClose={() => { setSelectedOrder(null); fetchData(); }}
+          />
       )}
     </div>
   );

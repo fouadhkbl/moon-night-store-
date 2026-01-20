@@ -24,6 +24,7 @@ const App: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [toasts, setToasts] = useState<any[]>([]);
+  const [targetOrderId, setTargetOrderId] = useState<string | null>(null);
 
   const addToast = (title: string, message: string, type: 'success'|'error'|'info' = 'info') => {
      const id = Math.random().toString(36).substr(2, 9);
@@ -66,6 +67,12 @@ const App: React.FC = () => {
     window.scrollTo(0,0); 
     setCurrentPage(page);
     if (page !== 'shop') setSelectedCategory(null);
+    if (page !== 'dashboard') setTargetOrderId(null); // Clear target if navigating away
+  };
+
+  const handleViewOrder = (orderId: string) => {
+    setTargetOrderId(orderId);
+    handleNavigate('dashboard');
   };
 
   const handleAddToCart = async (product: Product, quantity: number) => {
@@ -219,7 +226,8 @@ const App: React.FC = () => {
           <CheckoutPage 
             cart={cart}
             session={session}
-            onNavigate={handleNavigate} 
+            onNavigate={handleNavigate}
+            onViewOrder={handleViewOrder}
             onClearCart={handleClearCart}
             addToast={addToast}
           />
@@ -239,6 +247,7 @@ const App: React.FC = () => {
             setSession={setSession} 
             addToast={addToast} 
             onNavigate={handleNavigate} 
+            initialOrderId={targetOrderId}
             onSignOut={() => { 
               supabase.auth.signOut(); 
               setSession({ user: { id: 'guest-user-123', email: 'guest@moonnight.com' } }); 

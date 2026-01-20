@@ -1,3 +1,4 @@
+
 export interface Product {
   id: string;
   name: string;
@@ -31,10 +32,14 @@ export interface CartItem {
 
 export interface Order {
   id: string;
+  user_id: string;
   total_amount: number;
   status: string;
+  payment_method?: string;
+  transaction_id?: string;
   created_at: string;
   items?: OrderItem[];
+  profile?: Profile; // For admin view
 }
 
 export interface OrderItem {
@@ -54,6 +59,14 @@ export interface Coupon {
   usage_count: number;
   expires_at: string | null;
   is_active: boolean;
+}
+
+export interface OrderMessage {
+    id: string;
+    order_id: string;
+    sender_id: string;
+    message: string;
+    created_at: string;
 }
 
 export enum GameCategory {

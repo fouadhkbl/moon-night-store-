@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { CartItem, Coupon } from '../types';
-import { Check, Receipt, ShoppingCart, ArrowLeft, Loader2, Wallet, AlertCircle, CreditCard, ShieldCheck, Ticket } from 'lucide-react';
+import { Check, Receipt, ShoppingCart, ArrowLeft, Loader2, Wallet, AlertCircle, CreditCard, ShieldCheck, Ticket, Clock } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -12,15 +12,17 @@ declare global {
 // Approximate conversion rate from MAD to USD for PayPal processing
 const MAD_TO_USD_RATE = 0.1; 
 
-export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast }: { 
+export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCart, addToast }: { 
   cart: CartItem[], 
   session: any,
   onNavigate: (p: string) => void,
+  onViewOrder: (id: string) => void,
   onClearCart: () => void,
   addToast: any
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'paypal'>('paypal');
   const [paypalLoaded, setPaypalLoaded] = useState(false);
@@ -193,7 +195,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
         .insert({
           user_id: session.user.id,
           total_amount: finalTotal,
-          status: 'completed',
+          status: 'pending', // Default to pending, waiting for delivery
           payment_method: method,
           transaction_id: paymentDetailsId || null
         })
@@ -212,6 +214,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
       if (itemsError) throw itemsError;
 
+      setCreatedOrderId(order.id);
       setShowSuccess(true);
       onClearCart();
     } catch (err: any) {
@@ -228,10 +231,23 @@ export const CheckoutPage = ({ cart, session, onNavigate, onClearCart, addToast 
           <Check className="w-12 h-12" />
         </div>
         <h2 className="text-4xl font-black text-white italic mb-4">PAYMENT SUCCESSFUL!</h2>
-        <p className="text-gray-400 mb-10 max-w-md mx-auto">Your epic loot is being delivered instantly to your game account. Check your orders for details.</p>
+        <p className="text-gray-400 mb-6 max-w-md mx-auto">Your order has been placed. You can now chat with support in the order details.</p>
+        
+        {/* Active Delivery Time Notice */}
+        <div className="max-w-md mx-auto bg-blue-900/20 border border-blue-500/30 rounded-2xl p-6 mb-10 flex flex-col items-center gap-3">
+             <Clock className="w-8 h-8 text-blue-400" />
+             <div>
+                <h4 className="text-white font-black uppercase italic tracking-tighter">Delivery Info</h4>
+                <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mt-1">Your order will be delivered during active hours: <span className="text-yellow-400">9AM - 9PM</span></p>
+             </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button onClick={() => onNavigate('dashboard')} className="bg-[#1e232e] border border-gray-700 hover:border-blue-500 text-white px-8 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
-            <Receipt className="w-5 h-5" /> View Orders
+          <button 
+            onClick={() => createdOrderId ? onViewOrder(createdOrderId) : onNavigate('dashboard')} 
+            className="bg-[#1e232e] border border-gray-700 hover:border-blue-500 text-white px-8 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+          >
+            <Receipt className="w-5 h-5" /> View Order Details
           </button>
           <button onClick={() => onNavigate('shop')} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-black transition-all shadow-xl shadow-blue-600/20 flex items-center justify-center gap-2">
              Continue Shopping <ShoppingCart className="w-5 h-5" />

@@ -1,14 +1,181 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { Profile, Order } from '../types';
+import { Profile, Order, OrderItem, OrderMessage } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck } from 'lucide-react';
+import { Gamepad2, Wallet, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, Box, MessageSquare, Send, X, Clock, Check, Eye } from 'lucide-react';
 
-export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession }: { session: any, addToast: any, onSignOut: () => void, onNavigate: (p: string) => void, setSession: (s: any) => void }) => {
+// --- ORDER DETAILS & CHAT MODAL ---
+const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
+    const [items, setItems] = useState<OrderItem[]>([]);
+    const [messages, setMessages] = useState<OrderMessage[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [loading, setLoading] = useState(true);
+    const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        const fetchDetails = async () => {
+            setLoading(true);
+            // Fetch Items
+            const { data: itemsData } = await supabase.from('order_items').select('*, product:products(*)').eq('order_id', order.id);
+            if (itemsData) setItems(itemsData);
+
+            // Fetch Messages
+            const { data: msgData } = await supabase.from('order_messages').select('*').eq('order_id', order.id).order('created_at', { ascending: true });
+            if (msgData) setMessages(msgData);
+
+            setLoading(false);
+            scrollToBottom();
+        };
+
+        fetchDetails();
+
+        // Subscribe to new messages
+        const channel = supabase.channel(`order_chat:${order.id}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_messages', filter: `order_id=eq.${order.id}` }, (payload) => {
+                setMessages(prev => [...prev, payload.new as OrderMessage]);
+                scrollToBottom();
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [order.id]);
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newMessage.trim()) return;
+
+        await supabase.from('order_messages').insert({
+            order_id: order.id,
+            sender_id: currentUser.id,
+            message: newMessage.trim()
+        });
+        setNewMessage('');
+    };
+
+    if (loading) return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80"><div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>;
+
+    return (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-4xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
+                
+                {/* Left Side: Order Info */}
+                <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Order #{order.id.slice(0,6)}</h3>
+                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                            order.status === 'completed' ? 'bg-green-500/10 text-green-500' : 
+                            order.status === 'canceled' ? 'bg-red-500/10 text-red-500' :
+                            'bg-yellow-500/10 text-yellow-500'
+                        }`}>
+                            {order.status}
+                        </div>
+                    </div>
+
+                    {/* Active Time Notice */}
+                    <div className="bg-blue-900/10 border border-blue-500/20 p-4 rounded-xl mb-6 flex gap-3">
+                         <Clock className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                         <div>
+                             <p className="text-[10px] font-black uppercase text-blue-200 tracking-widest mb-1">Delivery Hours</p>
+                             <p className="text-xs text-gray-400">Your order will be delivered during active time: <span className="text-yellow-400 font-bold">9AM - 9PM</span>.</p>
+                         </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        {items.map(item => (
+                            <div key={item.id} className="flex gap-3 bg-[#0b0e14] p-3 rounded-xl border border-gray-800">
+                                <img src={item.product?.image_url} className="w-12 h-12 rounded-lg object-cover" alt="" />
+                                <div>
+                                    <p className="text-sm font-bold text-white truncate max-w-[150px]">{item.product?.name}</p>
+                                    <p className="text-[10px] text-gray-500 font-mono">Qty: {item.quantity}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-8 pt-6 border-t border-gray-800">
+                        <div className="flex justify-between text-gray-400 text-xs uppercase font-bold tracking-widest mb-2">
+                            <span>Total Amount</span>
+                            <span className="text-white font-mono text-lg">{order.total_amount.toFixed(2)} DH</span>
+                        </div>
+                    </div>
+                    
+                    <button onClick={onClose} className="mt-8 w-full py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:bg-gray-800 transition uppercase text-xs font-black tracking-widest">
+                        Close Details
+                    </button>
+                </div>
+
+                {/* Right Side: Chat */}
+                <div className="w-full md:w-7/12 flex flex-col h-full relative">
+                    <div className="p-4 border-b border-gray-800 bg-[#1e232e] flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <MessageSquare className="w-4 h-4 text-blue-500" />
+                            <span className="text-sm font-black text-white uppercase tracking-widest">Support Chat</span>
+                        </div>
+                        <button onClick={onClose} className="md:hidden text-gray-500"><X /></button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0b0e14]/50 custom-scrollbar">
+                         {messages.length === 0 && (
+                             <div className="text-center py-10 opacity-30">
+                                 <MessageSquare className="w-12 h-12 mx-auto mb-2" />
+                                 <p className="text-xs uppercase font-bold">Start a conversation</p>
+                             </div>
+                         )}
+                         {messages.map(msg => {
+                             const isMe = msg.sender_id === currentUser.id;
+                             return (
+                                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                     <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-[#1e232e] text-gray-200 border border-gray-700 rounded-tl-none'}`}>
+                                         {msg.message}
+                                         <p className={`text-[8px] mt-1 opacity-50 font-mono text-right`}>
+                                             {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                         </p>
+                                     </div>
+                                 </div>
+                             );
+                         })}
+                         <div ref={messagesEndRef} />
+                    </div>
+
+                    <form onSubmit={handleSendMessage} className="p-4 bg-[#1e232e] border-t border-gray-800 flex gap-2">
+                        <input 
+                            type="text" 
+                            className="flex-1 bg-[#0b0e14] border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-500 outline-none"
+                            placeholder="Type a message..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                        />
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl transition-all disabled:opacity-50" disabled={!newMessage.trim()}>
+                            <Send className="w-5 h-5" />
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession, initialOrderId }: { 
+    session: any, 
+    addToast: any, 
+    onSignOut: () => void, 
+    onNavigate: (p: string) => void, 
+    setSession: (s: any) => void,
+    initialOrderId?: string | null
+}) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wallet'>('overview');
   const [authMode, setAuthMode] = useState<'none' | 'login' | 'signup'>('none');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const isGuest = session?.user?.id === 'guest-user-123';
 
@@ -25,10 +192,20 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
             const { data: pData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
             if (pData) setProfile(pData);
             const { data: oData } = await supabase.from('orders').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
-            if (oData) setOrders(oData);
+            if (oData) {
+                setOrders(oData);
+                // Handle deep linking to order
+                if (initialOrderId) {
+                    const target = oData.find(o => o.id === initialOrderId);
+                    if (target) {
+                        setSelectedOrder(target);
+                        setActiveTab('orders'); // Ensure we are on the orders tab
+                    }
+                }
+            }
         }
     }
-  }, [session, isGuest]);
+  }, [session, isGuest, initialOrderId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -38,7 +215,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
         onAuthSuccess={s => { 
           setSession(s); 
           setAuthMode('none'); 
-          onNavigate('dashboard'); // Explicitly stay/refresh dashboard view
+          onNavigate('dashboard'); 
         }} 
         onToggle={() => setAuthMode('signup')} 
       />
@@ -124,14 +301,29 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                    {orders.length === 0 ? <p className="text-gray-600 uppercase text-[10px] font-black tracking-widest py-10 text-center border-2 border-dashed border-gray-800 rounded-3xl">No logs found.</p> : (
                        <div className="space-y-4">
                            {orders.map(o => (
-                               <div key={o.id} className="p-6 bg-[#0b0e14] rounded-3xl flex justify-between items-center border border-gray-800 hover:border-blue-500/30 transition-all shadow-xl">
-                                   <div>
-                                     <p className="font-black text-white uppercase tracking-tighter text-lg leading-none mb-1">Trade #{o.id.slice(0,8)}</p>
+                               <div key={o.id} onClick={() => setSelectedOrder(o)} className="p-6 bg-[#0b0e14] rounded-3xl flex flex-col md:flex-row justify-between items-center border border-gray-800 hover:border-blue-500/50 cursor-pointer transition-all shadow-xl group">
+                                   <div className="flex-1">
+                                     <p className="font-black text-white uppercase tracking-tighter text-lg leading-none mb-1 group-hover:text-blue-400 transition-colors">Trade #{o.id.slice(0,8)}</p>
                                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{new Date(o.created_at).toLocaleDateString()}</p>
                                    </div>
-                                   <div className="text-right">
-                                      <p className="font-black text-green-400 italic text-2xl tracking-tighter leading-none">{o.total_amount.toFixed(2)} DH</p>
-                                      <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest mt-1">Status: {o.status}</p>
+                                   
+                                   <div className="flex items-center gap-6 mt-4 md:mt-0 w-full md:w-auto justify-between md:justify-end">
+                                       <div className="text-right">
+                                          <p className="font-black text-green-400 italic text-2xl tracking-tighter leading-none">{o.total_amount.toFixed(2)} DH</p>
+                                          <div className="flex items-center gap-2 justify-end mt-1">
+                                              <p className={`text-[9px] font-black uppercase tracking-widest ${
+                                                  o.status === 'completed' ? 'text-green-500' : 
+                                                  o.status === 'canceled' ? 'text-red-500' : 
+                                                  'text-gray-600'
+                                              }`}>Status: {o.status}</p>
+                                              {o.status === 'pending' && <Clock className="w-3 h-3 text-yellow-500 animate-pulse"/>}
+                                              {o.status === 'canceled' && <X className="w-3 h-3 text-red-500"/>}
+                                              {o.status === 'completed' && <Check className="w-3 h-3 text-green-500"/>} 
+                                          </div>
+                                       </div>
+                                       <button className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl transition-all shadow-lg flex-shrink-0 group-hover:scale-110">
+                                           <Eye className="w-5 h-5" />
+                                       </button>
                                    </div>
                                </div>
                            ))}
@@ -225,6 +417,14 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
              )}
           </div>
        </div>
+
+       {selectedOrder && profile && (
+           <OrderDetailsModal 
+              order={selectedOrder} 
+              currentUser={profile} 
+              onClose={() => setSelectedOrder(null)} 
+           />
+       )}
     </div>
   );
 };
