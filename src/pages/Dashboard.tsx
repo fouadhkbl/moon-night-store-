@@ -32,8 +32,32 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  if (isGuest && authMode === 'login') return <div className="py-20"><LoginForm onAuthSuccess={s => { setSession(s); setAuthMode('none'); }} onToggle={() => setAuthMode('signup')} /></div>;
-  if (isGuest && authMode === 'signup') return <div className="py-20"><SignupForm addToast={addToast} onAuthSuccess={s => { if(s) setSession(s); setAuthMode('none'); }} onToggle={() => setAuthMode('login')} /></div>;
+  if (isGuest && authMode === 'login') return (
+    <div className="py-20 container mx-auto px-4">
+      <LoginForm 
+        onAuthSuccess={s => { 
+          setSession(s); 
+          setAuthMode('none'); 
+          onNavigate('dashboard'); // Explicitly stay/refresh dashboard view
+        }} 
+        onToggle={() => setAuthMode('signup')} 
+      />
+    </div>
+  );
+
+  if (isGuest && authMode === 'signup') return (
+    <div className="py-20 container mx-auto px-4">
+      <SignupForm 
+        addToast={addToast} 
+        onAuthSuccess={s => { 
+          if(s) setSession(s); 
+          setAuthMode('none'); 
+          onNavigate('dashboard'); 
+        }} 
+        onToggle={() => setAuthMode('login')} 
+      />
+    </div>
+  );
 
   return (
     <div className="container mx-auto px-4 py-8 animate-fade-in pb-20">
