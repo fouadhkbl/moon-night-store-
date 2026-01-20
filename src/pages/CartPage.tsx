@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { supabase } from '../supabaseClient';
-import { CartItem } from '../types';
-import { Check, X, Receipt, ShoppingCart, ArrowLeft, Minus, Plus, ChevronRight, Loader2, Trash2 } from 'lucide-react';
+import { supabase } from '../../supabaseClient';
+import { CartItem } from '../../types';
+import { Check, Receipt, ShoppingCart, ArrowLeft, Minus, Plus, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 
 export const CartPage = ({ cart, session, onUpdateQty, onRemove, onNavigate, onClearCart, addToast }: { 
   cart: CartItem[], 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient';
-import { Profile, Order } from '../types';
+import { supabase } from '../../supabaseClient';
+import { Profile, Order } from '../../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
 import { Gamepad2, Wallet, LogOut } from 'lucide-react';
 
