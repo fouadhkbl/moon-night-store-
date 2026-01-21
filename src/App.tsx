@@ -197,7 +197,7 @@ const App: React.FC = () => {
                <div>
                   <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-none mb-3">SYSTEM SHOP</h1>
                   <p className="text-gray-600 text-[12px] uppercase tracking-[0.4em] font-black">
-                      {searchQuery ? `Searching: "${searchQuery}"` : (selectedCategory ? `Department: ${selectedCategory}` : 'All Global Inventory')}
+                      {searchQuery ? `Searching: "${searchQuery}"` : (selectedCategory ? `Department: ${selectedCategory}` : 'All Global Products')}
                   </p>
                </div>
                <div className="flex items-center gap-4 overflow-x-auto pb-6 scrollbar-hide max-w-full">

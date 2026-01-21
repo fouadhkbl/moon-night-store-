@@ -45,7 +45,7 @@ export const HomePage = ({ onNavigate, onSelectCategory }: { onNavigate: (p: str
         <div className="container mx-auto px-4">
           <div className="mb-24 text-center md:text-left">
             <p className="text-blue-500 font-black uppercase text-[12px] tracking-[0.4em] mb-4">Elite Departments</p>
-            <h2 className="text-6xl md:text-8xl font-black text-white italic uppercase tracking-tighter leading-none">Global Inventory</h2>
+            <h2 className="text-6xl md:text-8xl font-black text-white italic uppercase tracking-tighter leading-none">Global Products</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
             {[
