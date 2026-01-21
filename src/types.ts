@@ -1,4 +1,3 @@
-
 export interface Product {
   id: string;
   name: string;
@@ -21,6 +20,7 @@ export interface Profile {
   wallet_balance: number;
   vip_level: number;
   vip_points: number;
+  discord_points: number; // Added discord_points
   auth_provider?: string;
 }
 
@@ -75,6 +75,15 @@ export interface AccessLog {
     ip_address: string;
     user_id?: string;
     created_at: string;
+}
+
+export interface PointTransaction {
+  id: string;
+  user_id: string;
+  points_amount: number;
+  money_equivalent: number;
+  status: 'pending' | 'completed' | 'rejected';
+  created_at: string;
 }
 
 export enum GameCategory {

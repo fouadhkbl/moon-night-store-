@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { Profile, Order, OrderItem, OrderMessage } from '../types';
+import { Profile, Order, OrderItem, OrderMessage, PointTransaction } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, Box, MessageSquare, Send, X, Clock, Check, Eye, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Gamepad2, Wallet, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, Box, MessageSquare, Send, X, Clock, Check, Eye, Trash2, AlertCircle, CheckCircle, Coins, Repeat, ExternalLink } from 'lucide-react';
 
 // --- ORDER DETAILS & CHAT MODAL ---
 const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
@@ -212,9 +212,15 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
 }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wallet'>('overview');
+  const [pointTransactions, setPointTransactions] = useState<PointTransaction[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wallet' | 'points'>('overview');
   const [authMode, setAuthMode] = useState<'none' | 'login' | 'signup'>('none');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  
+  // Points Conversion State
+  const [pointsToConvert, setPointsToConvert] = useState<number>(0);
+  const [isConverting, setIsConverting] = useState(false);
+  const [conversionSuccess, setConversionSuccess] = useState(false);
 
   const isGuest = session?.user?.id === 'guest-user-123';
 
@@ -224,24 +230,27 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
             setProfile({
                 id: 'guest-user-123', email: 'guest@moonnight.com', username: 'Guest Gamer',
                 avatar_url: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=200&q=80',
-                wallet_balance: 0.00, vip_level: 0, vip_points: 0
+                wallet_balance: 0.00, vip_level: 0, vip_points: 0, discord_points: 0
             });
             setOrders([]);
         } else {
             const { data: pData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
             if (pData) setProfile(pData);
+            
             const { data: oData } = await supabase.from('orders').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
             if (oData) {
                 setOrders(oData);
-                // Handle deep linking to order
                 if (initialOrderId) {
                     const target = oData.find(o => o.id === initialOrderId);
                     if (target) {
                         setSelectedOrder(target);
-                        setActiveTab('orders'); // Ensure we are on the orders tab
+                        setActiveTab('orders'); 
                     }
                 }
             }
+
+            const { data: ptData } = await supabase.from('point_transactions').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
+            if (ptData) setPointTransactions(ptData);
         }
     }
   }, [session, isGuest, initialOrderId]);
@@ -249,7 +258,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleDeleteOrder = async (e: React.MouseEvent, orderId: string) => {
-    e.stopPropagation(); // Prevent opening modal
+    e.stopPropagation(); 
     if (!window.confirm("Are you sure you want to remove this canceled order from your history?")) return;
     
     const { error } = await supabase.from('orders').delete().eq('id', orderId);
@@ -259,6 +268,49 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
         addToast("Deleted", "Order removed from history.", "success");
         setOrders(prev => prev.filter(o => o.id !== orderId));
     }
+  };
+
+  const handleConvertPoints = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!profile) return;
+      if (pointsToConvert < 1000) {
+          addToast("Minimum", "Minimum conversion is 1000 Points.", "error");
+          return;
+      }
+      if (pointsToConvert > profile.discord_points) {
+          addToast("Insufficient Points", "You do not have enough Discord points.", "error");
+          return;
+      }
+
+      setIsConverting(true);
+      try {
+          const usdAmount = pointsToConvert / 1000;
+          
+          // Deduct points
+          const { error: updateError } = await supabase.from('profiles')
+             .update({ discord_points: profile.discord_points - pointsToConvert })
+             .eq('id', profile.id);
+          
+          if (updateError) throw updateError;
+
+          // Record transaction
+          const { error: insertError } = await supabase.from('point_transactions').insert({
+              user_id: profile.id,
+              points_amount: pointsToConvert,
+              money_equivalent: usdAmount,
+              status: 'pending'
+          });
+
+          if (insertError) throw insertError;
+
+          setConversionSuccess(true);
+          addToast("Success", "Conversion request created.", "success");
+          fetchData(); // Refresh profile points
+      } catch (err: any) {
+          addToast("Error", err.message, "error");
+      } finally {
+          setIsConverting(false);
+      }
   };
 
   if (isGuest && authMode === 'login') return (
@@ -326,6 +378,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
              <button onClick={() => setActiveTab('overview')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'overview' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Dashboard</button>
              <button onClick={() => setActiveTab('orders')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'orders' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Orders</button>
              <button onClick={() => setActiveTab('wallet')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'wallet' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Wallet</button>
+             <button onClick={() => setActiveTab('points')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'points' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Discord Points</button>
           </div>
           <div className="lg:col-span-3">
              {activeTab === 'overview' && (
@@ -476,6 +529,139 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                        )}
                    </div>
                 </div>
+             )}
+
+             {activeTab === 'points' && (
+                 <div className="space-y-8 animate-slide-up">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Current Points Card */}
+                        <div className="bg-gradient-to-br from-purple-700 to-indigo-900 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden flex flex-col justify-between">
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                            <div className="relative z-10">
+                                <p className="text-purple-200 font-black uppercase text-[10px] tracking-widest mb-2 flex items-center gap-2">
+                                    <Coins className="w-4 h-4" /> Available Points
+                                </p>
+                                <h3 className="text-6xl font-black italic tracking-tighter leading-none mb-1">{profile?.discord_points || 0}</h3>
+                                <p className="text-xs font-bold text-purple-200 uppercase tracking-widest">Discord Balance</p>
+                            </div>
+                        </div>
+
+                        {/* Conversion Rate Card */}
+                        <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl flex flex-col justify-center">
+                            <h3 className="text-white font-black italic uppercase tracking-tighter text-xl mb-4 flex items-center gap-2">
+                                <Repeat className="w-6 h-6 text-green-400" /> Exchange Rate
+                            </h3>
+                            <div className="bg-[#0b0e14] p-6 rounded-2xl border border-gray-800 flex items-center justify-between">
+                                <div className="text-center">
+                                    <p className="text-3xl font-black text-purple-400 italic tracking-tighter">1000</p>
+                                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Points</p>
+                                </div>
+                                <div className="h-0.5 flex-1 bg-gray-800 mx-4 relative">
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400">
+                                        =
+                                    </div>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-3xl font-black text-green-400 italic tracking-tighter">$1.00</p>
+                                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">USD</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Conversion Action */}
+                    <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl">
+                        <h3 className="text-white font-black italic uppercase tracking-tighter text-2xl mb-8">Convert to Real Money</h3>
+                        
+                        {!conversionSuccess ? (
+                            <form onSubmit={handleConvertPoints} className="max-w-xl mx-auto">
+                                <div className="mb-8">
+                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Amount to Convert (Points)</label>
+                                    <input 
+                                        type="number" 
+                                        min="1000"
+                                        step="1000"
+                                        value={pointsToConvert}
+                                        onChange={e => setPointsToConvert(parseInt(e.target.value))}
+                                        className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-6 text-center text-4xl font-black text-white outline-none focus:border-purple-500 transition-all shadow-inner placeholder:text-gray-800"
+                                        placeholder="0"
+                                    />
+                                    <p className="text-center mt-3 text-xs font-bold text-gray-500">
+                                        Equivalent to <span className="text-green-400">${(pointsToConvert / 1000).toFixed(2)} USD</span>
+                                    </p>
+                                </div>
+                                <button 
+                                    type="submit" 
+                                    disabled={isConverting || !pointsToConvert}
+                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-purple-600/20 uppercase tracking-widest active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                                >
+                                    {isConverting ? 'Processing...' : 'Transfer to Wallet'}
+                                </button>
+                            </form>
+                        ) : (
+                            <div className="text-center py-10 max-w-lg mx-auto">
+                                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 border border-green-500/50">
+                                    <CheckCircle className="w-10 h-10" />
+                                </div>
+                                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">Request Submitted!</h3>
+                                <p className="text-gray-400 font-bold text-sm mb-8">Your points have been deducted. To receive your cash, please contact <span className="text-purple-400">Fouad</span> on Discord with your Transaction ID.</p>
+                                <a 
+                                    href="https://discord.com" // Replace with actual discord link
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-3 bg-[#5865F2] hover:bg-[#4752c4] text-white px-8 py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-xl"
+                                >
+                                    Contact Fouad <ExternalLink className="w-4 h-4" />
+                                </a>
+                                <button 
+                                    onClick={() => { setConversionSuccess(false); setPointsToConvert(0); }}
+                                    className="block mx-auto mt-6 text-xs font-bold text-gray-500 uppercase tracking-widest hover:text-white"
+                                >
+                                    Make Another Transfer
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Transaction History Table */}
+                    <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl">
+                        <h3 className="text-white font-black italic uppercase tracking-tighter text-2xl mb-8">Conversion History</h3>
+                        {pointTransactions.length === 0 ? (
+                            <p className="text-center py-10 text-gray-600 font-black uppercase tracking-widest border-2 border-dashed border-gray-800 rounded-3xl">No conversions yet.</p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="text-[10px] font-black uppercase tracking-widest text-gray-500 border-b border-gray-800">
+                                        <tr>
+                                            <th className="pb-4 pl-4">Date</th>
+                                            <th className="pb-4">Points</th>
+                                            <th className="pb-4">Amount (USD)</th>
+                                            <th className="pb-4">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-800">
+                                        {pointTransactions.map(pt => (
+                                            <tr key={pt.id} className="hover:bg-[#0b0e14] transition-colors">
+                                                <td className="py-4 pl-4 text-xs font-mono text-gray-400">{new Date(pt.created_at).toLocaleDateString()}</td>
+                                                <td className="py-4 font-black text-purple-400 italic">-{pt.points_amount}</td>
+                                                <td className="py-4 font-black text-green-400 italic">${pt.money_equivalent.toFixed(2)}</td>
+                                                <td className="py-4">
+                                                    <span className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest border ${
+                                                        pt.status === 'completed' ? 'bg-green-500/10 text-green-500 border-green-500/30' :
+                                                        pt.status === 'rejected' ? 'bg-red-500/10 text-red-500 border-red-500/30' :
+                                                        'bg-yellow-500/10 text-yellow-500 border-yellow-500/30'
+                                                    }`}>
+                                                        {pt.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                 </div>
              )}
           </div>
        </div>

@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers } from 'lucide-react';
+import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins } from 'lucide-react';
 import { Profile, Product, GameCategory, Coupon } from '../../types';
 
-export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number) => void }) => {
+export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number, points: number) => void }) => {
   const [amount, setAmount] = useState(user.wallet_balance);
+  const [points, setPoints] = useState(user.discord_points || 0);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    await onSave(user.id, amount);
+    await onSave(user.id, amount, points);
     setIsSaving(false);
   };
 
@@ -17,27 +18,39 @@ export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, o
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-fade-in">
       <div className="bg-[#1e232e] w-full max-w-sm rounded-[2rem] border border-gray-800 shadow-3xl p-8 animate-slide-up">
         <div className="text-center mb-8">
-           <div className="w-16 h-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-yellow-500 border border-yellow-500/20">
+           <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-500 border border-blue-500/20">
               <DollarSign className="w-8 h-8" />
            </div>
-           <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Edit Solde</h2>
-           <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">Updating balance for {user.username}</p>
+           <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Edit User Assets</h2>
+           <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">Updating {user.username}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 text-center">New Balance (DH)</label>
+            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 text-center">Wallet Balance (DH)</label>
             <input 
               required 
               type="number" 
               step="0.01" 
-              autoFocus
-              className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-3xl font-black text-yellow-400 italic outline-none focus:border-yellow-500 transition-all shadow-inner" 
+              className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-2xl font-black text-yellow-400 italic outline-none focus:border-yellow-500 transition-all shadow-inner" 
               value={amount} 
               onChange={e => setAmount(parseFloat(e.target.value))} 
             />
           </div>
-          <div className="flex gap-3">
+          
+          <div>
+            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 text-center flex items-center justify-center gap-2"><Coins className="w-3 h-3 text-purple-400" /> Discord Points</label>
+            <input 
+              required 
+              type="number" 
+              step="1" 
+              className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-2xl font-black text-purple-400 italic outline-none focus:border-purple-500 transition-all shadow-inner" 
+              value={points} 
+              onChange={e => setPoints(parseInt(e.target.value))} 
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
              <button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-4 rounded-xl hover:bg-gray-700 transition uppercase text-xs">Cancel</button>
              <button type="submit" disabled={isSaving} className="flex-1 bg-blue-600 text-white font-black py-4 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 uppercase text-xs shadow-xl shadow-blue-600/30">
                {isSaving ? <Loader2 className="animate-spin" /> : <Save className="w-4 h-4" />} Update

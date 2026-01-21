@@ -329,10 +329,14 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   };
 
   // --- USER HANDLERS ---
-  const handleUpdateBalance = async (userId: string, newBalance: number) => {
-    const { error } = await supabase.from('profiles').update({ wallet_balance: newBalance }).eq('id', userId);
+  const handleUpdateBalance = async (userId: string, newBalance: number, newPoints: number) => {
+    const { error } = await supabase.from('profiles').update({ 
+        wallet_balance: newBalance,
+        discord_points: newPoints
+    }).eq('id', userId);
+
     if (!error) {
-      addToast('Success', 'Player solde updated.', 'success');
+      addToast('Success', 'User assets updated.', 'success');
       setEditingUser(null);
       fetchData();
     } else {
@@ -662,13 +666,19 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                          )}
                       </div>
                    </div>
-                   <div className="flex items-center justify-between bg-[#0b0e14] p-4 rounded-2xl border border-gray-800">
-                      <div>
-                          <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Solde</p>
-                          <p className="text-lg font-black text-yellow-400 italic tracking-tighter leading-none mt-1">{u.wallet_balance.toFixed(2)} DH</p>
+                   <div className="bg-[#0b0e14] p-4 rounded-2xl border border-gray-800 space-y-3">
+                      <div className="flex justify-between items-end">
+                          <div>
+                              <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Solde</p>
+                              <p className="text-lg font-black text-yellow-400 italic tracking-tighter leading-none mt-1">{u.wallet_balance.toFixed(2)} DH</p>
+                          </div>
+                          <div>
+                              <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest text-right">Points</p>
+                              <p className="text-lg font-black text-purple-400 italic tracking-tighter leading-none mt-1 text-right">{u.discord_points || 0}</p>
+                          </div>
                       </div>
-                      <div className="flex gap-2">
-                          <button onClick={() => setEditingUser(u)} className="p-3 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl transition-all border border-blue-500/20 shadow-lg active:scale-90"><Edit2 className="w-4 h-4" /></button>
+                      <div className="flex gap-2 pt-2 border-t border-gray-800">
+                          <button onClick={() => setEditingUser(u)} className="flex-1 p-3 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl transition-all border border-blue-500/20 shadow-lg active:scale-90 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest"><Edit2 className="w-4 h-4" /> Edit Assets</button>
                           <button onClick={() => handleDeleteUser(u.id)} className="p-3 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-red-500/20 shadow-lg active:scale-90"><Trash2 className="w-4 h-4" /></button>
                       </div>
                    </div>
@@ -776,7 +786,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       {selectedOrder && (
           <AdminOrderModal
             order={selectedOrder}
-            currentUser={role === 'full' && profiles.find(p => p.id === session.user.id) ? profiles.find(p => p.id === session.user.id)! : { id: 'admin-mod', username: 'Moderator', email: 'mod@system', wallet_balance: 0, vip_level: 0, vip_points: 0, avatar_url: '' }} 
+            currentUser={role === 'full' && profiles.find(p => p.id === session.user.id) ? profiles.find(p => p.id === session.user.id)! : { id: 'admin-mod', username: 'Moderator', email: 'mod@system', wallet_balance: 0, vip_level: 0, vip_points: 0, discord_points: 0, avatar_url: '' }} 
             onClose={() => { setSelectedOrder(null); fetchData(); }}
           />
       )}

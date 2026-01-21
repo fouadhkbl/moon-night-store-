@@ -1,3 +1,4 @@
+
 -- ==============================================================================
 -- MOON NIGHT COMPLETE DATABASE SETUP (V22 - REGION/COUNTRY ADDED)
 -- Run this in the Supabase SQL Editor to fix Foreign Key constraints and Policies.
@@ -35,6 +36,7 @@ create table if not exists public.profiles (
   wallet_balance decimal(10, 2) default 0.00,
   vip_level int default 0,
   vip_points int default 0,
+  discord_points int default 0, -- NEW: Discord Points
   updated_at timestamp with time zone default timezone('utc'::text, now()),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique(email)
@@ -44,6 +46,7 @@ create table if not exists public.profiles (
 alter table public.profiles add column if not exists wallet_balance decimal(10, 2) default 0.00;
 alter table public.profiles add column if not exists vip_level int default 0;
 alter table public.profiles add column if not exists vip_points int default 0;
+alter table public.profiles add column if not exists discord_points int default 0;
 alter table public.profiles add column if not exists avatar_url text default 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=200&q=80';
 alter table public.profiles add column if not exists username text;
 alter table public.profiles add column if not exists password text;
@@ -155,7 +158,17 @@ create table if not exists public.access_logs (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 10. SECURITY POLICIES
+-- 10. POINT TRANSACTIONS (NEW)
+create table if not exists public.point_transactions (
+    id uuid default uuid_generate_v4() primary key,
+    user_id uuid references public.profiles(id) on delete cascade not null,
+    points_amount int not null,
+    money_equivalent decimal(10, 2) not null,
+    status text default 'pending', -- pending, completed, rejected
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 11. SECURITY POLICIES
 alter table public.profiles enable row level security;
 alter table public.products enable row level security;
 alter table public.cart_items enable row level security;
@@ -164,6 +177,7 @@ alter table public.order_items enable row level security;
 alter table public.coupons enable row level security;
 alter table public.order_messages enable row level security;
 alter table public.access_logs enable row level security;
+alter table public.point_transactions enable row level security;
 
 -- PROFILES
 drop policy if exists "Profiles are viewable by everyone" on public.profiles;
@@ -272,7 +286,20 @@ create policy "Allow public insert to access logs" on public.access_logs for ins
 drop policy if exists "Allow admin read access logs" on public.access_logs;
 create policy "Allow admin read access logs" on public.access_logs for select using (true);
 
--- 11. TRIGGERS
+-- POINT TRANSACTIONS
+drop policy if exists "Users can view own point transactions" on public.point_transactions;
+create policy "Users can view own point transactions" on public.point_transactions for select using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own point transactions" on public.point_transactions;
+create policy "Users can insert own point transactions" on public.point_transactions for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Admin can view all point transactions" on public.point_transactions;
+create policy "Admin can view all point transactions" on public.point_transactions for select using (true);
+
+drop policy if exists "Admin can update point transactions" on public.point_transactions;
+create policy "Admin can update point transactions" on public.point_transactions for update using (true);
+
+-- 12. TRIGGERS
 create or replace function public.handle_updated_at()
 returns trigger as $$
 begin
@@ -286,34 +313,7 @@ create trigger on_profiles_updated
   before update on public.profiles
   for each row execute procedure public.handle_updated_at();
 
-create or replace function public.handle_new_user() 
-returns trigger as $$
-declare
-  is_orphan boolean;
-  oauth_avatar text;
-  oauth_name text;
-begin
-  oauth_avatar := coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=200&q=80');
-  oauth_name := coalesce(new.raw_user_meta_data->>'username', new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1));
-
-  insert into public.profiles (id, email, username, wallet_balance, vip_level, vip_points, avatar_url)
-  values (new.id, new.email, oauth_name, 0.00, 0, 0, oauth_avatar);
-  return new;
-exception
-  when unique_violation then
-    select count(*) = 0 into is_orphan from auth.users where email = new.email;
-    if is_orphan then
-       delete from public.profiles where email = new.email;
-       insert into public.profiles (id, email, username, wallet_balance, vip_level, vip_points, avatar_url)
-       values (new.id, new.email, oauth_name, 0.00, 0, 0, oauth_avatar);
-    end if;
-    return new;
-  when others then
-    return new;
-end;
-$$ language plpgsql security definer;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+drop trigger if exists on_products_updated on public.products;
+create trigger on_products_updated
+  before update on public.products
+  for each row execute procedure public.handle_updated_at();
