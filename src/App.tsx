@@ -13,6 +13,7 @@ import { CartPage } from './pages/CartPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { Dashboard } from './pages/Dashboard';
 import { TopUpPage } from './pages/TopUpPage';
+import { PointsShopPage } from './pages/PointsShopPage';
 import { Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -274,6 +275,14 @@ const App: React.FC = () => {
             onSearch={handleSearch}
             language={language}
           />
+        )}
+
+        {currentPage === 'pointsShop' && (
+            <PointsShopPage 
+                session={session}
+                onNavigate={handleNavigate}
+                addToast={addToast}
+            />
         )}
         
         {currentPage === 'shop' && (

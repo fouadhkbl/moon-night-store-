@@ -1,6 +1,6 @@
 
 -- ==============================================================================
--- MOON NIGHT COMPLETE DATABASE SETUP (V23 - FIX POINT TRANS DELETE)
+-- MOON NIGHT COMPLETE DATABASE SETUP (V24 - POINTS SHOP)
 -- Run this in the Supabase SQL Editor to fix Foreign Key constraints and Policies.
 -- ==============================================================================
 
@@ -168,7 +168,31 @@ create table if not exists public.point_transactions (
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 11. SECURITY POLICIES
+-- 11. POINTS SHOP PRODUCTS (NEW)
+create table if not exists public.point_products (
+    id uuid default uuid_generate_v4() primary key,
+    name text not null,
+    description text,
+    image_url text not null,
+    cost int not null,
+    duration text, -- e.g. "Lifetime", "30 Days"
+    advantage text, -- e.g. "20% Boost", "Access to VIP"
+    is_active boolean default true,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 12. POINTS REDEMPTIONS (NEW - Tracking items bought with points)
+create table if not exists public.point_redemptions (
+    id uuid default uuid_generate_v4() primary key,
+    user_id uuid references public.profiles(id) on delete cascade not null,
+    product_id uuid references public.point_products(id) on delete set null,
+    cost_at_redemption int not null,
+    status text default 'delivered',
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+
+-- 13. SECURITY POLICIES
 alter table public.profiles enable row level security;
 alter table public.products enable row level security;
 alter table public.cart_items enable row level security;
@@ -178,6 +202,8 @@ alter table public.coupons enable row level security;
 alter table public.order_messages enable row level security;
 alter table public.access_logs enable row level security;
 alter table public.point_transactions enable row level security;
+alter table public.point_products enable row level security;
+alter table public.point_redemptions enable row level security;
 
 -- PROFILES
 drop policy if exists "Profiles are viewable by everyone" on public.profiles;
@@ -302,7 +328,25 @@ create policy "Admin can update point transactions" on public.point_transactions
 drop policy if exists "Admin can delete point transactions" on public.point_transactions;
 create policy "Admin can delete point transactions" on public.point_transactions for delete using (true);
 
--- 12. TRIGGERS
+-- POINT PRODUCTS (NEW POLICIES)
+drop policy if exists "Point Products viewable by everyone" on public.point_products;
+create policy "Point Products viewable by everyone" on public.point_products for select using (true);
+
+drop policy if exists "Admin can manage point products" on public.point_products;
+create policy "Admin can manage point products" on public.point_products for all using (true);
+
+-- POINT REDEMPTIONS (NEW POLICIES)
+drop policy if exists "Users can view own redemptions" on public.point_redemptions;
+create policy "Users can view own redemptions" on public.point_redemptions for select using (auth.uid() = user_id);
+
+drop policy if exists "Users can create redemptions" on public.point_redemptions;
+create policy "Users can create redemptions" on public.point_redemptions for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Admin can view all redemptions" on public.point_redemptions;
+create policy "Admin can view all redemptions" on public.point_redemptions for select using (true);
+
+
+-- 14. TRIGGERS
 create or replace function public.handle_updated_at()
 returns trigger as $$
 begin

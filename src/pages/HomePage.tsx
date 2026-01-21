@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, Star, Coins, Zap, Sword, ArrowUpCircle, Gift, Users } from 'lucide-react';
+import { ChevronRight, Star, Coins, Zap, Sword, ArrowUpCircle, Gift, Users, Trophy } from 'lucide-react';
 import { GameCategory } from '../types';
 
 export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void, onSearch: (q: string) => void, language: 'en' | 'fr' }) => {
@@ -70,6 +70,13 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
                 className="bg-transparent border-2 border-gray-700 hover:border-white hover:bg-white hover:text-black text-white px-12 py-4 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter"
               >
                 {text.browse} <ChevronRight className="w-5 h-5" />
+              </button>
+              
+              <button 
+                onClick={() => onNavigate('pointsShop')}
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-12 py-4 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-2xl shadow-purple-600/30"
+              >
+                <Trophy className="w-5 h-5" /> Points Shop
               </button>
             </div>
           </div>

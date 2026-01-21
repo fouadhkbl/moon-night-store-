@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins } from 'lucide-react';
-import { Profile, Product, GameCategory, Coupon } from '../../types';
+import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap } from 'lucide-react';
+import { Profile, Product, GameCategory, Coupon, PointProduct } from '../../types';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number, points: number) => void }) => {
   const [amount, setAmount] = useState<string>(user.wallet_balance.toString());
@@ -206,6 +206,88 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
       </div>
     </div>
   );
+};
+
+export const PointProductFormModal = ({ product, onClose, onSave }: { product: Partial<PointProduct> | null, onClose: () => void, onSave: (p: any) => void }) => {
+    const [formData, setFormData] = useState<Partial<PointProduct>>(product || {
+        name: '',
+        cost: 0,
+        image_url: '',
+        description: '',
+        duration: '',
+        advantage: '',
+        is_active: true
+    });
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        await onSave(formData);
+        setIsSaving(false);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col max-h-[90vh]">
+                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]">
+                    <div className="flex items-center gap-3">
+                         <div className="bg-purple-600/20 p-2 rounded-lg text-purple-400"><Trophy className="w-5 h-5" /></div>
+                         <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
+                             {product?.id ? 'Edit Reward' : 'New Reward'}
+                         </h2>
+                    </div>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition"><X /></button>
+                </div>
+                
+                <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Item Name</label>
+                        <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Point Cost</label>
+                        <input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.cost} onChange={e => setFormData({...formData, cost: parseInt(e.target.value)})} />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Image URL</label>
+                        <input required type="url" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                         <div>
+                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Clock className="w-3 h-3" /> Duration</label>
+                             <input required type="text" placeholder="e.g. Lifetime" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})} />
+                         </div>
+                         <div>
+                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Zap className="w-3 h-3" /> Advantage</label>
+                             <input required type="text" placeholder="e.g. +20% EXP" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.advantage} onChange={e => setFormData({...formData, advantage: e.target.value})} />
+                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Description</label>
+                        <textarea className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none h-24" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}></textarea>
+                    </div>
+
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" className="hidden" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} />
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.is_active ? 'bg-green-600 border-green-500' : 'bg-gray-800 border-gray-700'}`}>
+                            {formData.is_active && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <span className="text-xs font-bold text-gray-400 group-hover:text-white">Item Active</span>
+                    </label>
+                </form>
+
+                <div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3">
+                    <button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-700 transition">Cancel</button>
+                    <button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-purple-600 text-white font-black py-3 rounded-xl hover:bg-purple-700 transition flex items-center justify-center gap-2">
+                        {isSaving ? <Loader2 className="animate-spin" /> : <Save className="w-4 h-4" />} Save Reward
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export const CouponFormModal = ({ coupon, onClose, onSave }: { coupon: Partial<Coupon> | null, onClose: () => void, onSave: (c: any) => void }) => {

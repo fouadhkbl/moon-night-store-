@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft } from 'lucide-react';
-import { ProductFormModal, BalanceEditorModal, CouponFormModal } from './AdminModals';
+import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct } from '../../types';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy } from 'lucide-react';
+import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal } from './AdminModals';
 
 // --- VISITOR LOG MODAL ---
 const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
@@ -241,8 +241,9 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 };
 
 export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' | 'shop' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points'>(role === 'shop' ? 'products' : 'stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop'>(role === 'shop' ? 'products' : 'stats');
   const [products, setProducts] = useState<Product[]>([]);
+  const [pointProducts, setPointProducts] = useState<PointProduct[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -254,9 +255,11 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   
   // Modal States
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isPointProductModalOpen, setIsPointProductModalOpen] = useState(false);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [isVisitsModalOpen, setIsVisitsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
+  const [editingPointProduct, setEditingPointProduct] = useState<Partial<PointProduct> | null>(null);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -269,6 +272,10 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
     // Fetch Products (Always visible)
     const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (pData) setProducts(pData);
+    
+    // Fetch Point Products (Always visible)
+    const { data: ppData } = await supabase.from('point_products').select('*').order('cost', { ascending: true });
+    if (ppData) setPointProducts(ppData);
 
     // Fetch Profiles - Only for FULL admin
     if (role === 'full') {
@@ -368,6 +375,37 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
     } catch (err: any) {
       addToast('Error', err.message, 'error');
     }
+  };
+
+  // --- POINT PRODUCT HANDLERS (NEW) ---
+  const handleSavePointProduct = async (productData: Partial<PointProduct>) => {
+      try {
+          if (productData.id) {
+              const { error } = await supabase.from('point_products').update(productData).eq('id', productData.id);
+              if (error) throw error;
+              addToast('Updated', 'Points reward updated.', 'success');
+          } else {
+              const { error } = await supabase.from('point_products').insert(productData);
+              if (error) throw error;
+              addToast('Created', 'Points reward created.', 'success');
+          }
+          setIsPointProductModalOpen(false);
+          setEditingPointProduct(null);
+          fetchData();
+      } catch (err: any) {
+          addToast('Error', err.message, 'error');
+      }
+  };
+
+  const handleDeletePointProduct = async (id: string) => {
+      if (!window.confirm('Are you sure you want to remove this reward?')) return;
+      const { error } = await supabase.from('point_products').delete().eq('id', id);
+      if (!error) {
+          addToast('Deleted', 'Reward removed.', 'success');
+          fetchData();
+      } else {
+          addToast('Error', error.message, 'error');
+      }
   };
 
   // --- USER HANDLERS ---
@@ -479,6 +517,10 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
     p.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredPointProducts = pointProducts.filter(p => 
+      p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const filteredUsers = profiles.filter(u => {
     const matchesSearch = u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           u.username?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -533,6 +575,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           )}
           <button onClick={() => setActiveSection('products')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'products' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
             <Package className="w-4 h-4" /> Shop
+          </button>
+          <button onClick={() => setActiveSection('pointsShop')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'pointsShop' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+            <Trophy className="w-4 h-4" /> Points Shop
           </button>
           {role === 'full' && (
               <>
@@ -698,6 +743,59 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
              ))}
           </div>
         </div>
+      )}
+
+      {activeSection === 'pointsShop' && (
+          <div className="space-y-6 animate-slide-up">
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch">
+                  <div className="relative flex-1">
+                      <input 
+                          type="text" 
+                          placeholder="Search rewards..." 
+                          className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-purple-500 outline-none transition-all shadow-xl"
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                      />
+                      <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
+                  </div>
+                  <button 
+                      onClick={() => { setEditingPointProduct(null); setIsPointProductModalOpen(true); }}
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl uppercase text-xs tracking-widest whitespace-nowrap"
+                  >
+                      <PlusCircle className="w-5 h-5" /> New Reward
+                  </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filteredPointProducts.map(p => (
+                      <div key={p.id} className={`bg-[#1e232e] rounded-3xl border border-gray-800 p-5 shadow-2xl flex flex-col group hover:border-purple-500/30 transition-all ${!p.is_active ? 'opacity-50 grayscale' : ''}`}>
+                          <div className="flex gap-4 mb-6 items-start">
+                              <img src={p.image_url} className="w-20 h-20 rounded-2xl object-cover border border-gray-700 shadow-lg" alt="" />
+                              <div className="min-w-0 flex-1">
+                                  <h3 className="text-white font-black italic truncate leading-tight mb-2 uppercase tracking-tighter text-lg">{p.name}</h3>
+                                  <p className="text-xl font-black text-purple-400 italic tracking-tighter mt-1">{p.cost} PTS</p>
+                                  <div className="mt-2 text-[9px] text-gray-400 font-mono flex gap-2">
+                                     <span>{p.duration}</span>
+                                     <span>•</span>
+                                     <span>{p.advantage}</span>
+                                  </div>
+                              </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 mt-auto">
+                              <button onClick={() => { setEditingPointProduct(p); setIsPointProductModalOpen(true); }} className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-black py-4 rounded-2xl transition-all text-[10px] uppercase tracking-widest border border-gray-700">
+                                  <Edit2 className="w-4 h-4" /> Edit
+                              </button>
+                              <button onClick={() => handleDeletePointProduct(p.id)} className="flex items-center justify-center gap-2 bg-red-900/10 hover:bg-red-900/30 text-red-500 font-black py-4 rounded-2xl transition-all text-[10px] uppercase tracking-widest border border-red-500/20">
+                                  <Trash2 className="w-4 h-4" /> Delete
+                              </button>
+                          </div>
+                      </div>
+                  ))}
+                  {filteredPointProducts.length === 0 && (
+                      <div className="col-span-full py-20 text-center text-gray-500 font-black uppercase tracking-widest border-2 border-dashed border-gray-800 rounded-3xl">No rewards created.</div>
+                  )}
+              </div>
+          </div>
       )}
 
       {activeSection === 'users' && role === 'full' && (
@@ -895,6 +993,14 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           product={editingProduct} 
           onClose={() => { setIsProductModalOpen(false); setEditingProduct(null); }} 
           onSave={handleSaveProduct} 
+        />
+      )}
+      
+      {isPointProductModalOpen && (activeSection === 'pointsShop') && (
+        <PointProductFormModal 
+          product={editingPointProduct} 
+          onClose={() => { setIsPointProductModalOpen(false); setEditingPointProduct(null); }} 
+          onSave={handleSavePointProduct} 
         />
       )}
       

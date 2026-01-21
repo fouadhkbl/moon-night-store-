@@ -88,6 +88,27 @@ export interface PointTransaction {
   profile?: Profile; // Added for Admin Join
 }
 
+export interface PointProduct {
+  id: string;
+  name: string;
+  description: string;
+  image_url: string;
+  cost: number;
+  duration: string;
+  advantage: string;
+  is_active: boolean;
+}
+
+export interface PointRedemption {
+  id: string;
+  user_id: string;
+  product_id: string;
+  cost_at_redemption: number;
+  status: string;
+  created_at: string;
+  point_product?: PointProduct;
+}
+
 export enum GameCategory {
   ACCOUNTS = 'Accounts',
   COINS = 'Coins',
