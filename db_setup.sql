@@ -1,5 +1,5 @@
 -- ==============================================================================
--- MOON NIGHT COMPLETE DATABASE SETUP (V18 - NO SEED DATA)
+-- MOON NIGHT COMPLETE DATABASE SETUP (V21 - VISITOR TRACKING ADDED)
 -- Run this in the Supabase SQL Editor to fix Foreign Key constraints and Policies.
 -- ==============================================================================
 
@@ -139,12 +139,19 @@ begin
   if exists (select 1 from information_schema.table_constraints where constraint_name = 'order_messages_sender_id_fkey' and table_name = 'order_messages') then
     alter table public.order_messages drop constraint order_messages_sender_id_fkey;
   end if;
-  -- Constraint: If sender (profile) is deleted, delete the message.
   alter table public.order_messages add constraint order_messages_sender_id_fkey foreign key (sender_id) references public.profiles(id) on delete cascade;
 end;
 $$;
 
--- 9. SECURITY POLICIES
+-- 9. ACCESS LOGS (VISITOR TRACKING)
+create table if not exists public.access_logs (
+  id uuid default uuid_generate_v4() primary key,
+  ip_address text,
+  user_id uuid references public.profiles(id) on delete set null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 10. SECURITY POLICIES
 alter table public.profiles enable row level security;
 alter table public.products enable row level security;
 alter table public.cart_items enable row level security;
@@ -152,6 +159,7 @@ alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
 alter table public.coupons enable row level security;
 alter table public.order_messages enable row level security;
+alter table public.access_logs enable row level security;
 
 -- PROFILES
 drop policy if exists "Profiles are viewable by everyone" on public.profiles;
@@ -253,7 +261,14 @@ create policy "Enable update for admin panel coupons" on public.coupons for upda
 drop policy if exists "Enable delete for admin panel coupons" on public.coupons;
 create policy "Enable delete for admin panel coupons" on public.coupons for delete using (true);
 
--- 10. TRIGGERS
+-- ACCESS LOGS
+drop policy if exists "Allow public insert to access logs" on public.access_logs;
+create policy "Allow public insert to access logs" on public.access_logs for insert with check (true);
+
+drop policy if exists "Allow admin read access logs" on public.access_logs;
+create policy "Allow admin read access logs" on public.access_logs for select using (true);
+
+-- 11. TRIGGERS
 create or replace function public.handle_updated_at()
 returns trigger as $$
 begin

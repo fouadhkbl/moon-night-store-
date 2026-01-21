@@ -33,6 +33,39 @@ const App: React.FC = () => {
      setTimeout(() => setToasts(curr => curr.filter(t => t.id !== id)), 4000);
   };
 
+  // --- VISITOR TRACKING ---
+  useEffect(() => {
+    const logVisitor = async () => {
+        // Prevent logging multiple times per browser session
+        if (sessionStorage.getItem('moonnight_visit_logged')) return;
+        
+        try {
+            // Get IP Address
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            const ip = data.ip;
+
+            // Log to Database
+            const { error } = await supabase.from('access_logs').insert({
+                ip_address: ip,
+                user_id: session?.user?.id !== 'guest-user-123' ? session?.user?.id : null
+            });
+
+            if (!error) {
+                sessionStorage.setItem('moonnight_visit_logged', 'true');
+            }
+        } catch (e) {
+            console.error("Tracking Error", e);
+        }
+    };
+
+    // Wait for session to settle slightly before logging to catch User ID if possible, 
+    // but log anyway if guest
+    if (!isSessionLoading) {
+        logVisitor();
+    }
+  }, [isSessionLoading, session]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setSession(session);

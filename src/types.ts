@@ -69,6 +69,13 @@ export interface OrderMessage {
     created_at: string;
 }
 
+export interface AccessLog {
+    id: string;
+    ip_address: string;
+    user_id?: string;
+    created_at: string;
+}
+
 export enum GameCategory {
   COINS = 'Coins',
   TOP_UP = 'Top Up',

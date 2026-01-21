@@ -45,7 +45,13 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
     }
   }, [appliedCoupon, subtotal]);
 
-  const finalTotal = Math.max(0, subtotal - discountAmount);
+  const totalAfterDiscount = Math.max(0, subtotal - discountAmount);
+  
+  // Calculate Fees based on payment method
+  // 0% for Wallet (Solde), 1.5% for PayPal/Card
+  const feePercentage = paymentMethod === 'wallet' ? 0 : 0.015; 
+  const processingFee = totalAfterDiscount * feePercentage;
+  const finalTotal = totalAfterDiscount + processingFee;
 
   // Fetch Wallet Balance
   useEffect(() => {
@@ -107,7 +113,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
                                         value: usdAmount,
                                         currency_code: 'USD'
                                     },
-                                    description: `Moon Night Order`
+                                    description: `Moon Night Order (incl. fees)`
                                 }]
                             });
                         },
@@ -297,6 +303,10 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
                                <span>- {discountAmount.toFixed(2)} DH</span>
                            </div>
                        )}
+                       <div className="flex justify-between text-gray-400 text-xs font-black uppercase tracking-widest">
+                           <span>Fee ({paymentMethod === 'wallet' ? '0%' : '1.5%'})</span>
+                           <span>+ {processingFee.toFixed(2)} DH</span>
+                       </div>
                        <div className="flex justify-between text-white text-xl font-black italic tracking-tighter pt-2">
                            <span>Total</span>
                            <span className="text-yellow-400">{finalTotal.toFixed(2)} DH</span>
@@ -351,7 +361,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
                             </button>
                             <button 
                                 onClick={() => setPaymentMethod('wallet')}
-                                disabled={walletBalance < finalTotal}
+                                disabled={walletBalance < totalAfterDiscount}
                                 className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${paymentMethod === 'wallet' ? 'bg-blue-600 border-blue-600' : 'bg-[#0b0e14] border-gray-800 hover:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed'}`}
                             >
                                 <Wallet className={`w-8 h-8 ${paymentMethod === 'wallet' ? 'text-white' : 'text-gray-500'}`} />

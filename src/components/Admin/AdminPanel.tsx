@@ -1,8 +1,63 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile, Coupon, Order, OrderMessage } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban } from 'lucide-react';
+import { Product, Profile, Coupon, Order, OrderMessage, AccessLog } from '../../types';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal } from './AdminModals';
+
+// --- VISITOR LOG MODAL ---
+const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
+    return (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-2xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col max-h-[85vh]">
+                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23] rounded-t-3xl">
+                     <div className="flex items-center gap-3">
+                        <div className="bg-cyan-500/20 p-2 rounded-xl text-cyan-400 border border-cyan-500/30">
+                            <Globe className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Daily Visitors</h3>
+                            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{logs.length} entries today</p>
+                        </div>
+                     </div>
+                     <button onClick={onClose} className="text-gray-500 hover:text-white transition"><X /></button>
+                </div>
+                <div className="p-6 overflow-y-auto custom-scrollbar">
+                     {logs.length === 0 ? (
+                         <p className="text-center py-10 text-gray-500 font-bold uppercase tracking-widest">No visits recorded yet.</p>
+                     ) : (
+                         <table className="w-full text-left">
+                             <thead className="text-gray-500 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
+                                 <tr>
+                                     <th className="pb-3">Time</th>
+                                     <th className="pb-3">IP Address</th>
+                                     <th className="pb-3 text-right">User ID</th>
+                                 </tr>
+                             </thead>
+                             <tbody className="divide-y divide-gray-800">
+                                 {logs.map(log => (
+                                     <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                                         <td className="py-4 text-xs font-mono text-gray-400">
+                                             {new Date(log.created_at).toLocaleTimeString()}
+                                         </td>
+                                         <td className="py-4 text-sm font-bold text-white">
+                                             {log.ip_address}
+                                         </td>
+                                         <td className="py-4 text-xs font-mono text-gray-500 text-right">
+                                             {log.user_id ? <span className="text-blue-400">Logged In</span> : 'Guest'}
+                                         </td>
+                                     </tr>
+                                 ))}
+                             </tbody>
+                         </table>
+                     )}
+                </div>
+                <div className="p-4 border-t border-gray-800 bg-[#151a23] rounded-b-3xl">
+                    <button onClick={onClose} className="w-full bg-[#0b0e14] hover:bg-gray-900 border border-gray-800 text-white font-black py-3 rounded-xl transition-all uppercase tracking-widest text-xs">Close Log</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // --- ADMIN ORDER & CHAT MODAL ---
 const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
@@ -164,6 +219,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [logs, setLogs] = useState<AccessLog[]>([]);
   const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -171,6 +227,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
   // Modal States
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [isVisitsModalOpen, setIsVisitsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
@@ -196,13 +253,22 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
     // Fetch Orders with Profiles
     const { data: oData } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
     if (oData) setOrders(oData);
+    
+    // Fetch Daily Logs (Filter for today)
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const { data: lData } = await supabase
+        .from('access_logs')
+        .select('*')
+        .gte('created_at', today.toISOString())
+        .order('created_at', { ascending: false });
+    if (lData) setLogs(lData);
 
     // Fetch Real Stats
     const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
     const { count: orderCount } = await supabase.from('orders').select('*', { count: 'exact', head: true });
     
-    // Calculate Revenue manually from orders fetched (or use a separate rpc call for efficiency in prod)
-    // Only count non-canceled orders for revenue
+    // Calculate Revenue manually from orders fetched
     const totalRevenue = oData?.reduce((acc, curr) => curr.status !== 'canceled' ? acc + Number(curr.total_amount) : acc, 0) || 0;
 
     setStats({ users: userCount || 0, orders: orderCount || 0, revenue: totalRevenue });
@@ -400,6 +466,15 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
 
       {activeSection === 'stats' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-slide-up">
+           <div 
+             className="bg-[#1e232e] p-6 rounded-3xl border border-gray-800 shadow-2xl hover:border-cyan-500/30 transition-all cursor-pointer active:scale-95"
+             onClick={() => setIsVisitsModalOpen(true)}
+           >
+              <Globe className="text-cyan-400 mb-6 w-8 h-8" />
+              <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Visits Today</p>
+              <h3 className="text-4xl font-black text-white italic tracking-tighter">{logs.length}</h3>
+              <p className="text-[10px] text-cyan-500 font-bold uppercase tracking-widest mt-2 flex items-center gap-1"><PlusCircle className="w-3 h-3" /> View Log</p>
+           </div>
            <div className="bg-[#1e232e] p-6 rounded-3xl border border-gray-800 shadow-2xl hover:border-blue-500/30 transition-all">
               <Users className="text-blue-500 mb-6 w-8 h-8" />
               <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Registered Gamers</p>
@@ -414,11 +489,6 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
               <ShoppingCart className="text-purple-500 mb-6 w-8 h-8" />
               <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Total Sales</p>
               <h3 className="text-4xl font-black text-white italic tracking-tighter">{stats.orders}</h3>
-           </div>
-           <div className="bg-[#1e232e] p-6 rounded-3xl border border-gray-800 shadow-2xl hover:border-cyan-500/30 transition-all">
-              <Package className="text-cyan-400 mb-6 w-8 h-8" />
-              <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Active Items</p>
-              <h3 className="text-4xl font-black text-white italic tracking-tighter">{products.length}</h3>
            </div>
         </div>
       )}
@@ -677,6 +747,10 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
              onClose={() => { setIsCouponModalOpen(false); setEditingCoupon(null); }}
              onSave={handleSaveCoupon}
           />
+      )}
+
+      {isVisitsModalOpen && (
+          <VisitHistoryModal logs={logs} onClose={() => setIsVisitsModalOpen(false)} />
       )}
 
       {editingUser && (
