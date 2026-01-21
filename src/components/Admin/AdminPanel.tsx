@@ -213,7 +213,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
     );
 };
 
-export const AdminPanel = ({ session, addToast }: { session: any, addToast: any }) => {
+export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' }) => {
   const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders'>('stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -242,13 +242,17 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
     const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (pData) setProducts(pData);
 
-    // Fetch Profiles
-    const { data: userData } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    if (userData) setProfiles(userData);
+    // Fetch Profiles - Only for FULL admin
+    if (role === 'full') {
+        const { data: userData } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+        if (userData) setProfiles(userData);
+    }
 
-    // Fetch Coupons
-    const { data: cData } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
-    if (cData) setCoupons(cData);
+    // Fetch Coupons - Only for FULL admin
+    if (role === 'full') {
+        const { data: cData } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+        if (cData) setCoupons(cData);
+    }
 
     // Fetch Orders with Profiles
     const { data: oData } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
@@ -273,7 +277,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
 
     setStats({ users: userCount || 0, orders: orderCount || 0, revenue: totalRevenue });
     setIsLoading(false);
-  }, []);
+  }, [role]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -442,7 +446,9 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div>
           <h1 className="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter">ADMIN <span className="text-blue-500">CONTROL</span></h1>
-          <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">Live Database Manager • Connected</p>
+          <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">
+             {role === 'full' ? 'Master Admin • Full Access' : 'Moderator Access • Restricted'}
+          </p>
         </div>
         
         <div className="flex w-full md:w-auto bg-[#1e232e] p-1.5 rounded-2xl border border-gray-800 shadow-xl overflow-x-auto scrollbar-hide">
@@ -455,12 +461,16 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
           <button onClick={() => setActiveSection('products')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'products' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
             <Package className="w-4 h-4" /> Shop
           </button>
-          <button onClick={() => setActiveSection('users')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'users' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-            <Users className="w-4 h-4" /> Users
-          </button>
-          <button onClick={() => setActiveSection('coupons')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'coupons' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-            <Ticket className="w-4 h-4" /> Coupons
-          </button>
+          {role === 'full' && (
+              <>
+                <button onClick={() => setActiveSection('users')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'users' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+                    <Users className="w-4 h-4" /> Users
+                </button>
+                <button onClick={() => setActiveSection('coupons')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'coupons' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+                    <Ticket className="w-4 h-4" /> Coupons
+                </button>
+              </>
+          )}
         </div>
       </div>
 
@@ -569,12 +579,14 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
              </div>
              
              <div className="flex gap-2">
-                 <button 
-                    onClick={handleDeleteAllProducts}
-                    className="bg-red-900/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/20 font-black px-6 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl uppercase text-xs tracking-widest whitespace-nowrap"
-                 >
-                    <Trash2 className="w-5 h-5" /> Wipe All
-                 </button>
+                 {role === 'full' && (
+                    <button 
+                        onClick={handleDeleteAllProducts}
+                        className="bg-red-900/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/20 font-black px-6 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl uppercase text-xs tracking-widest whitespace-nowrap"
+                    >
+                        <Trash2 className="w-5 h-5" /> Wipe All
+                    </button>
+                 )}
                  <button 
                     onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl uppercase text-xs tracking-widest whitespace-nowrap"
@@ -612,7 +624,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
         </div>
       )}
 
-      {activeSection === 'users' && (
+      {activeSection === 'users' && role === 'full' && (
         <div className="space-y-6 animate-slide-up">
           <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
              <div className="relative flex-1 w-full md:w-auto">
@@ -667,7 +679,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
         </div>
       )}
 
-      {activeSection === 'coupons' && (
+      {activeSection === 'coupons' && role === 'full' && (
           <div className="space-y-6 animate-slide-up">
               <div className="flex justify-between items-center gap-4">
                    <div className="relative flex-1">
@@ -741,7 +753,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
         />
       )}
       
-      {isCouponModalOpen && (activeSection === 'coupons') && (
+      {isCouponModalOpen && (activeSection === 'coupons') && role === 'full' && (
           <CouponFormModal 
              coupon={editingCoupon}
              onClose={() => { setIsCouponModalOpen(false); setEditingCoupon(null); }}
@@ -753,7 +765,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
           <VisitHistoryModal logs={logs} onClose={() => setIsVisitsModalOpen(false)} />
       )}
 
-      {editingUser && (
+      {editingUser && role === 'full' && (
         <BalanceEditorModal 
           user={editingUser} 
           onClose={() => setEditingUser(null)} 
@@ -764,7 +776,7 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
       {selectedOrder && (
           <AdminOrderModal
             order={selectedOrder}
-            currentUser={profiles.find(p => p.id === session.user.id) || profiles[0]} // Fallback for safety, assuming admin is logged in
+            currentUser={role === 'full' && profiles.find(p => p.id === session.user.id) ? profiles.find(p => p.id === session.user.id)! : { id: 'admin-mod', username: 'Moderator', email: 'mod@system', wallet_balance: 0, vip_level: 0, vip_points: 0, avatar_url: '' }} 
             onClose={() => { setSelectedOrder(null); fetchData(); }}
           />
       )}

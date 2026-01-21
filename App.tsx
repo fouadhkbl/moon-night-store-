@@ -17,7 +17,7 @@ const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('home'); // Sets Home page as default
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminRole, setAdminRole] = useState<'none' | 'full' | 'limited'>('none');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -241,10 +241,10 @@ const App: React.FC = () => {
         )}
 
         {currentPage === 'admin' && (
-          isAdminAuthenticated ? (
-            <AdminPanel session={session} addToast={addToast} />
+          adminRole !== 'none' ? (
+            <AdminPanel session={session} addToast={addToast} role={adminRole} />
           ) : (
-            <AdminLockScreen onSuccess={() => setIsAdminAuthenticated(true)} />
+            <AdminLockScreen onSuccess={(role) => setAdminRole(role)} />
           )
         )}
       </main>

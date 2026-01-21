@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { ShieldAlert, Key } from 'lucide-react';
 
-export const AdminLockScreen = ({ onSuccess }: { onSuccess: () => void }) => {
+export const AdminLockScreen = ({ onSuccess }: { onSuccess: (role: 'full' | 'limited') => void }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === 'fouad12jad1///') {
-      onSuccess();
+      onSuccess('full'); // Master Admin: All access
+    } else if (password === 'moonadmin01') {
+      onSuccess('limited'); // Moderator: Stats, Orders, Shop Only
     } else {
       setError(true);
       setPassword('');
