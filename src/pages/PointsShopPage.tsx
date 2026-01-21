@@ -58,8 +58,14 @@ export const PointsShopPage = ({ session, onNavigate, addToast }: { session: any
             });
             if (insertError) throw insertError;
 
+            // 3. Update Local State
             setProfile({ ...profile, discord_points: newBalance });
             addToast('Success!', `You have successfully redeemed ${product.name}.`, 'success');
+            
+            // 4. Redirect to Dashboard Points Tab
+            setTimeout(() => {
+                onNavigate('dashboard-points');
+            }, 1000);
 
         } catch (err: any) {
             addToast('Error', err.message, 'error');
@@ -118,8 +124,13 @@ export const PointsShopPage = ({ session, onNavigate, addToast }: { session: any
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                          {products.map(product => (
                              <div key={product.id} className="bg-[#1e232e] rounded-[2rem] border border-gray-800 hover:border-purple-500/50 transition-all duration-300 shadow-2xl overflow-hidden group flex flex-col h-full">
-                                 <div className="relative h-48 overflow-hidden">
-                                     <img src={product.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 brightness-75 group-hover:brightness-100" alt={product.name} />
+                                 <div className="relative h-48 overflow-hidden bg-gray-900">
+                                     <img 
+                                        src={product.image_url} 
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                                        alt={product.name} 
+                                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?auto=format&fit=crop&w=800&q=80'; }}
+                                     />
                                      <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-purple-500/30">
                                          <p className="text-purple-400 font-black italic text-lg tracking-tighter">{product.cost} PTS</p>
                                      </div>

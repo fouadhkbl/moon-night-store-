@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { Profile, Order, OrderItem, OrderMessage, PointTransaction } from '../types';
+import { Profile, Order, OrderItem, OrderMessage, PointTransaction, PointRedemption } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, Box, MessageSquare, Send, X, Clock, Check, Eye, Trash2, AlertCircle, CheckCircle, Coins, Repeat, ExternalLink } from 'lucide-react';
+import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, Box, MessageSquare, Send, X, Clock, Check, Eye, Trash2, AlertCircle, CheckCircle, Coins, Repeat, ExternalLink, Gift } from 'lucide-react';
 
 // --- ORDER DETAILS & CHAT MODAL ---
 const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
@@ -202,18 +202,20 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
     );
 };
 
-export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession, initialOrderId }: { 
+export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession, initialOrderId, initialTab }: { 
     session: any, 
     addToast: any, 
     onSignOut: () => void, 
     onNavigate: (p: string) => void, 
     setSession: (s: any) => void,
-    initialOrderId?: string | null
+    initialOrderId?: string | null,
+    initialTab?: 'overview' | 'orders' | 'wallet' | 'points'
 }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [pointTransactions, setPointTransactions] = useState<PointTransaction[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wallet' | 'points'>('overview');
+  const [pointRedemptions, setPointRedemptions] = useState<PointRedemption[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wallet' | 'points'>(initialTab || 'overview');
   const [authMode, setAuthMode] = useState<'none' | 'login' | 'signup'>('none');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
@@ -223,6 +225,11 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
   const [conversionSuccess, setConversionSuccess] = useState(false);
 
   const isGuest = session?.user?.id === 'guest-user-123';
+
+  // React to prop changes for tab switching from other pages
+  useEffect(() => {
+      if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
 
   const fetchData = useCallback(async () => {
     if (session?.user) {
@@ -244,16 +251,23 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                     const target = oData.find(o => o.id === initialOrderId);
                     if (target) {
                         setSelectedOrder(target);
-                        setActiveTab('orders'); 
+                        if (!initialTab) setActiveTab('orders'); 
                     }
                 }
             }
 
             const { data: ptData } = await supabase.from('point_transactions').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
             if (ptData) setPointTransactions(ptData);
+
+            // Fetch Redemptions
+            const { data: prData } = await supabase.from('point_redemptions')
+                .select('*, point_product:point_products(*)')
+                .eq('user_id', session.user.id)
+                .order('created_at', { ascending: false });
+            if (prData) setPointRedemptions(prData);
         }
     }
-  }, [session, isGuest, initialOrderId]);
+  }, [session, isGuest, initialOrderId, initialTab]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -379,11 +393,11 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
        </div>
 
        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="bg-[#1e232e] rounded-[2rem] overflow-hidden border border-gray-800 shadow-2xl h-fit">
+          <div className="bg-[#1e232e] rounded-[2rem] overflow-hidden border border-gray-800 shadow-2xl h-fit sticky top-24">
              <button onClick={() => setActiveTab('overview')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'overview' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Dashboard</button>
              <button onClick={() => setActiveTab('orders')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'orders' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Orders</button>
              <button onClick={() => setActiveTab('wallet')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'wallet' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Wallet</button>
-             <button onClick={() => setActiveTab('points')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'points' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Discord Points</button>
+             <button onClick={() => setActiveTab('points')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'points' ? 'bg-purple-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Discord Points</button>
           </div>
           <div className="lg:col-span-3">
              {activeTab === 'overview' && (
@@ -574,6 +588,42 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                         </div>
                     </div>
 
+                    {/* REDEEMED ITEMS SECTION */}
+                    <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl">
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className="p-2 bg-[#0b0e14] rounded-xl text-purple-400 border border-purple-500/20"><Gift className="w-5 h-5" /></div>
+                            <h3 className="font-black text-white text-2xl italic uppercase tracking-tighter">My Redeemed Rewards</h3>
+                        </div>
+                        {pointRedemptions.length === 0 ? (
+                            <div className="text-center py-10 border-2 border-dashed border-gray-800 rounded-3xl">
+                                <p className="text-gray-600 font-black uppercase tracking-widest text-[10px]">No rewards redeemed yet.</p>
+                                <button onClick={() => onNavigate('pointsShop')} className="mt-4 text-purple-500 text-xs font-bold uppercase tracking-widest hover:text-white transition">Visit Points Shop</button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {pointRedemptions.map(redemption => (
+                                    <div key={redemption.id} className="bg-[#0b0e14] p-4 rounded-2xl border border-gray-800 flex gap-4 items-center relative overflow-hidden group">
+                                        <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-gray-700">
+                                            {redemption.point_product?.image_url ? (
+                                                <img src={redemption.point_product.image_url} className="w-full h-full object-cover" alt="" />
+                                            ) : (
+                                                <div className="w-full h-full bg-gray-800 flex items-center justify-center"><Gift className="w-6 h-6 text-gray-600" /></div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-white font-black italic uppercase tracking-tighter truncate">{redemption.point_product?.name || 'Unknown Reward'}</h4>
+                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{new Date(redemption.created_at).toLocaleDateString()}</p>
+                                            <div className="mt-1 flex items-center gap-2">
+                                                <span className="text-purple-400 font-black italic text-xs tracking-tighter">{redemption.cost_at_redemption} PTS</span>
+                                                <span className="px-2 py-0.5 bg-green-500/10 text-green-500 text-[8px] font-black uppercase tracking-widest rounded border border-green-500/20">{redemption.status}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Conversion Action */}
                     <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl">
                         <h3 className="text-white font-black italic uppercase tracking-tighter text-2xl mb-8">Convert to Wallet</h3>
@@ -584,7 +634,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                                     <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Amount to Convert (Points)</label>
                                     <input 
                                         type="number" 
-                                        min="1000"
+                                        min="1000" 
                                         step="1000"
                                         value={pointsToConvert}
                                         onChange={e => setPointsToConvert(parseInt(e.target.value))}

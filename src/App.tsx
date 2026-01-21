@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [toasts, setToasts] = useState<any[]>([]);
   const [targetOrderId, setTargetOrderId] = useState<string | null>(null);
+  const [dashboardTab, setDashboardTab] = useState<'overview' | 'orders' | 'wallet' | 'points'>('overview');
 
   const t = {
     en: {
@@ -172,7 +173,19 @@ const App: React.FC = () => {
 
   const handleNavigate = (page: string) => { 
     window.scrollTo(0,0); 
-    setCurrentPage(page);
+    
+    // Handle special dashboard routes
+    if (page === 'dashboard-points') {
+        setDashboardTab('points');
+        setCurrentPage('dashboard');
+    } else if (page === 'dashboard') {
+        // Only reset if we are not coming from a specific dashboard link, but usually standard nav should go to overview
+        if (currentPage !== 'dashboard') setDashboardTab('overview');
+        setCurrentPage('dashboard');
+    } else {
+        setCurrentPage(page);
+    }
+
     if (page !== 'shop') {
         setSelectedCategory(null);
         setSearchQuery('');
@@ -358,6 +371,7 @@ const App: React.FC = () => {
             addToast={addToast} 
             onNavigate={handleNavigate} 
             initialOrderId={targetOrderId}
+            initialTab={dashboardTab}
             onSignOut={() => { 
               supabase.auth.signOut(); 
               setSession({ user: { id: 'guest-user-123', email: 'guest@moonnight.com' } }); 
