@@ -3,14 +3,18 @@ import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone
 import { Profile, Product, GameCategory, Coupon } from '../../types';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number, points: number) => void }) => {
-  const [amount, setAmount] = useState(user.wallet_balance);
-  const [points, setPoints] = useState(user.discord_points || 0);
+  const [amount, setAmount] = useState<string>(user.wallet_balance.toString());
+  const [points, setPoints] = useState<string>((user.discord_points || 0).toString());
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    await onSave(user.id, amount, points);
+    // Parse values, defaulting to 0 if invalid/empty
+    const finalAmount = parseFloat(amount) || 0;
+    const finalPoints = parseInt(points) || 0;
+    
+    await onSave(user.id, finalAmount, finalPoints);
     setIsSaving(false);
   };
 
@@ -32,9 +36,10 @@ export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, o
               required 
               type="number" 
               step="0.01" 
-              className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-2xl font-black text-yellow-400 italic outline-none focus:border-yellow-500 transition-all shadow-inner" 
+              className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-2xl font-black text-yellow-400 italic outline-none focus:border-yellow-500 transition-all shadow-inner placeholder-gray-700" 
               value={amount} 
-              onChange={e => setAmount(parseFloat(e.target.value))} 
+              onChange={e => setAmount(e.target.value)} 
+              placeholder="0.00"
             />
           </div>
           
@@ -44,9 +49,10 @@ export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, o
               required 
               type="number" 
               step="1" 
-              className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-2xl font-black text-purple-400 italic outline-none focus:border-purple-500 transition-all shadow-inner" 
+              className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-2xl font-black text-purple-400 italic outline-none focus:border-purple-500 transition-all shadow-inner placeholder-gray-700" 
               value={points} 
-              onChange={e => setPoints(parseInt(e.target.value))} 
+              onChange={e => setPoints(e.target.value)} 
+              placeholder="0"
             />
           </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile, Coupon, Order, OrderMessage, AccessLog } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe } from 'lucide-react';
+import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem } from '../../types';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal } from './AdminModals';
 
 // --- VISITOR LOG MODAL ---
@@ -62,6 +62,7 @@ const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () =
 // --- ADMIN ORDER & CHAT MODAL ---
 const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
     const [messages, setMessages] = useState<OrderMessage[]>([]);
+    const [items, setItems] = useState<OrderItem[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [status, setStatus] = useState(order.status);
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
@@ -71,12 +72,18 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
     };
 
     useEffect(() => {
-        const fetchMessages = async () => {
-            const { data } = await supabase.from('order_messages').select('*').eq('order_id', order.id).order('created_at', { ascending: true });
-            if (data) setMessages(data);
+        const fetchDetails = async () => {
+            // Fetch Messages
+            const { data: msgData } = await supabase.from('order_messages').select('*').eq('order_id', order.id).order('created_at', { ascending: true });
+            if (msgData) setMessages(msgData);
+            
+            // Fetch Order Items
+            const { data: itemsData } = await supabase.from('order_items').select('*, product:products(*)').eq('order_id', order.id);
+            if (itemsData) setItems(itemsData);
+
             scrollToBottom();
         };
-        fetchMessages();
+        fetchDetails();
 
         const channel = supabase.channel(`admin_chat:${order.id}`)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_messages', filter: `order_id=eq.${order.id}` }, (payload) => {
@@ -138,7 +145,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
             <div className="bg-[#1e232e] w-full max-w-5xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
                 {/* Info Side */}
-                <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto">
+                <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto custom-scrollbar">
                     <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-4">Order #{order.id.slice(0,6)}</h3>
                     
                     <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6">
@@ -158,6 +165,26 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
                              <button onClick={() => handleUpdateStatus('pending')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Pending</button>
                              <button onClick={() => handleUpdateStatus('completed')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'completed' ? 'bg-green-500 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Completed</button>
                              <button onClick={() => handleUpdateStatus('canceled')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'canceled' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Canceled</button>
+                        </div>
+                    </div>
+
+                    {/* ITEMS LIST */}
+                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Archive className="w-3 h-3"/> Purchased Items</p>
+                        <div className="space-y-3">
+                            {items.length === 0 ? <p className="text-xs text-gray-600">Loading items...</p> : items.map(item => (
+                                <div key={item.id} className="flex gap-3 items-center">
+                                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0 border border-gray-700">
+                                        <img src={item.product?.image_url} className="w-full h-full object-cover" alt="" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-white font-bold text-xs truncate leading-tight">{item.product?.name || 'Item Removed'}</p>
+                                        <p className="text-[10px] text-gray-500 font-mono mt-0.5">
+                                            Qty: {item.quantity} <span className="text-gray-600">|</span> <span className="text-yellow-400">{item.price_at_purchase.toFixed(2)} DH</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
