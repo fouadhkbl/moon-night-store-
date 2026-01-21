@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, Loader2, Save, X, Check, Ticket, Globe } from 'lucide-react';
+import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers } from 'lucide-react';
 import { Profile, Product, GameCategory, Coupon } from '../../types';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number) => void }) => {
@@ -72,6 +72,7 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
   };
 
   const regions = ['Global', 'Africa', 'Europe', 'Asia', 'North America', 'South America', 'Morocco'];
+  const platforms = ['PC', 'Mobile', 'Console', 'All Platforms'];
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
@@ -98,6 +99,8 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
               <input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.stock ?? 0} onChange={e => setFormData({...formData, stock: parseInt(e.target.value)})} />
             </div>
           </div>
+
+          {/* CATEGORY & PLATFORM */}
           <div className="grid grid-cols-2 gap-4">
              <div>
               <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Category</label>
@@ -106,6 +109,27 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
               </select>
             </div>
             <div>
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Platform</label>
+              <div className="relative">
+                <select 
+                    className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none appearance-none" 
+                    value={formData.platform} 
+                    onChange={e => setFormData({...formData, platform: e.target.value})}
+                >
+                    {platforms.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <div className="absolute right-3 top-3 pointer-events-none text-gray-500">
+                    {formData.platform === 'PC' && <Monitor className="w-4 h-4" />}
+                    {formData.platform === 'Mobile' && <Smartphone className="w-4 h-4" />}
+                    {formData.platform === 'Console' && <Gamepad2 className="w-4 h-4" />}
+                    {formData.platform === 'All Platforms' && <Layers className="w-4 h-4" />}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* REGION / COUNTRY */}
+          <div>
                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Region / Country</label>
                 {customCountry ? (
                      <div className="flex gap-2">
@@ -135,8 +159,8 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
                         <option value="Other">Specific Country...</option>
                     </select>
                 )}
-            </div>
           </div>
+
           <div>
             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Image URL</label>
             <input required type="url" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />

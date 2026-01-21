@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product } from '../../types';
-import { ShoppingCart, Plus, Globe } from 'lucide-react';
+import { ShoppingCart, Plus, Globe, Smartphone, Monitor, Gamepad2, Layers } from 'lucide-react';
 
 export const ShopGrid = ({ category, searchQuery, onProductClick }: { category: string | null, searchQuery: string, onProductClick: (p: Product) => void }) => {
    const [products, setProducts] = useState<Product[]>([]);
    const [isLoading, setIsLoading] = useState(true);
    const [selectedRegion, setSelectedRegion] = useState<string>('All');
+   const [selectedPlatform, setSelectedPlatform] = useState<string>('All');
 
    useEffect(() => {
      setIsLoading(true);
@@ -20,6 +21,12 @@ export const ShopGrid = ({ category, searchQuery, onProductClick }: { category: 
      if (selectedRegion !== 'All') {
          query = query.eq('country', selectedRegion);
      }
+
+     // Filter by Platform
+     // If user selects specific platform (e.g. PC), show "PC" items AND "All Platforms" items
+     if (selectedPlatform !== 'All') {
+         query = query.in('platform', [selectedPlatform, 'All Platforms']);
+     }
      
      if (searchQuery) {
          // Filter by Name OR Category using ILIKE
@@ -30,14 +37,37 @@ export const ShopGrid = ({ category, searchQuery, onProductClick }: { category: 
        if (data) setProducts(data); 
        setIsLoading(false);
      }); 
-   }, [category, searchQuery, selectedRegion]);
+   }, [category, searchQuery, selectedRegion, selectedPlatform]);
 
    const regions = ['All', 'Global', 'Africa', 'Europe', 'Asia', 'North America', 'South America', 'Morocco'];
+   const platforms = ['All', 'PC', 'Mobile', 'Console'];
+
+   const getPlatformIcon = (plat: string) => {
+       if (plat === 'PC') return <Monitor className="w-3 h-3" />;
+       if (plat === 'Mobile') return <Smartphone className="w-3 h-3" />;
+       if (plat === 'Console') return <Gamepad2 className="w-3 h-3" />;
+       return <Layers className="w-3 h-3" />;
+   };
 
    return (
       <div className="animate-slide-up">
-          {/* Region Filter */}
-          <div className="flex justify-end mb-6">
+          {/* Filters Bar */}
+          <div className="flex flex-wrap justify-end mb-6 gap-4">
+              {/* Platform Filter */}
+              <div className="relative group">
+                 <select 
+                    value={selectedPlatform} 
+                    onChange={(e) => setSelectedPlatform(e.target.value)}
+                    className="bg-[#1e232e] border border-gray-800 text-gray-300 text-[10px] font-black uppercase tracking-widest py-3 pl-4 pr-10 rounded-xl focus:outline-none focus:border-blue-500 appearance-none cursor-pointer hover:text-white transition-colors"
+                 >
+                     {platforms.map(p => <option key={p} value={p}>{p === 'All' ? 'All Platforms' : p}</option>)}
+                 </select>
+                 <div className="absolute right-3 top-3 text-gray-500 pointer-events-none group-hover:text-blue-500 transition-colors">
+                     {getPlatformIcon(selectedPlatform === 'All' ? 'All Platforms' : selectedPlatform)}
+                 </div>
+              </div>
+
+              {/* Region Filter */}
               <div className="relative group">
                  <select 
                     value={selectedRegion} 
@@ -81,9 +111,11 @@ export const ShopGrid = ({ category, searchQuery, onProductClick }: { category: 
                             alt={p.name} 
                            />
                            <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">
-                               <div className="bg-black/70 backdrop-blur-xl px-2.5 py-1 rounded-lg text-[8px] font-black text-white border border-white/10 uppercase tracking-widest shadow-2xl">
-                                  {p.platform}
+                               {/* Platform Badge */}
+                               <div className="bg-black/70 backdrop-blur-xl px-2.5 py-1 rounded-lg text-[8px] font-black text-white border border-white/10 uppercase tracking-widest shadow-2xl flex items-center gap-1">
+                                  {getPlatformIcon(p.platform)} {p.platform === 'All Platforms' ? 'Cross-Play' : p.platform}
                                </div>
+                               {/* Country Badge */}
                                {p.country && p.country !== 'Global' && (
                                    <div className="bg-blue-900/80 backdrop-blur-xl px-2.5 py-1 rounded-lg text-[8px] font-black text-blue-100 border border-blue-500/30 uppercase tracking-widest shadow-2xl flex items-center gap-1">
                                        <Globe className="w-2 h-2" /> {p.country}
