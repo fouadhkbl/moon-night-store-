@@ -1,5 +1,5 @@
 -- ==============================================================================
--- MOON NIGHT COMPLETE DATABASE SETUP (V21 - VISITOR TRACKING ADDED)
+-- MOON NIGHT COMPLETE DATABASE SETUP (V22 - REGION/COUNTRY ADDED)
 -- Run this in the Supabase SQL Editor to fix Foreign Key constraints and Policies.
 -- ==============================================================================
 
@@ -16,10 +16,14 @@ create table if not exists public.products (
   image_url text not null,
   stock int default 999,
   platform text,
+  country text default 'Global', -- New Column for Region/Country
   is_trending boolean default false,
   updated_at timestamp with time zone default timezone('utc'::text, now()),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- MIGRATION: Add country column if it doesn't exist
+alter table public.products add column if not exists country text default 'Global';
 
 -- 3. PROFILES TABLE
 create table if not exists public.profiles (

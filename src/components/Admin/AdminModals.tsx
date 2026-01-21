@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, Loader2, Save, X, Check, Ticket } from 'lucide-react';
+import { DollarSign, Loader2, Save, X, Check, Ticket, Globe } from 'lucide-react';
 import { Profile, Product, GameCategory, Coupon } from '../../types';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number) => void }) => {
@@ -53,14 +53,16 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
   const [formData, setFormData] = useState<Partial<Product>>(product || {
     name: '',
     price: 0,
-    category: GameCategory.COINS,
+    category: GameCategory.ACCOUNTS,
     platform: 'PC',
     image_url: '',
     description: '',
+    country: 'Global',
     is_trending: false,
     stock: 999
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [customCountry, setCustomCountry] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +70,8 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
     await onSave(formData);
     setIsSaving(false);
   };
+
+  const regions = ['Global', 'Africa', 'Europe', 'Asia', 'North America', 'South America', 'Morocco'];
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
@@ -84,7 +88,7 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Product Name</label>
             <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Price (DH)</label>
               <input required type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} />
@@ -93,11 +97,44 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
               <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Stock</label>
               <input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.stock ?? 0} onChange={e => setFormData({...formData, stock: parseInt(e.target.value)})} />
             </div>
-            <div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+             <div>
               <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Category</label>
               <select className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
                 {(Object.values(GameCategory) as string[]).map(c => <option key={c} value={c}>{c}</option>)}
               </select>
+            </div>
+            <div>
+                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Region / Country</label>
+                {customCountry ? (
+                     <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" 
+                            value={formData.country} 
+                            placeholder="Type Country..."
+                            onChange={e => setFormData({...formData, country: e.target.value})} 
+                        />
+                        <button type="button" onClick={() => setCustomCountry(false)} className="px-3 bg-gray-800 rounded-lg hover:text-white text-gray-400"><X className="w-4 h-4"/></button>
+                     </div>
+                ) : (
+                    <select 
+                        className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" 
+                        value={regions.includes(formData.country || 'Global') ? formData.country : 'Other'} 
+                        onChange={e => {
+                            if (e.target.value === 'Other') {
+                                setCustomCountry(true);
+                                setFormData({...formData, country: ''});
+                            } else {
+                                setFormData({...formData, country: e.target.value});
+                            }
+                        }}
+                    >
+                        {regions.map(r => <option key={r} value={r}>{r}</option>)}
+                        <option value="Other">Specific Country...</option>
+                    </select>
+                )}
             </div>
           </div>
           <div>

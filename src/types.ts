@@ -8,6 +8,7 @@ export interface Product {
   image_url: string;
   stock: number;
   platform: string;
+  country?: string; // New field for region/country
   is_trending: boolean;
 }
 
@@ -77,6 +78,7 @@ export interface AccessLog {
 }
 
 export enum GameCategory {
+  ACCOUNTS = 'Accounts',
   COINS = 'Coins',
   TOP_UP = 'Top Up',
   ITEMS = 'Items',

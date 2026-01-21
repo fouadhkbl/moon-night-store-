@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, Star, Coins, Zap, Sword, ArrowUpCircle, Gift } from 'lucide-react';
+import { ChevronRight, Star, Coins, Zap, Sword, ArrowUpCircle, Gift, Users } from 'lucide-react';
 import { GameCategory } from '../types';
 
 export const HomePage = ({ onNavigate, onSelectCategory }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void, onSearch: (q: string) => void }) => {
@@ -47,8 +47,9 @@ export const HomePage = ({ onNavigate, onSelectCategory }: { onNavigate: (p: str
             <p className="text-blue-500 font-black uppercase text-[12px] tracking-[0.4em] mb-4">Elite Departments</p>
             <h2 className="text-6xl md:text-8xl font-black text-white italic uppercase tracking-tighter leading-none">Global Products</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {[
+              { id: GameCategory.ACCOUNTS, icon: Users, label: 'Accounts', color: 'from-pink-400/20' },
               { id: GameCategory.COINS, icon: Coins, label: 'Coins', color: 'from-yellow-400/20' },
               { id: GameCategory.TOP_UP, icon: Zap, label: 'Top-Ups', color: 'from-blue-400/20' },
               { id: GameCategory.ITEMS, icon: Sword, label: 'Items', color: 'from-red-400/20' },
@@ -58,13 +59,13 @@ export const HomePage = ({ onNavigate, onSelectCategory }: { onNavigate: (p: str
               <button 
                 key={cat.id}
                 onClick={() => { onSelectCategory(cat.id); onNavigate('shop'); }}
-                className="group relative bg-[#1e232e] border border-gray-800 p-12 rounded-[3rem] flex flex-col items-center gap-8 hover:border-blue-500 transition-all duration-500 overflow-hidden shadow-2xl hover:-translate-y-4"
+                className="group relative bg-[#1e232e] border border-gray-800 p-10 rounded-[2.5rem] flex flex-col items-center gap-6 hover:border-blue-500 transition-all duration-500 overflow-hidden shadow-2xl hover:-translate-y-4"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                 <div className="relative z-10 text-gray-500 group-hover:text-blue-400 transition-all duration-500 group-hover:scale-125">
-                  <cat.icon size={64} strokeWidth={1.5} />
+                  <cat.icon size={48} strokeWidth={1.5} />
                 </div>
-                <span className="relative z-10 font-black text-gray-400 group-hover:text-white uppercase tracking-[0.3em] text-[11px]">{cat.label}</span>
+                <span className="relative z-10 font-black text-gray-400 group-hover:text-white uppercase tracking-[0.3em] text-[10px]">{cat.label}</span>
               </button>
             ))}
           </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Zap, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { X, Zap, Minus, Plus, ShoppingCart, Globe } from 'lucide-react';
 import { Product } from '../../types';
 
 export const ProductDetailsModal = ({ product, onClose, onAddToCart }: { product: Product, onClose: () => void, onAddToCart: (p: Product, qty: number) => void }) => {
@@ -18,13 +18,18 @@ export const ProductDetailsModal = ({ product, onClose, onAddToCart }: { product
 
         <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-6 flex-wrap">
               <span className="px-3 py-1 rounded-lg bg-blue-600/20 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-600/30">
                 {product.category}
               </span>
               <span className="px-3 py-1 rounded-lg bg-gray-800 text-gray-400 text-[10px] font-black uppercase tracking-widest">
                 {product.platform}
               </span>
+              {product.country && (
+                  <span className="px-3 py-1 rounded-lg bg-green-900/20 text-green-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 border border-green-500/20">
+                    <Globe className="w-3 h-3" /> {product.country}
+                  </span>
+              )}
             </div>
             <h2 className="text-4xl font-black text-white italic mb-6 leading-tight uppercase tracking-tighter">{product.name}</h2>
             <p className="text-gray-400 mb-10 leading-relaxed text-sm font-medium">
