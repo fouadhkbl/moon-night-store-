@@ -240,8 +240,8 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
     );
 };
 
-export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points'>('stats');
+export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' | 'shop' }) => {
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points'>(role === 'shop' ? 'products' : 'stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -266,7 +266,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     
-    // Fetch Products
+    // Fetch Products (Always visible)
     const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (pData) setProducts(pData);
 
@@ -291,28 +291,33 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         if (ptData) setPointTransactions(ptData);
     }
 
-    // Fetch Orders with Profiles
-    const { data: oData } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
-    if (oData) setOrders(oData);
+    // Fetch Orders - For Full and Limited (Not Shop Only)
+    if (role !== 'shop') {
+        const { data: oData } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
+        if (oData) setOrders(oData);
+        
+        // Calculate Revenue manually from orders fetched
+        const totalRevenue = oData?.reduce((acc, curr) => curr.status !== 'canceled' ? acc + Number(curr.total_amount) : acc, 0) || 0;
+        
+        // Fetch Real Stats
+        const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+        const { count: orderCount } = await supabase.from('orders').select('*', { count: 'exact', head: true });
+        
+        setStats({ users: userCount || 0, orders: orderCount || 0, revenue: totalRevenue });
+    }
     
-    // Fetch Daily Logs (Filter for today)
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const { data: lData } = await supabase
-        .from('access_logs')
-        .select('*')
-        .gte('created_at', today.toISOString())
-        .order('created_at', { ascending: false });
-    if (lData) setLogs(lData);
+    // Fetch Daily Logs - For Full and Limited (Not Shop Only)
+    if (role !== 'shop') {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const { data: lData } = await supabase
+            .from('access_logs')
+            .select('*')
+            .gte('created_at', today.toISOString())
+            .order('created_at', { ascending: false });
+        if (lData) setLogs(lData);
+    }
 
-    // Fetch Real Stats
-    const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-    const { count: orderCount } = await supabase.from('orders').select('*', { count: 'exact', head: true });
-    
-    // Calculate Revenue manually from orders fetched
-    const totalRevenue = oData?.reduce((acc, curr) => curr.status !== 'canceled' ? acc + Number(curr.total_amount) : acc, 0) || 0;
-
-    setStats({ users: userCount || 0, orders: orderCount || 0, revenue: totalRevenue });
     setIsLoading(false);
   }, [role]);
 
@@ -453,12 +458,18 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   // --- POINT TRANSACTION HANDLERS ---
   const handleDeletePointTransaction = async (id: string) => {
       if (!window.confirm('Are you sure you want to delete this conversion history log? This does not revert the balance.')) return;
+      
+      // Optimistic update: Remove from UI immediately
+      setPointTransactions(prev => prev.filter(pt => pt.id !== id));
+
       const { error } = await supabase.from('point_transactions').delete().eq('id', id);
+      
       if (!error) {
           addToast('Deleted', 'Transaction log removed.', 'success');
-          fetchData();
+          fetchData(); 
       } else {
           addToast('Error', error.message, 'error');
+          fetchData(); 
       }
   };
 
@@ -505,17 +516,21 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         <div>
           <h1 className="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter">ADMIN <span className="text-blue-500">CONTROL</span></h1>
           <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">
-             {role === 'full' ? 'Master Admin • Full Access' : 'Moderator Access • Restricted'}
+             {role === 'full' ? 'Master Admin • Full Access' : role === 'shop' ? 'Shop Admin • Inventory Access' : 'Moderator Access • Restricted'}
           </p>
         </div>
         
         <div className="flex w-full md:w-auto bg-[#1e232e] p-1.5 rounded-2xl border border-gray-800 shadow-xl overflow-x-auto scrollbar-hide">
-          <button onClick={() => setActiveSection('stats')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'stats' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-            <BarChart3 className="w-4 h-4" /> Stats
-          </button>
-          <button onClick={() => setActiveSection('orders')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'orders' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-            <ClipboardList className="w-4 h-4" /> Orders
-          </button>
+          {role !== 'shop' && (
+            <button onClick={() => setActiveSection('stats')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'stats' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+                <BarChart3 className="w-4 h-4" /> Stats
+            </button>
+          )}
+          {role !== 'shop' && (
+            <button onClick={() => setActiveSection('orders')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'orders' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+                <ClipboardList className="w-4 h-4" /> Orders
+            </button>
+          )}
           <button onClick={() => setActiveSection('products')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'products' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
             <Package className="w-4 h-4" /> Shop
           </button>
@@ -535,7 +550,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         </div>
       </div>
 
-      {activeSection === 'stats' && (
+      {activeSection === 'stats' && role !== 'shop' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-slide-up">
            <div 
              className="bg-[#1e232e] p-6 rounded-3xl border border-gray-800 shadow-2xl hover:border-cyan-500/30 transition-all cursor-pointer active:scale-95"
@@ -564,7 +579,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         </div>
       )}
 
-      {activeSection === 'orders' && (
+      {activeSection === 'orders' && role !== 'shop' && (
           <div className="space-y-6 animate-slide-up">
               <div className="relative">
                 <input 

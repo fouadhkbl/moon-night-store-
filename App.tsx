@@ -17,7 +17,7 @@ const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('home'); // Sets Home page as default
-  const [adminRole, setAdminRole] = useState<'none' | 'full' | 'limited'>('none');
+  const [adminRole, setAdminRole] = useState<'none' | 'full' | 'limited' | 'shop'>('none');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);

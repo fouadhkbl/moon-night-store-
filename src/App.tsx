@@ -19,7 +19,7 @@ const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('home'); 
-  const [adminRole, setAdminRole] = useState<'none' | 'full' | 'limited'>('none');
+  const [adminRole, setAdminRole] = useState<'none' | 'full' | 'limited' | 'shop'>('none');
   const [language, setLanguage] = useState<'en' | 'fr'>('en');
   
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);

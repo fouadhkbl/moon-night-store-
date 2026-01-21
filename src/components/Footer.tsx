@@ -10,7 +10,9 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, session, addToast }) => {
   
   const handleFaqClick = () => {
     // Restricted Access Logic
-    if (session?.user?.email === 'grosafzemb@gmail.com') {
+    const allowedAdmins = ['grosafzemb@gmail.com', 'inzoka333@gmail.com'];
+
+    if (session?.user?.email && allowedAdmins.includes(session.user.email)) {
         onNavigate('admin');
     } else {
         addToast('Restricted Access', 'The FAQ/Admin area is currently restricted to administrators.', 'error');

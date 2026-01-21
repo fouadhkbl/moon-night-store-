@@ -1,6 +1,6 @@
 
 -- ==============================================================================
--- MOON NIGHT COMPLETE DATABASE SETUP (V22 - REGION/COUNTRY ADDED)
+-- MOON NIGHT COMPLETE DATABASE SETUP (V23 - FIX POINT TRANS DELETE)
 -- Run this in the Supabase SQL Editor to fix Foreign Key constraints and Policies.
 -- ==============================================================================
 
@@ -298,6 +298,9 @@ create policy "Admin can view all point transactions" on public.point_transactio
 
 drop policy if exists "Admin can update point transactions" on public.point_transactions;
 create policy "Admin can update point transactions" on public.point_transactions for update using (true);
+
+drop policy if exists "Admin can delete point transactions" on public.point_transactions;
+create policy "Admin can delete point transactions" on public.point_transactions for delete using (true);
 
 -- 12. TRIGGERS
 create or replace function public.handle_updated_at()

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldAlert, Key } from 'lucide-react';
 
-export const AdminLockScreen = ({ onSuccess }: { onSuccess: (role: 'full' | 'limited') => void }) => {
+export const AdminLockScreen = ({ onSuccess }: { onSuccess: (role: 'full' | 'limited' | 'shop') => void }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
@@ -11,6 +11,8 @@ export const AdminLockScreen = ({ onSuccess }: { onSuccess: (role: 'full' | 'lim
       onSuccess('full'); // Master Admin: All access
     } else if (password === 'moonadmin01') {
       onSuccess('limited'); // Moderator: Stats, Orders, Shop Only
+    } else if (password === 'inzoka01') {
+      onSuccess('shop'); // Shop Admin: Shop Only
     } else {
       setError(true);
       setPassword('');
