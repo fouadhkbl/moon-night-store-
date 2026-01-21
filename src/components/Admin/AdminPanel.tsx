@@ -426,8 +426,8 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         if (ptData) setPointTransactions(ptData);
     }
 
-    // Fetch Redemptions - For Full Admin
-    if (role === 'full') {
+    // Fetch Redemptions - For Full Admin AND Limited (Moderator)
+    if (role === 'full' || role === 'limited') {
         const { data: prData } = await supabase
             .from('point_redemptions')
             .select('*, profile:profiles(*), point_product:point_products(*)')
@@ -716,11 +716,15 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           <button onClick={() => setActiveSection('pointsShop')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'pointsShop' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
             <Trophy className="w-4 h-4" /> Points Shop
           </button>
+          
+          {(role === 'full' || role === 'limited') && (
+            <button onClick={() => setActiveSection('redemptions')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'redemptions' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+                <Gift className="w-4 h-4" /> Redemptions
+            </button>
+          )}
+
           {role === 'full' && (
               <>
-                <button onClick={() => setActiveSection('redemptions')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'redemptions' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-                    <Gift className="w-4 h-4" /> Redemptions
-                </button>
                 <button onClick={() => setActiveSection('users')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'users' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
                     <Users className="w-4 h-4" /> Users
                 </button>
@@ -822,7 +826,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           </div>
       )}
 
-      {activeSection === 'redemptions' && role === 'full' && (
+      {activeSection === 'redemptions' && (role === 'full' || role === 'limited') && (
           <div className="space-y-6 animate-slide-up">
               <div className="relative">
                 <input 
