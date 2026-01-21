@@ -10,7 +10,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, session, addToast }) => {
   
   const handleFaqClick = () => {
     // Restricted Access Logic
-    const allowedAdmins = ['grosafzemb@gmail.com', 'inzoka333@gmail.com'];
+    const allowedAdmins = ['grosafzemb@gmail.com', 'inzoka333@gmail.com', 'adamelalam82@gmail.com'];
 
     if (session?.user?.email && allowedAdmins.includes(session.user.email)) {
         onNavigate('admin');
