@@ -2,9 +2,20 @@ import React from 'react';
 
 interface FooterProps {
   onNavigate: (page: string) => void;
+  session: any;
+  addToast: (title: string, message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+const Footer: React.FC<FooterProps> = ({ onNavigate, session, addToast }) => {
+  
+  const handleFaqClick = () => {
+    if (session?.user?.email === 'grosafzemb@gmail.com') {
+        onNavigate('admin');
+    } else {
+        addToast('Restricted', 'This area is restricted to specific administrators.', 'error');
+    }
+  };
+
   return (
     <footer className="bg-[#151a23] py-12 border-t border-gray-800 mt-auto">
       <div className="container mx-auto px-4">
@@ -27,7 +38,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div>
             <h4 className="text-white font-bold mb-4">Support</h4>
             <ul className="space-y-2 text-gray-400 text-sm">
-              <li><button onClick={() => onNavigate('admin')} className="hover:text-blue-400 text-left">FAQ</button></li>
+              <li><button onClick={handleFaqClick} className="hover:text-blue-400 text-left">FAQ</button></li>
               <li><a href="#" className="hover:text-blue-400">Privacy Policy</a></li>
               <li><a href="#" className="hover:text-blue-400">Terms of Service</a></li>
               <li><a href="#" className="hover:text-blue-400">Refund Policy</a></li>

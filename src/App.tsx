@@ -295,7 +295,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <Footer onNavigate={handleNavigate} />
+      <Footer onNavigate={handleNavigate} session={session} addToast={addToast} />
       
       {selectedProduct && (
         <ProductDetailsModal 
