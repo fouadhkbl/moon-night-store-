@@ -699,7 +699,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           </p>
         </div>
         
-        <div className="flex w-full md:w-auto bg-[#1e232e] p-1.5 rounded-2xl border border-gray-800 shadow-xl overflow-x-auto scrollbar-hide">
+        <div className="flex w-full md:w-auto bg-[#1e232e] p-1.5 rounded-2xl border border-gray-800 shadow-xl overflow-x-auto custom-scrollbar">
           {role !== 'shop' && (
             <button onClick={() => setActiveSection('stats')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'stats' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
                 <BarChart3 className="w-4 h-4" /> Stats
@@ -776,7 +776,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
 
              <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
                  {filteredOrders.length === 0 ? <p className="text-center py-12 text-gray-500 font-black uppercase tracking-widest">No orders found</p> : (
-                     <div className="overflow-x-auto">
+                     <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left">
                             <thead className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
                                 <tr>
@@ -837,7 +837,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
 
              <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
                  {filteredRedemptions.length === 0 ? <p className="text-center py-12 text-gray-500 font-black uppercase tracking-widest">No redemptions found</p> : (
-                     <div className="overflow-x-auto">
+                     <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left">
                             <thead className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
                                 <tr>
@@ -1012,7 +1012,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                 <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
              </div>
              
-             <div className="flex gap-2 bg-[#1e232e] p-1.5 rounded-2xl border border-gray-800 shadow-xl overflow-x-auto scrollbar-hide flex-shrink-0">
+             <div className="flex gap-2 bg-[#1e232e] p-1.5 rounded-2xl border border-gray-800 shadow-xl overflow-x-auto custom-scrollbar flex-shrink-0">
                 <button onClick={() => setProviderFilter('all')} className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${providerFilter === 'all' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-white'}`}>All</button>
                 <button onClick={() => setProviderFilter('email')} className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${providerFilter === 'email' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-gray-500 hover:text-white'}`}><Mail className="w-3 h-3" /> Email</button>
                 <button onClick={() => setProviderFilter('google')} className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${providerFilter === 'google' ? 'bg-white/10 text-white border border-white/20' : 'text-gray-500 hover:text-white'}`}><ProviderIcon provider="google" /> Google</button>
