@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy } from 'lucide-react';
+import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage } from '../../types';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal } from './AdminModals';
 
 // --- VISITOR LOG MODAL ---
@@ -53,6 +53,132 @@ const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () =
                 </div>
                 <div className="p-4 border-t border-gray-800 bg-[#151a23] rounded-b-3xl">
                     <button onClick={onClose} className="w-full bg-[#0b0e14] hover:bg-gray-900 border border-gray-800 text-white font-black py-3 rounded-xl transition-all uppercase tracking-widest text-xs">Close Log</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- ADMIN REDEMPTION & CHAT MODAL ---
+const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption: PointRedemption, currentUser: Profile, onClose: () => void }) => {
+    const [messages, setMessages] = useState<RedemptionMessage[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [status, setStatus] = useState(redemption.status);
+    const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+    const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
+
+    useEffect(() => {
+        const fetchDetails = async () => {
+            const { data: msgData } = await supabase.from('redemption_messages').select('*').eq('redemption_id', redemption.id).order('created_at', { ascending: true });
+            if (msgData) setMessages(msgData);
+            scrollToBottom();
+        };
+        fetchDetails();
+
+        const channel = supabase.channel(`admin_redemption_chat:${redemption.id}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'redemption_messages', filter: `redemption_id=eq.${redemption.id}` }, (payload) => {
+                const newMsg = payload.new as RedemptionMessage;
+                setMessages(prev => {
+                    if (prev.some(m => m.id === newMsg.id)) return prev;
+                    return [...prev, newMsg];
+                });
+                scrollToBottom();
+            })
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [redemption.id]);
+
+    useEffect(() => { scrollToBottom(); }, [messages]);
+
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newMessage.trim()) return;
+        const msgText = newMessage.trim();
+        setNewMessage('');
+
+        const tempId = `temp-admin-r-${Date.now()}`;
+        const optimisicMsg: RedemptionMessage = {
+            id: tempId,
+            redemption_id: redemption.id,
+            sender_id: currentUser.id,
+            message: msgText,
+            created_at: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, optimisicMsg]);
+        scrollToBottom();
+
+        const { data, error } = await supabase.from('redemption_messages').insert({
+            redemption_id: redemption.id,
+            sender_id: currentUser.id,
+            message: msgText
+        }).select().single();
+
+        if (error) setMessages(prev => prev.filter(m => m.id !== tempId));
+        else if (data) setMessages(prev => prev.map(m => m.id === tempId ? data : m));
+    };
+
+    const handleUpdateStatus = async (newStatus: string) => {
+        await supabase.from('point_redemptions').update({ status: newStatus }).eq('id', redemption.id);
+        setStatus(newStatus);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-5xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
+                <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto">
+                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-4">Redemption Details</h3>
+                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">User</p>
+                        <p className="text-white font-bold">{redemption.profile?.username} <span className="text-gray-500 text-xs">({redemption.profile?.email})</span></p>
+                    </div>
+                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6 flex gap-4">
+                        <img src={redemption.point_product?.image_url} className="w-16 h-16 rounded-lg object-cover" alt=""/>
+                        <div>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Reward</p>
+                            <p className="text-white font-bold">{redemption.point_product?.name}</p>
+                            <p className="text-purple-400 text-xs font-black italic">{redemption.cost_at_redemption} Points</p>
+                        </div>
+                    </div>
+                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Status</p>
+                        <div className="flex gap-2">
+                             <button onClick={() => handleUpdateStatus('pending')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Pending</button>
+                             <button onClick={() => handleUpdateStatus('delivered')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'delivered' ? 'bg-green-500 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Delivered</button>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="mt-8 w-full py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:bg-gray-800 transition uppercase text-xs font-black tracking-widest">Close</button>
+                </div>
+                <div className="w-full md:w-7/12 flex flex-col h-full bg-[#1e232e]">
+                    <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-[#1e232e]">
+                        <span className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2"><MessageSquare className="w-4 h-4 text-purple-500"/> Chat with User</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0b0e14]/30 custom-scrollbar">
+                         {messages.length === 0 && <p className="text-center text-gray-600 text-xs py-10 uppercase font-bold tracking-widest">No messages yet.</p>}
+                         {messages.map(msg => {
+                             const isMe = msg.sender_id === currentUser.id;
+                             return (
+                                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                     <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${isMe ? 'bg-purple-600 text-white rounded-tr-none' : 'bg-[#2a303c] text-white border border-gray-700 rounded-tl-none'}`}>
+                                         {msg.message}
+                                     </div>
+                                 </div>
+                             );
+                         })}
+                         <div ref={messagesEndRef} />
+                    </div>
+                    <form onSubmit={handleSendMessage} className="p-4 bg-[#1e232e] border-t border-gray-800 flex gap-2">
+                        <input 
+                            type="text" 
+                            className="flex-1 bg-[#0b0e14] border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-purple-500 outline-none"
+                            placeholder="Send credentials/code..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                        />
+                        <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-xl transition-all" disabled={!newMessage.trim()}>
+                            <Send className="w-5 h-5" />
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -241,13 +367,14 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 };
 
 export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' | 'shop' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop'>(role === 'shop' ? 'products' : 'stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions'>(role === 'shop' ? 'products' : 'stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [pointProducts, setPointProducts] = useState<PointProduct[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [pointTransactions, setPointTransactions] = useState<PointTransaction[]>([]);
+  const [pointRedemptions, setPointRedemptions] = useState<PointRedemption[]>([]);
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
   const [isLoading, setIsLoading] = useState(true);
@@ -263,6 +390,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedRedemption, setSelectedRedemption] = useState<PointRedemption | null>(null);
   
   const [providerFilter, setProviderFilter] = useState<'all' | 'email' | 'google' | 'discord'>('all');
 
@@ -296,6 +424,15 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           .select('*, profile:profiles(email, username)')
           .order('created_at', { ascending: false });
         if (ptData) setPointTransactions(ptData);
+    }
+
+    // Fetch Redemptions - For Full Admin
+    if (role === 'full') {
+        const { data: prData } = await supabase
+            .from('point_redemptions')
+            .select('*, profile:profiles(*), point_product:point_products(*)')
+            .order('created_at', { ascending: false });
+        if (prData) setPointRedemptions(prData);
     }
 
     // Fetch Orders - For Full and Limited (Not Shop Only)
@@ -536,9 +673,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       o.profile?.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredPoints = pointTransactions.filter(pt => 
-      pt.profile?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      pt.profile?.username.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRedemptions = pointRedemptions.filter(pr => 
+      pr.profile?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pr.point_product?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const ProviderIcon = ({ provider }: { provider?: string }) => {
@@ -581,14 +718,14 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           </button>
           {role === 'full' && (
               <>
+                <button onClick={() => setActiveSection('redemptions')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'redemptions' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+                    <Gift className="w-4 h-4" /> Redemptions
+                </button>
                 <button onClick={() => setActiveSection('users')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'users' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
                     <Users className="w-4 h-4" /> Users
                 </button>
                 <button onClick={() => setActiveSection('coupons')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'coupons' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
                     <Ticket className="w-4 h-4" /> Coupons
-                </button>
-                <button onClick={() => setActiveSection('points')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'points' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-                    <ArrowRightLeft className="w-4 h-4" /> Conversions
                 </button>
               </>
           )}
@@ -673,6 +810,69 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                               className="bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-purple-500/30"
                                             >
                                                 Manage / Chat
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                     </div>
+                 )}
+             </div>
+          </div>
+      )}
+
+      {activeSection === 'redemptions' && role === 'full' && (
+          <div className="space-y-6 animate-slide-up">
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Search redemptions by user or item..." 
+                  className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none transition-all shadow-xl"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+                <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
+             </div>
+
+             <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
+                 {filteredRedemptions.length === 0 ? <p className="text-center py-12 text-gray-500 font-black uppercase tracking-widest">No redemptions found</p> : (
+                     <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
+                                <tr>
+                                    <th className="p-6">Date</th>
+                                    <th className="p-6">User</th>
+                                    <th className="p-6">Reward</th>
+                                    <th className="p-6">Cost</th>
+                                    <th className="p-6">Status</th>
+                                    <th className="p-6">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-800">
+                                {filteredRedemptions.map(r => (
+                                    <tr key={r.id} className="hover:bg-[#151a23] transition-colors">
+                                        <td className="p-6 text-gray-500 text-xs font-mono">{new Date(r.created_at).toLocaleDateString()}</td>
+                                        <td className="p-6 text-white font-bold text-xs">{r.profile?.username}</td>
+                                        <td className="p-6 text-white font-bold text-xs flex items-center gap-2">
+                                            <img src={r.point_product?.image_url} className="w-6 h-6 rounded object-cover" alt=""/>
+                                            {r.point_product?.name}
+                                        </td>
+                                        <td className="p-6 font-black text-purple-400 italic text-sm">{r.cost_at_redemption} PTS</td>
+                                        <td className="p-6">
+                                            <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${
+                                                r.status === 'delivered' ? 'bg-green-500/10 text-green-500' : 
+                                                'bg-yellow-500/10 text-yellow-500'
+                                            }`}>
+                                                {r.status}
+                                            </span>
+                                        </td>
+                                        <td className="p-6">
+                                            <button 
+                                              onClick={() => setSelectedRedemption(r)}
+                                              className="bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-purple-500/30"
+                                            >
+                                                Chat / Deliver
                                             </button>
                                         </td>
                                     </tr>
@@ -925,69 +1125,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           </div>
       )}
 
-      {activeSection === 'points' && role === 'full' && (
-          <div className="space-y-6 animate-slide-up">
-              <div className="relative">
-                <input 
-                  type="text" 
-                  placeholder="Search by User Email or Username..." 
-                  className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-purple-500 outline-none transition-all shadow-xl"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                />
-                <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
-             </div>
-
-             <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
-                 {filteredPoints.length === 0 ? <p className="text-center py-12 text-gray-500 font-black uppercase tracking-widest">No conversion history found</p> : (
-                     <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
-                                <tr>
-                                    <th className="p-6">Date</th>
-                                    <th className="p-6">User Email</th>
-                                    <th className="p-6">Username</th>
-                                    <th className="p-6">Points Deducted</th>
-                                    <th className="p-6">Amount Added (DH)</th>
-                                    <th className="p-6">Status</th>
-                                    <th className="p-6 text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-800">
-                                {filteredPoints.map(pt => (
-                                    <tr key={pt.id} className="hover:bg-[#151a23] transition-colors">
-                                        <td className="p-6 font-mono text-xs text-gray-500">{new Date(pt.created_at).toLocaleString()}</td>
-                                        <td className="p-6 text-white font-bold text-xs">{pt.profile?.email || 'N/A'}</td>
-                                        <td className="p-6 text-gray-400 text-xs">{pt.profile?.username || 'Unknown'}</td>
-                                        <td className="p-6 font-black text-purple-400 italic text-sm">-{pt.points_amount} Pts</td>
-                                        <td className="p-6 font-black text-green-400 italic text-sm">+{pt.money_equivalent.toFixed(2)} DH</td>
-                                        <td className="p-6">
-                                            <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${
-                                                pt.status === 'completed' ? 'bg-green-500/10 text-green-500 border border-green-500/30' : 
-                                                'bg-yellow-500/10 text-yellow-500 border border-yellow-500/30'
-                                            }`}>
-                                                {pt.status}
-                                            </span>
-                                        </td>
-                                        <td className="p-6 text-center">
-                                            <button 
-                                                onClick={() => handleDeletePointTransaction(pt.id)}
-                                                className="bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white p-2 rounded-lg transition-all shadow-lg border border-red-500/20"
-                                                title="Delete Log"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                     </div>
-                 )}
-             </div>
-          </div>
-      )}
-
       {isProductModalOpen && (activeSection === 'products') && (
         <ProductFormModal 
           product={editingProduct} 
@@ -1029,6 +1166,14 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
             order={selectedOrder}
             currentUser={role === 'full' && profiles.find(p => p.id === session.user.id) ? profiles.find(p => p.id === session.user.id)! : { id: 'admin-mod', username: 'Moderator', email: 'mod@system', wallet_balance: 0, vip_level: 0, vip_points: 0, discord_points: 0, avatar_url: '' }} 
             onClose={() => { setSelectedOrder(null); fetchData(); }}
+          />
+      )}
+
+      {selectedRedemption && (
+          <AdminRedemptionModal
+            redemption={selectedRedemption}
+            currentUser={role === 'full' && profiles.find(p => p.id === session.user.id) ? profiles.find(p => p.id === session.user.id)! : { id: 'admin-mod', username: 'Moderator', email: 'mod@system', wallet_balance: 0, vip_level: 0, vip_points: 0, discord_points: 0, avatar_url: '' }}
+            onClose={() => { setSelectedRedemption(null); fetchData(); }}
           />
       )}
     </div>

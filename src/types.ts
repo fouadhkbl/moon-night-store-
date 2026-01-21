@@ -71,6 +71,14 @@ export interface OrderMessage {
     created_at: string;
 }
 
+export interface RedemptionMessage {
+    id: string;
+    redemption_id: string;
+    sender_id: string;
+    message: string;
+    created_at: string;
+}
+
 export interface AccessLog {
     id: string;
     ip_address: string;
@@ -107,6 +115,7 @@ export interface PointRedemption {
   status: string;
   created_at: string;
   point_product?: PointProduct;
+  profile?: Profile; // For Admin
 }
 
 export enum GameCategory {

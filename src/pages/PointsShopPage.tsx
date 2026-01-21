@@ -49,18 +49,18 @@ export const PointsShopPage = ({ session, onNavigate, addToast }: { session: any
             const { error: updateError } = await supabase.from('profiles').update({ discord_points: newBalance }).eq('id', profile.id);
             if (updateError) throw updateError;
 
-            // 2. Record Redemption
+            // 2. Record Redemption (Status Pending)
             const { error: insertError } = await supabase.from('point_redemptions').insert({
                 user_id: profile.id,
                 product_id: product.id,
                 cost_at_redemption: product.cost,
-                status: 'delivered' 
+                status: 'pending' 
             });
             if (insertError) throw insertError;
 
             // 3. Update Local State
             setProfile({ ...profile, discord_points: newBalance });
-            addToast('Success!', `You have successfully redeemed ${product.name}.`, 'success');
+            addToast('Success!', `You have successfully redeemed ${product.name}. Check your dashboard.`, 'success');
             
             // 4. Redirect to Dashboard Points Tab
             setTimeout(() => {
@@ -124,7 +124,7 @@ export const PointsShopPage = ({ session, onNavigate, addToast }: { session: any
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                          {products.map(product => (
                              <div key={product.id} className="bg-[#1e232e] rounded-[2rem] border border-gray-800 hover:border-purple-500/50 transition-all duration-300 shadow-2xl overflow-hidden group flex flex-col h-full">
-                                 <div className="relative h-48 overflow-hidden bg-gray-900">
+                                 <div className="relative h-80 overflow-hidden bg-gray-900">
                                      <img 
                                         src={product.image_url} 
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 

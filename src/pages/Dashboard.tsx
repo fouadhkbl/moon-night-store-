@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { Profile, Order, OrderItem, OrderMessage, PointTransaction, PointRedemption } from '../types';
+import { Profile, Order, OrderItem, OrderMessage, PointRedemption, RedemptionMessage } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, Box, MessageSquare, Send, X, Clock, Check, Eye, Trash2, AlertCircle, CheckCircle, Coins, Repeat, ExternalLink, Gift } from 'lucide-react';
+import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar } from 'lucide-react';
+
+// --- SHARED CHAT MODAL LOGIC (Order & Redemption) ---
+// Note: Created separate components for simplicity in state management types
 
 // --- ORDER DETAILS & CHAT MODAL ---
 const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
@@ -33,11 +36,10 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
 
         fetchDetails();
 
-        // Subscribe to new messages (filtered to ignore our own optimistic updates if needed, though simple dedupe works via ID usually)
+        // Subscribe to new messages
         const channel = supabase.channel(`order_chat:${order.id}`)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_messages', filter: `order_id=eq.${order.id}` }, (payload) => {
                 const newMsg = payload.new as OrderMessage;
-                // Only add if we don't already have a message with this ID (prevents duplication from optimistic update if IDs match, though temporary IDs differ)
                 setMessages(prev => {
                     if (prev.some(m => m.id === newMsg.id)) return prev;
                     return [...prev, newMsg];
@@ -58,9 +60,9 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
         if (!newMessage.trim()) return;
 
         const msgText = newMessage.trim();
-        setNewMessage(''); // Clear input immediately
+        setNewMessage(''); 
 
-        // Optimistic Update: Add message to UI immediately before DB confirms
+        // Optimistic Update
         const tempId = `temp-${Date.now()}`;
         const optimisicMsg: OrderMessage = {
             id: tempId,
@@ -81,12 +83,9 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
         }).select().single();
 
         if (error) {
-            // Revert on error (remove the temp message)
             console.error("Failed to send", error);
             setMessages(prev => prev.filter(m => m.id !== tempId));
-            // Optional: Show error toast here
         } else if (data) {
-            // Replace temp message with real one (mostly for ID consistency)
             setMessages(prev => prev.map(m => m.id === tempId ? data : m));
         }
     };
@@ -96,13 +95,11 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
     return (
         <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
             <div className="bg-[#1e232e] w-full max-w-4xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
-                
                 {/* Left Side: Order Info */}
                 <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Order #{order.id.slice(0,6)}</h3>
                     </div>
-
                     {/* Status Badge - Prominent */}
                     <div className={`p-4 rounded-xl mb-6 border flex items-center gap-3 ${
                         order.status === 'completed' ? 'bg-green-500/10 border-green-500/30 text-green-500' : 
@@ -117,16 +114,7 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
                             <p className="text-lg font-black uppercase tracking-tighter">{order.status}</p>
                         </div>
                     </div>
-
-                    {/* Active Time Notice */}
-                    <div className="bg-blue-900/10 border border-blue-500/20 p-4 rounded-xl mb-6 flex gap-3">
-                         <Clock className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                         <div>
-                             <p className="text-[10px] font-black uppercase text-blue-200 tracking-widest mb-1">Delivery Hours</p>
-                             <p className="text-xs text-gray-400">Your order will be delivered during active time: <span className="text-yellow-400 font-bold">9AM - 9PM</span>.</p>
-                         </div>
-                    </div>
-
+                    {/* Items List */}
                     <div className="space-y-4">
                         {items.map(item => (
                             <div key={item.id} className="flex gap-3 bg-[#0b0e14] p-3 rounded-xl border border-gray-800">
@@ -138,19 +126,16 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
                             </div>
                         ))}
                     </div>
-
                     <div className="mt-8 pt-6 border-t border-gray-800">
                         <div className="flex justify-between text-gray-400 text-xs uppercase font-bold tracking-widest mb-2">
                             <span>Total Amount</span>
                             <span className="text-white font-mono text-lg">{order.total_amount.toFixed(2)} DH</span>
                         </div>
                     </div>
-                    
                     <button onClick={onClose} className="mt-8 w-full py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:bg-gray-800 transition uppercase text-xs font-black tracking-widest">
                         Close Details
                     </button>
                 </div>
-
                 {/* Right Side: Chat */}
                 <div className="w-full md:w-7/12 flex flex-col h-full relative">
                     <div className="p-4 border-b border-gray-800 bg-[#1e232e] flex items-center justify-between">
@@ -160,7 +145,6 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
                         </div>
                         <button onClick={onClose} className="md:hidden text-gray-500"><X /></button>
                     </div>
-
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0b0e14]/50 custom-scrollbar">
                          {messages.length === 0 && (
                              <div className="text-center py-10 opacity-30">
@@ -174,16 +158,12 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
                                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                                      <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-[#1e232e] text-gray-200 border border-gray-700 rounded-tl-none'}`}>
                                          {msg.message}
-                                         <p className={`text-[8px] mt-1 opacity-50 font-mono text-right`}>
-                                             {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                         </p>
                                      </div>
                                  </div>
                              );
                          })}
                          <div ref={messagesEndRef} />
                     </div>
-
                     <form onSubmit={handleSendMessage} className="p-4 bg-[#1e232e] border-t border-gray-800 flex gap-2">
                         <input 
                             type="text" 
@@ -193,6 +173,154 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
                             onChange={(e) => setNewMessage(e.target.value)}
                         />
                         <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl transition-all disabled:opacity-50" disabled={!newMessage.trim()}>
+                            <Send className="w-5 h-5" />
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- REDEMPTION DETAILS & CHAT MODAL ---
+const RedemptionDetailsModal = ({ redemption, currentUser, onClose }: { redemption: PointRedemption, currentUser: Profile, onClose: () => void }) => {
+    const [messages, setMessages] = useState<RedemptionMessage[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [loading, setLoading] = useState(true);
+    const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+    const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
+
+    useEffect(() => {
+        const fetchDetails = async () => {
+            setLoading(true);
+            const { data: msgData } = await supabase.from('redemption_messages').select('*').eq('redemption_id', redemption.id).order('created_at', { ascending: true });
+            if (msgData) setMessages(msgData);
+            setLoading(false);
+            scrollToBottom();
+        };
+        fetchDetails();
+
+        const channel = supabase.channel(`redemption_chat:${redemption.id}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'redemption_messages', filter: `redemption_id=eq.${redemption.id}` }, (payload) => {
+                const newMsg = payload.new as RedemptionMessage;
+                setMessages(prev => {
+                    if (prev.some(m => m.id === newMsg.id)) return prev;
+                    return [...prev, newMsg];
+                });
+                scrollToBottom();
+            })
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [redemption.id]);
+
+    useEffect(() => { scrollToBottom(); }, [messages]);
+
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newMessage.trim()) return;
+        const msgText = newMessage.trim();
+        setNewMessage(''); 
+
+        const tempId = `temp-${Date.now()}`;
+        const optimisicMsg: RedemptionMessage = {
+            id: tempId,
+            redemption_id: redemption.id,
+            sender_id: currentUser.id,
+            message: msgText,
+            created_at: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, optimisicMsg]);
+        scrollToBottom();
+
+        const { data, error } = await supabase.from('redemption_messages').insert({
+            redemption_id: redemption.id,
+            sender_id: currentUser.id,
+            message: msgText
+        }).select().single();
+
+        if (error) {
+            console.error("Failed to send", error);
+            setMessages(prev => prev.filter(m => m.id !== tempId));
+        } else if (data) {
+            setMessages(prev => prev.map(m => m.id === tempId ? data : m));
+        }
+    };
+
+    if (loading) return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80"><div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div></div>;
+
+    return (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-4xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
+                {/* Left Side Info */}
+                <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-purple-600/20 rounded-xl text-purple-400"><Gift className="w-6 h-6" /></div>
+                        <h3 className="text-lg font-black text-white italic uppercase tracking-tighter">Reward Claim</h3>
+                    </div>
+                    {/* Status */}
+                    <div className={`p-4 rounded-xl mb-6 border flex items-center gap-3 ${
+                        redemption.status === 'delivered' ? 'bg-green-500/10 border-green-500/30 text-green-500' : 
+                        'bg-yellow-500/10 border-yellow-500/30 text-yellow-500'
+                    }`}>
+                        {redemption.status === 'delivered' ? <CheckCircle className="w-6 h-6" /> : <Clock className="w-6 h-6 animate-pulse" />}
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Status</p>
+                            <p className="text-lg font-black uppercase tracking-tighter">{redemption.status}</p>
+                        </div>
+                    </div>
+                    {/* Item */}
+                    <div className="flex gap-4 bg-[#0b0e14] p-4 rounded-2xl border border-gray-800 mb-6">
+                        <img src={redemption.point_product?.image_url} className="w-16 h-16 rounded-xl object-cover" alt="" />
+                        <div>
+                            <p className="text-sm font-bold text-white">{redemption.point_product?.name}</p>
+                            <p className="text-xs text-purple-400 font-black italic">{redemption.cost_at_redemption} Points</p>
+                        </div>
+                    </div>
+                    <p className="text-xs text-gray-500 leading-relaxed">
+                        Use the chat on the right to communicate with the admin regarding the delivery of your reward (e.g. sending account credentials or codes).
+                    </p>
+                    <button onClick={onClose} className="mt-8 w-full py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:bg-gray-800 transition uppercase text-xs font-black tracking-widest">
+                        Close
+                    </button>
+                </div>
+                {/* Chat Side */}
+                <div className="w-full md:w-7/12 flex flex-col h-full relative">
+                    <div className="p-4 border-b border-gray-800 bg-[#1e232e] flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <MessageSquare className="w-4 h-4 text-purple-500" />
+                            <span className="text-sm font-black text-white uppercase tracking-widest">Redemption Support</span>
+                        </div>
+                        <button onClick={onClose} className="md:hidden text-gray-500"><X /></button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0b0e14]/50 custom-scrollbar">
+                         {messages.length === 0 && (
+                             <div className="text-center py-10 opacity-30">
+                                 <MessageSquare className="w-12 h-12 mx-auto mb-2" />
+                                 <p className="text-xs uppercase font-bold">Ask about your reward here</p>
+                             </div>
+                         )}
+                         {messages.map(msg => {
+                             const isMe = msg.sender_id === currentUser.id;
+                             return (
+                                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                     <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${isMe ? 'bg-purple-600 text-white rounded-tr-none' : 'bg-[#1e232e] text-gray-200 border border-gray-700 rounded-tl-none'}`}>
+                                         {msg.message}
+                                     </div>
+                                 </div>
+                             );
+                         })}
+                         <div ref={messagesEndRef} />
+                    </div>
+                    <form onSubmit={handleSendMessage} className="p-4 bg-[#1e232e] border-t border-gray-800 flex gap-2">
+                        <input 
+                            type="text" 
+                            className="flex-1 bg-[#0b0e14] border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-purple-500 outline-none"
+                            placeholder="Message admin..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                        />
+                        <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-xl transition-all disabled:opacity-50" disabled={!newMessage.trim()}>
                             <Send className="w-5 h-5" />
                         </button>
                     </form>
@@ -213,17 +341,12 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
 }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [pointTransactions, setPointTransactions] = useState<PointTransaction[]>([]);
   const [pointRedemptions, setPointRedemptions] = useState<PointRedemption[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wallet' | 'points'>(initialTab || 'overview');
   const [authMode, setAuthMode] = useState<'none' | 'login' | 'signup'>('none');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedRedemption, setSelectedRedemption] = useState<PointRedemption | null>(null);
   
-  // Points Conversion State
-  const [pointsToConvert, setPointsToConvert] = useState<number>(0);
-  const [isConverting, setIsConverting] = useState(false);
-  const [conversionSuccess, setConversionSuccess] = useState(false);
-
   const isGuest = session?.user?.id === 'guest-user-123';
 
   // React to prop changes for tab switching from other pages
@@ -256,9 +379,6 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                 }
             }
 
-            const { data: ptData } = await supabase.from('point_transactions').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
-            if (ptData) setPointTransactions(ptData);
-
             // Fetch Redemptions
             const { data: prData } = await supabase.from('point_redemptions')
                 .select('*, point_product:point_products(*)')
@@ -282,54 +402,6 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
         addToast("Deleted", "Order removed from history.", "success");
         setOrders(prev => prev.filter(o => o.id !== orderId));
     }
-  };
-
-  const handleConvertPoints = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!profile) return;
-      if (pointsToConvert < 1000) {
-          addToast("Minimum", "Minimum conversion is 1000 Points.", "error");
-          return;
-      }
-      if (pointsToConvert > profile.discord_points) {
-          addToast("Insufficient Points", "You do not have enough Discord points.", "error");
-          return;
-      }
-
-      setIsConverting(true);
-      try {
-          // Direct Conversion Rate: 1000 Points = 10 DH
-          // Calculation: (Points / 1000) * 10
-          const dhAmount = (pointsToConvert / 1000) * 10; 
-
-          // Deduct points AND Add to Wallet Balance immediately
-          const { error: updateError } = await supabase.from('profiles')
-             .update({ 
-                 discord_points: profile.discord_points - pointsToConvert,
-                 wallet_balance: profile.wallet_balance + dhAmount
-             })
-             .eq('id', profile.id);
-          
-          if (updateError) throw updateError;
-
-          // Record transaction as COMPLETED directly
-          const { error: insertError } = await supabase.from('point_transactions').insert({
-              user_id: profile.id,
-              points_amount: pointsToConvert,
-              money_equivalent: dhAmount, // Storing DH amount
-              status: 'completed'
-          });
-
-          if (insertError) throw insertError;
-
-          setConversionSuccess(true);
-          addToast("Success", `Converted ${pointsToConvert} points to ${dhAmount.toFixed(2)} DH.`, "success");
-          fetchData(); // Refresh profile points and transactions
-      } catch (err: any) {
-          addToast("Error", err.message, "error");
-      } finally {
-          setIsConverting(false);
-      }
   };
 
   if (isGuest && authMode === 'login') return (
@@ -552,159 +624,77 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
 
              {activeTab === 'points' && (
                  <div className="space-y-8 animate-slide-up">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Current Points Card */}
-                        <div className="bg-gradient-to-br from-purple-700 to-indigo-900 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden flex flex-col justify-between">
-                            <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                            <div className="relative z-10">
-                                <p className="text-purple-200 font-black uppercase text-[10px] tracking-widest mb-2 flex items-center gap-2">
-                                    <Coins className="w-4 h-4" /> Available Points
-                                </p>
-                                <h3 className="text-6xl font-black italic tracking-tighter leading-none mb-1">{profile?.discord_points || 0}</h3>
-                                <p className="text-xs font-bold text-purple-200 uppercase tracking-widest">Discord Balance</p>
+                    {/* Current Points Card - Full Width */}
+                    <div className="bg-gradient-to-br from-purple-700 to-indigo-900 p-8 md:p-12 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden flex flex-col justify-center min-h-[200px]">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl -mr-16 -mt-16 animate-pulse"></div>
+                        <div className="absolute bottom-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                        
+                        <div className="relative z-10 flex flex-col items-center justify-center text-center">
+                            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-2xl mb-4 shadow-xl">
+                                <Coins className="w-8 h-8 text-white" />
                             </div>
-                        </div>
-
-                        {/* Conversion Rate Card */}
-                        <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl flex flex-col justify-center">
-                            <h3 className="text-white font-black italic uppercase tracking-tighter text-xl mb-4 flex items-center gap-2">
-                                <Repeat className="w-6 h-6 text-green-400" /> Exchange Rate
-                            </h3>
-                            <div className="bg-[#0b0e14] p-6 rounded-2xl border border-gray-800 flex items-center justify-between">
-                                <div className="text-center">
-                                    <p className="text-3xl font-black text-purple-400 italic tracking-tighter">1000</p>
-                                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Points</p>
-                                </div>
-                                <div className="h-0.5 flex-1 bg-gray-800 mx-4 relative">
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400">
-                                        =
-                                    </div>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-3xl font-black text-green-400 italic tracking-tighter">10.00</p>
-                                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">DH</p>
-                                </div>
-                            </div>
+                            <p className="text-purple-200 font-black uppercase text-xs tracking-[0.3em] mb-2">Available Balance</p>
+                            <h3 className="text-7xl md:text-8xl font-black italic tracking-tighter leading-none mb-2 drop-shadow-2xl">{profile?.discord_points || 0}</h3>
+                            <p className="text-sm font-bold text-purple-200 uppercase tracking-widest">Discord Points</p>
                         </div>
                     </div>
 
-                    {/* REDEEMED ITEMS SECTION */}
+                    {/* REDEEMED ITEMS SECTION - REDESIGNED */}
                     <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl">
                         <div className="flex items-center gap-3 mb-8">
                             <div className="p-2 bg-[#0b0e14] rounded-xl text-purple-400 border border-purple-500/20"><Gift className="w-5 h-5" /></div>
                             <h3 className="font-black text-white text-2xl italic uppercase tracking-tighter">My Redeemed Rewards</h3>
                         </div>
                         {pointRedemptions.length === 0 ? (
-                            <div className="text-center py-10 border-2 border-dashed border-gray-800 rounded-3xl">
+                            <div className="text-center py-12 border-2 border-dashed border-gray-800 rounded-3xl">
                                 <p className="text-gray-600 font-black uppercase tracking-widest text-[10px]">No rewards redeemed yet.</p>
-                                <button onClick={() => onNavigate('pointsShop')} className="mt-4 text-purple-500 text-xs font-bold uppercase tracking-widest hover:text-white transition">Visit Points Shop</button>
+                                <button onClick={() => onNavigate('pointsShop')} className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg">Visit Points Shop</button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {pointRedemptions.map(redemption => (
-                                    <div key={redemption.id} className="bg-[#0b0e14] p-4 rounded-2xl border border-gray-800 flex gap-4 items-center relative overflow-hidden group">
-                                        <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-gray-700">
+                                    <div key={redemption.id} onClick={() => setSelectedRedemption(redemption)} className="bg-[#0b0e14] rounded-[2rem] overflow-hidden border border-gray-800 hover:border-purple-500/50 transition-all duration-300 shadow-xl group flex flex-col cursor-pointer">
+                                        {/* Large Image Area */}
+                                        <div className="h-56 relative overflow-hidden">
                                             {redemption.point_product?.image_url ? (
-                                                <img src={redemption.point_product.image_url} className="w-full h-full object-cover" alt="" />
+                                                <img 
+                                                    src={redemption.point_product.image_url} 
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                                                    alt={redemption.point_product.name} 
+                                                />
                                             ) : (
-                                                <div className="w-full h-full bg-gray-800 flex items-center justify-center"><Gift className="w-6 h-6 text-gray-600" /></div>
+                                                <div className="w-full h-full bg-gray-900 flex items-center justify-center"><Gift className="w-12 h-12 text-gray-700" /></div>
                                             )}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e14] to-transparent opacity-80"></div>
+                                            <div className="absolute bottom-4 left-4 right-4">
+                                                <h4 className="text-white font-black italic text-lg uppercase tracking-tighter leading-tight drop-shadow-md truncate">
+                                                    {redemption.point_product?.name || 'Unknown Reward'}
+                                                </h4>
+                                            </div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="text-white font-black italic uppercase tracking-tighter truncate">{redemption.point_product?.name || 'Unknown Reward'}</h4>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{new Date(redemption.created_at).toLocaleDateString()}</p>
-                                            <div className="mt-1 flex items-center gap-2">
-                                                <span className="text-purple-400 font-black italic text-xs tracking-tighter">{redemption.cost_at_redemption} PTS</span>
-                                                <span className="px-2 py-0.5 bg-green-500/10 text-green-500 text-[8px] font-black uppercase tracking-widest rounded border border-green-500/20">{redemption.status}</span>
+                                        
+                                        {/* Content Area */}
+                                        <div className="p-6 pt-2 flex flex-col flex-1 gap-4">
+                                            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-gray-800 pb-4">
+                                                <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(redemption.created_at).toLocaleDateString()}</span>
+                                                <span className="text-purple-400 font-black italic">{redemption.cost_at_redemption} PTS</span>
+                                            </div>
+                                            
+                                            <div className="flex items-center justify-between">
+                                                <div className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border flex items-center gap-1 ${
+                                                    redemption.status === 'delivered' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 
+                                                    'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                                }`}>
+                                                    {redemption.status === 'delivered' ? <CheckCircle className="w-3 h-3"/> : <Clock className="w-3 h-3"/>}
+                                                    {redemption.status}
+                                                </div>
+                                                <button className="text-xs text-gray-400 hover:text-white transition font-bold uppercase tracking-widest flex items-center gap-1">
+                                                    Chat <MessageSquare className="w-3 h-3" />
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
                                 ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Conversion Action */}
-                    <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl">
-                        <h3 className="text-white font-black italic uppercase tracking-tighter text-2xl mb-8">Convert to Wallet</h3>
-                        
-                        {!conversionSuccess ? (
-                            <form onSubmit={handleConvertPoints} className="max-w-xl mx-auto">
-                                <div className="mb-8">
-                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Amount to Convert (Points)</label>
-                                    <input 
-                                        type="number" 
-                                        min="1000" 
-                                        step="1000"
-                                        value={pointsToConvert}
-                                        onChange={e => setPointsToConvert(parseInt(e.target.value))}
-                                        className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-6 text-center text-4xl font-black text-white outline-none focus:border-purple-500 transition-all shadow-inner placeholder:text-gray-800"
-                                        placeholder="0"
-                                    />
-                                    <p className="text-center mt-3 text-xs font-bold text-gray-500">
-                                        Equivalent to <span className="text-green-400">{(pointsToConvert / 1000 * 10).toFixed(2)} DH</span>
-                                    </p>
-                                </div>
-                                <button 
-                                    type="submit" 
-                                    disabled={isConverting || !pointsToConvert}
-                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-purple-600/20 uppercase tracking-widest active:scale-95 disabled:opacity-50 disabled:active:scale-100"
-                                >
-                                    {isConverting ? 'Processing...' : 'Transfer to Wallet'}
-                                </button>
-                            </form>
-                        ) : (
-                            <div className="text-center py-10 max-w-lg mx-auto">
-                                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 border border-green-500/50">
-                                    <CheckCircle className="w-10 h-10" />
-                                </div>
-                                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">Conversion Successful!</h3>
-                                <p className="text-gray-400 font-bold text-sm mb-8">Your points have been converted and <span className="text-yellow-400">added to your wallet</span> instantly.</p>
-                                <button 
-                                    onClick={() => { setConversionSuccess(false); setPointsToConvert(0); }}
-                                    className="block mx-auto mt-6 text-xs font-bold text-gray-500 uppercase tracking-widest hover:text-white"
-                                >
-                                    Make Another Transfer
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Transaction History Table */}
-                    <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl">
-                        <h3 className="text-white font-black italic uppercase tracking-tighter text-2xl mb-8">Conversion History</h3>
-                        {pointTransactions.length === 0 ? (
-                            <p className="text-center py-10 text-gray-600 font-black uppercase tracking-widest border-2 border-dashed border-gray-800 rounded-3xl">No conversions yet.</p>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead className="text-[10px] font-black uppercase tracking-widest text-gray-500 border-b border-gray-800">
-                                        <tr>
-                                            <th className="pb-4 pl-4">Date</th>
-                                            <th className="pb-4">Points</th>
-                                            <th className="pb-4">Amount (DH)</th>
-                                            <th className="pb-4">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-800">
-                                        {pointTransactions.map(pt => (
-                                            <tr key={pt.id} className="hover:bg-[#0b0e14] transition-colors">
-                                                <td className="py-4 pl-4 text-xs font-mono text-gray-400">{new Date(pt.created_at).toLocaleDateString()}</td>
-                                                <td className="py-4 font-black text-purple-400 italic">-{pt.points_amount}</td>
-                                                <td className="py-4 font-black text-green-400 italic">{pt.money_equivalent.toFixed(2)} DH</td>
-                                                <td className="py-4">
-                                                    <span className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest border ${
-                                                        pt.status === 'completed' ? 'bg-green-500/10 text-green-500 border-green-500/30' :
-                                                        pt.status === 'rejected' ? 'bg-red-500/10 text-red-500 border-red-500/30' :
-                                                        'bg-yellow-500/10 text-yellow-500 border-yellow-500/30'
-                                                    }`}>
-                                                        {pt.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
                             </div>
                         )}
                     </div>
@@ -718,6 +708,14 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
               order={selectedOrder} 
               currentUser={profile} 
               onClose={() => setSelectedOrder(null)} 
+           />
+       )}
+
+       {selectedRedemption && profile && (
+           <RedemptionDetailsModal 
+              redemption={selectedRedemption} 
+              currentUser={profile} 
+              onClose={() => setSelectedRedemption(null)} 
            />
        )}
     </div>

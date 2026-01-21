@@ -1,6 +1,6 @@
 
 -- ==============================================================================
--- MOON NIGHT COMPLETE DATABASE SETUP (V24 - POINTS SHOP)
+-- MOON NIGHT COMPLETE DATABASE SETUP (V25 - POINTS CHAT)
 -- Run this in the Supabase SQL Editor to fix Foreign Key constraints and Policies.
 -- ==============================================================================
 
@@ -135,7 +135,7 @@ create table if not exists public.coupons (
 create table if not exists public.order_messages (
   id uuid default uuid_generate_v4() primary key,
   order_id uuid references public.orders(id) on delete cascade not null,
-  sender_id uuid references public.profiles(id) not null,
+  sender_id uuid references public.profiles(id) on delete cascade not null,
   message text not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -187,12 +187,24 @@ create table if not exists public.point_redemptions (
     user_id uuid references public.profiles(id) on delete cascade not null,
     product_id uuid references public.point_products(id) on delete set null,
     cost_at_redemption int not null,
-    status text default 'delivered',
+    status text default 'pending', -- CHANGED TO PENDING DEFAULT
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- MIGRATION: Update default status for existing and new rows
+alter table public.point_redemptions alter column status set default 'pending';
 
--- 13. SECURITY POLICIES
+-- 13. REDEMPTION MESSAGES (NEW - Chat for points)
+create table if not exists public.redemption_messages (
+  id uuid default uuid_generate_v4() primary key,
+  redemption_id uuid references public.point_redemptions(id) on delete cascade not null,
+  sender_id uuid references public.profiles(id) on delete cascade not null,
+  message text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+
+-- 14. SECURITY POLICIES
 alter table public.profiles enable row level security;
 alter table public.products enable row level security;
 alter table public.cart_items enable row level security;
@@ -204,6 +216,7 @@ alter table public.access_logs enable row level security;
 alter table public.point_transactions enable row level security;
 alter table public.point_products enable row level security;
 alter table public.point_redemptions enable row level security;
+alter table public.redemption_messages enable row level security;
 
 -- PROFILES
 drop policy if exists "Profiles are viewable by everyone" on public.profiles;
@@ -345,8 +358,29 @@ create policy "Users can create redemptions" on public.point_redemptions for ins
 drop policy if exists "Admin can view all redemptions" on public.point_redemptions;
 create policy "Admin can view all redemptions" on public.point_redemptions for select using (true);
 
+drop policy if exists "Admin can update redemptions" on public.point_redemptions;
+create policy "Admin can update redemptions" on public.point_redemptions for update using (true);
 
--- 14. TRIGGERS
+-- REDEMPTION MESSAGES (NEW POLICIES)
+drop policy if exists "Users can view own redemption messages" on public.redemption_messages;
+create policy "Users can view own redemption messages" on public.redemption_messages for select using (
+  exists ( select 1 from public.point_redemptions where point_redemptions.id = redemption_messages.redemption_id and point_redemptions.user_id = auth.uid() )
+);
+
+drop policy if exists "Users can insert own redemption messages" on public.redemption_messages;
+create policy "Users can insert own redemption messages" on public.redemption_messages for insert with check (
+  auth.uid() = sender_id AND
+  exists ( select 1 from public.point_redemptions where point_redemptions.id = redemption_messages.redemption_id and point_redemptions.user_id = auth.uid() )
+);
+
+drop policy if exists "Admin can view all redemption messages" on public.redemption_messages;
+create policy "Admin can view all redemption messages" on public.redemption_messages for select using (true);
+
+drop policy if exists "Admin can insert redemption messages" on public.redemption_messages;
+create policy "Admin can insert redemption messages" on public.redemption_messages for insert with check (true);
+
+
+-- 15. TRIGGERS
 create or replace function public.handle_updated_at()
 returns trigger as $$
 begin
