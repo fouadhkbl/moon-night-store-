@@ -1,3 +1,4 @@
+
 export interface Product {
   id: string;
   name: string;
@@ -84,6 +85,7 @@ export interface PointTransaction {
   money_equivalent: number;
   status: 'pending' | 'completed' | 'rejected';
   created_at: string;
+  profile?: Profile; // Added for Admin Join
 }
 
 export enum GameCategory {

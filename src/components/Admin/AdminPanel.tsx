@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive } from 'lucide-react';
+import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction } from '../../types';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal } from './AdminModals';
 
 // --- VISITOR LOG MODAL ---
@@ -241,11 +241,12 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 };
 
 export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders'>('stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points'>('stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [pointTransactions, setPointTransactions] = useState<PointTransaction[]>([]);
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
   const [isLoading, setIsLoading] = useState(true);
@@ -279,6 +280,15 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
     if (role === 'full') {
         const { data: cData } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
         if (cData) setCoupons(cData);
+    }
+    
+    // Fetch Point Transactions - Only for FULL admin
+    if (role === 'full') {
+        const { data: ptData } = await supabase
+          .from('point_transactions')
+          .select('*, profile:profiles(email, username)')
+          .order('created_at', { ascending: false });
+        if (ptData) setPointTransactions(ptData);
     }
 
     // Fetch Orders with Profiles
@@ -461,6 +471,11 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       o.profile?.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredPoints = pointTransactions.filter(pt => 
+      pt.profile?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pt.profile?.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const ProviderIcon = ({ provider }: { provider?: string }) => {
     if (provider === 'google') return (
       <svg className="w-3 h-3" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /></svg>
@@ -499,6 +514,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                 </button>
                 <button onClick={() => setActiveSection('coupons')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'coupons' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
                     <Ticket className="w-4 h-4" /> Coupons
+                </button>
+                <button onClick={() => setActiveSection('points')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'points' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+                    <ArrowRightLeft className="w-4 h-4" /> Conversions
                 </button>
               </>
           )}
@@ -779,6 +797,59 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                       <div className="col-span-full py-10 text-center text-gray-500 font-black uppercase tracking-widest border-2 border-dashed border-gray-800 rounded-3xl">No coupons found.</div>
                   )}
               </div>
+          </div>
+      )}
+
+      {activeSection === 'points' && role === 'full' && (
+          <div className="space-y-6 animate-slide-up">
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Search by User Email or Username..." 
+                  className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-purple-500 outline-none transition-all shadow-xl"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+                <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
+             </div>
+
+             <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
+                 {filteredPoints.length === 0 ? <p className="text-center py-12 text-gray-500 font-black uppercase tracking-widest">No conversion history found</p> : (
+                     <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
+                                <tr>
+                                    <th className="p-6">Date</th>
+                                    <th className="p-6">User Email</th>
+                                    <th className="p-6">Username</th>
+                                    <th className="p-6">Points Deducted</th>
+                                    <th className="p-6">Amount Added (DH)</th>
+                                    <th className="p-6">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-800">
+                                {filteredPoints.map(pt => (
+                                    <tr key={pt.id} className="hover:bg-[#151a23] transition-colors">
+                                        <td className="p-6 font-mono text-xs text-gray-500">{new Date(pt.created_at).toLocaleString()}</td>
+                                        <td className="p-6 text-white font-bold text-xs">{pt.profile?.email || 'N/A'}</td>
+                                        <td className="p-6 text-gray-400 text-xs">{pt.profile?.username || 'Unknown'}</td>
+                                        <td className="p-6 font-black text-purple-400 italic text-sm">-{pt.points_amount} Pts</td>
+                                        <td className="p-6 font-black text-green-400 italic text-sm">+{pt.money_equivalent.toFixed(2)} DH</td>
+                                        <td className="p-6">
+                                            <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${
+                                                pt.status === 'completed' ? 'bg-green-500/10 text-green-500 border border-green-500/30' : 
+                                                'bg-yellow-500/10 text-yellow-500 border border-yellow-500/30'
+                                            }`}>
+                                                {pt.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                     </div>
+                 )}
+             </div>
           </div>
       )}
 
