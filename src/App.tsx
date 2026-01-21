@@ -80,6 +80,7 @@ const App: React.FC = () => {
         
         const { user } = currentSession;
         // Detect provider (google, discord, email) from app_metadata
+        // app_metadata.provider usually holds 'google', 'discord', 'email' etc.
         const provider = user.app_metadata?.provider || 'email';
         
         try {
@@ -95,18 +96,20 @@ const App: React.FC = () => {
                 needsUpdate = true;
             }
 
-            // 2. Sync Metadata (Avatar/Name) for Google/Discord users if profile is empty/default
+            // 2. Sync Metadata (Avatar/Name) for Google/Discord users if profile is empty or default
             if (provider !== 'email') {
                 const meta = user.user_metadata;
-                const newAvatar = meta.avatar_url || meta.picture;
+                const newAvatar = meta.avatar_url || meta.picture; // Google uses 'picture', Discord/GitHub use 'avatar_url'
                 const newName = meta.full_name || meta.name || meta.custom_claims?.global_name;
 
-                // Only update if profile has default/empty values
+                // Update if profile doesn't exist or has default values
                 if (profile) {
-                    if ((!profile.username || profile.username === 'New User') && newName) {
+                    // Update name if current is default
+                    if ((!profile.username || profile.username === 'New User' || profile.username === 'Guest') && newName) {
                         updates.username = newName;
                         needsUpdate = true;
                     }
+                    // Update avatar if current is default/unsplash
                     if (newAvatar && (!profile.avatar_url || profile.avatar_url.includes('unsplash'))) {
                         updates.avatar_url = newAvatar;
                         needsUpdate = true;
@@ -141,7 +144,7 @@ const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
           setSession(session);
-          // Sync on sign-in to ensure provider is correct immediately
+          // Sync on sign-in events to capture OAuth data immediately
           if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
               syncUserProfile(session);
           }

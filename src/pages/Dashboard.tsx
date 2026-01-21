@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, Order, OrderItem, OrderMessage, PointTransaction } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, Box, MessageSquare, Send, X, Clock, Check, Eye, Trash2, AlertCircle, CheckCircle, Coins, Repeat, ExternalLink } from 'lucide-react';
+import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, Box, MessageSquare, Send, X, Clock, Check, Eye, Trash2, AlertCircle, CheckCircle, Coins, Repeat, ExternalLink } from 'lucide-react';
 
 // --- ORDER DETAILS & CHAT MODAL ---
 const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
@@ -284,28 +284,33 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
 
       setIsConverting(true);
       try {
-          const usdAmount = pointsToConvert / 1000;
-          
-          // Deduct points
+          // Direct Conversion Rate: 1000 Points = 10 DH
+          // Calculation: (Points / 1000) * 10
+          const dhAmount = (pointsToConvert / 1000) * 10; 
+
+          // Deduct points AND Add to Wallet Balance immediately
           const { error: updateError } = await supabase.from('profiles')
-             .update({ discord_points: profile.discord_points - pointsToConvert })
+             .update({ 
+                 discord_points: profile.discord_points - pointsToConvert,
+                 wallet_balance: profile.wallet_balance + dhAmount
+             })
              .eq('id', profile.id);
           
           if (updateError) throw updateError;
 
-          // Record transaction
+          // Record transaction as COMPLETED directly
           const { error: insertError } = await supabase.from('point_transactions').insert({
               user_id: profile.id,
               points_amount: pointsToConvert,
-              money_equivalent: usdAmount,
-              status: 'pending'
+              money_equivalent: dhAmount, // Storing DH amount
+              status: 'completed'
           });
 
           if (insertError) throw insertError;
 
           setConversionSuccess(true);
-          addToast("Success", "Conversion request created.", "success");
-          fetchData(); // Refresh profile points
+          addToast("Success", `Converted ${pointsToConvert} points to ${dhAmount.toFixed(2)} DH.`, "success");
+          fetchData(); // Refresh profile points and transactions
       } catch (err: any) {
           addToast("Error", err.message, "error");
       } finally {
@@ -562,8 +567,8 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                                     </div>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-3xl font-black text-green-400 italic tracking-tighter">$1.00</p>
-                                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">USD</p>
+                                    <p className="text-3xl font-black text-green-400 italic tracking-tighter">10.00</p>
+                                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">DH</p>
                                 </div>
                             </div>
                         </div>
@@ -571,7 +576,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
 
                     {/* Conversion Action */}
                     <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl">
-                        <h3 className="text-white font-black italic uppercase tracking-tighter text-2xl mb-8">Convert to Real Money</h3>
+                        <h3 className="text-white font-black italic uppercase tracking-tighter text-2xl mb-8">Convert to Wallet</h3>
                         
                         {!conversionSuccess ? (
                             <form onSubmit={handleConvertPoints} className="max-w-xl mx-auto">
@@ -587,7 +592,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                                         placeholder="0"
                                     />
                                     <p className="text-center mt-3 text-xs font-bold text-gray-500">
-                                        Equivalent to <span className="text-green-400">${(pointsToConvert / 1000).toFixed(2)} USD</span>
+                                        Equivalent to <span className="text-green-400">{(pointsToConvert / 1000 * 10).toFixed(2)} DH</span>
                                     </p>
                                 </div>
                                 <button 
@@ -603,16 +608,8 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                                 <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 border border-green-500/50">
                                     <CheckCircle className="w-10 h-10" />
                                 </div>
-                                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">Request Submitted!</h3>
-                                <p className="text-gray-400 font-bold text-sm mb-8">Your points have been deducted. To receive your cash, please contact <span className="text-purple-400">Fouad</span> on Discord with your Transaction ID.</p>
-                                <a 
-                                    href="https://discord.com" // Replace with actual discord link
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-3 bg-[#5865F2] hover:bg-[#4752c4] text-white px-8 py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-xl"
-                                >
-                                    Contact Fouad <ExternalLink className="w-4 h-4" />
-                                </a>
+                                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">Conversion Successful!</h3>
+                                <p className="text-gray-400 font-bold text-sm mb-8">Your points have been converted and <span className="text-yellow-400">added to your wallet</span> instantly.</p>
                                 <button 
                                     onClick={() => { setConversionSuccess(false); setPointsToConvert(0); }}
                                     className="block mx-auto mt-6 text-xs font-bold text-gray-500 uppercase tracking-widest hover:text-white"
@@ -635,7 +632,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                                         <tr>
                                             <th className="pb-4 pl-4">Date</th>
                                             <th className="pb-4">Points</th>
-                                            <th className="pb-4">Amount (USD)</th>
+                                            <th className="pb-4">Amount (DH)</th>
                                             <th className="pb-4">Status</th>
                                         </tr>
                                     </thead>
@@ -644,7 +641,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                                             <tr key={pt.id} className="hover:bg-[#0b0e14] transition-colors">
                                                 <td className="py-4 pl-4 text-xs font-mono text-gray-400">{new Date(pt.created_at).toLocaleDateString()}</td>
                                                 <td className="py-4 font-black text-purple-400 italic">-{pt.points_amount}</td>
-                                                <td className="py-4 font-black text-green-400 italic">${pt.money_equivalent.toFixed(2)}</td>
+                                                <td className="py-4 font-black text-green-400 italic">{pt.money_equivalent.toFixed(2)} DH</td>
                                                 <td className="py-4">
                                                     <span className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest border ${
                                                         pt.status === 'completed' ? 'bg-green-500/10 text-green-500 border-green-500/30' :
