@@ -450,6 +450,18 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       }
   };
 
+  // --- POINT TRANSACTION HANDLERS ---
+  const handleDeletePointTransaction = async (id: string) => {
+      if (!window.confirm('Are you sure you want to delete this conversion history log? This does not revert the balance.')) return;
+      const { error } = await supabase.from('point_transactions').delete().eq('id', id);
+      if (!error) {
+          addToast('Deleted', 'Transaction log removed.', 'success');
+          fetchData();
+      } else {
+          addToast('Error', error.message, 'error');
+      }
+  };
+
   // --- FILTERS ---
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -825,6 +837,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                     <th className="p-6">Points Deducted</th>
                                     <th className="p-6">Amount Added (DH)</th>
                                     <th className="p-6">Status</th>
+                                    <th className="p-6 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-800">
@@ -842,6 +855,15 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                             }`}>
                                                 {pt.status}
                                             </span>
+                                        </td>
+                                        <td className="p-6 text-center">
+                                            <button 
+                                                onClick={() => handleDeletePointTransaction(pt.id)}
+                                                className="bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white p-2 rounded-lg transition-all shadow-lg border border-red-500/20"
+                                                title="Delete Log"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
