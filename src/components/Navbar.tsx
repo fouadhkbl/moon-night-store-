@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Search, User, Menu, LayoutDashboard, X } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Profile } from '../types';
 
@@ -8,9 +8,11 @@ interface NavbarProps {
   onNavigate: (page: string) => void;
   cartCount: number;
   onSearch: (query: string) => void;
+  language: 'en' | 'fr';
+  setLanguage: (lang: 'en' | 'fr') => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearch }) => {
+const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearch, language, setLanguage }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -74,6 +76,8 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
       }
   };
 
+  const placeholder = language === 'en' ? "Search Game, Item, or Category..." : "Rechercher un jeu, un objet ou une catégorie...";
+
   return (
     <nav className="sticky top-0 z-50 bg-[#0b0e14] border-b border-gray-800 h-16 flex items-center shadow-lg">
       <div className="container mx-auto px-4 flex justify-between items-center relative h-full">
@@ -99,7 +103,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
           <div className="relative w-full">
             <input
               type="text"
-              placeholder="Search Game, Item, or Category..."
+              placeholder={placeholder}
               className="w-full bg-[#1e232e] text-gray-300 rounded-md py-2 pl-4 pr-12 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-gray-700 font-medium placeholder:text-gray-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -117,6 +121,16 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
             className="lg:hidden p-2 text-gray-400 hover:text-white"
           >
             {isMobileSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
+          </button>
+
+          {/* Language Switcher */}
+          <button 
+            onClick={() => setLanguage(language === 'en' ? 'fr' : 'en')}
+            className="p-2 text-gray-400 hover:text-white transition flex items-center gap-1 bg-[#1e232e] rounded-md border border-gray-800 hover:border-blue-500"
+            title={language === 'en' ? 'Switch to French' : 'Passer en Anglais'}
+          >
+            <Languages className="w-5 h-5" />
+            <span className="text-[10px] font-black uppercase hidden sm:block">{language.toUpperCase()}</span>
           </button>
 
           <button 
@@ -169,7 +183,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
               <form onSubmit={handleSearchSubmit} className="relative">
                   <input
                     type="text"
-                    placeholder="Search..."
+                    placeholder={placeholder}
                     className="w-full bg-[#1e232e] text-white rounded-lg py-3 px-4 pl-10 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-gray-700"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}

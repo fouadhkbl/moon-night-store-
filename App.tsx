@@ -23,6 +23,7 @@ const App: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [toasts, setToasts] = useState<any[]>([]);
+  const [language, setLanguage] = useState<'en' | 'fr'>('en');
 
   const addToast = (title: string, message: string, type: 'success'|'error'|'info' = 'info') => {
      const id = Math.random().toString(36).substr(2, 9);
@@ -179,6 +180,7 @@ const App: React.FC = () => {
             onNavigate={handleNavigate} 
             onSelectCategory={setSelectedCategory} 
             onSearch={handleSearch}
+            language={language}
           />
         )}
         
@@ -212,6 +214,7 @@ const App: React.FC = () => {
               category={selectedCategory} 
               searchQuery={searchQuery}
               onProductClick={(p) => setSelectedProduct(p)} 
+              language={language}
             />
           </div>
         )}

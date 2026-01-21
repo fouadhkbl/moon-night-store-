@@ -3,11 +3,30 @@ import { supabase } from '../../supabaseClient';
 import { Product } from '../../types';
 import { ShoppingCart, Plus, Globe, Smartphone, Monitor, Gamepad2, Layers } from 'lucide-react';
 
-export const ShopGrid = ({ category, searchQuery, onProductClick }: { category: string | null, searchQuery: string, onProductClick: (p: Product) => void }) => {
+export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { category: string | null, searchQuery: string, onProductClick: (p: Product) => void, language: 'en' | 'fr' }) => {
    const [products, setProducts] = useState<Product[]>([]);
    const [isLoading, setIsLoading] = useState(true);
    const [selectedRegion, setSelectedRegion] = useState<string>('All');
    const [selectedPlatform, setSelectedPlatform] = useState<string>('All');
+
+   const t = {
+       en: {
+           allPlat: "All Devices",
+           allReg: "All Regions",
+           noSupply: "No Supply Found",
+           restock: "Restocking system scheduled.",
+           noMatch: "No items match",
+           cross: "All Devices"
+       },
+       fr: {
+           allPlat: "Tous les Appareils",
+           allReg: "Toutes Régions",
+           noSupply: "Aucun Stock Trouvé",
+           restock: "Système de réapprovisionnement programmé.",
+           noMatch: "Aucun article ne correspond à",
+           cross: "Tous Appareils"
+       }
+   }[language];
 
    useEffect(() => {
      setIsLoading(true);
@@ -60,7 +79,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick }: { category: 
                     onChange={(e) => setSelectedPlatform(e.target.value)}
                     className="bg-[#1e232e] border border-gray-800 text-gray-300 text-[10px] font-black uppercase tracking-widest py-3 pl-4 pr-10 rounded-xl focus:outline-none focus:border-blue-500 appearance-none cursor-pointer hover:text-white transition-colors"
                  >
-                     {platforms.map(p => <option key={p} value={p}>{p === 'All' ? 'All Platforms' : p}</option>)}
+                     {platforms.map(p => <option key={p} value={p}>{p === 'All' ? t.allPlat : p}</option>)}
                  </select>
                  <div className="absolute right-3 top-3 text-gray-500 pointer-events-none group-hover:text-blue-500 transition-colors">
                      {getPlatformIcon(selectedPlatform === 'All' ? 'All Platforms' : selectedPlatform)}
@@ -74,7 +93,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick }: { category: 
                     onChange={(e) => setSelectedRegion(e.target.value)}
                     className="bg-[#1e232e] border border-gray-800 text-gray-300 text-[10px] font-black uppercase tracking-widest py-3 pl-4 pr-10 rounded-xl focus:outline-none focus:border-blue-500 appearance-none cursor-pointer hover:text-white transition-colors"
                  >
-                     {regions.map(r => <option key={r} value={r}>{r === 'All' ? 'All Regions' : r}</option>)}
+                     {regions.map(r => <option key={r} value={r}>{r === 'All' ? t.allReg : r}</option>)}
                  </select>
                  <Globe className="absolute right-3 top-3 w-4 h-4 text-gray-500 pointer-events-none group-hover:text-blue-500 transition-colors" />
               </div>
@@ -91,9 +110,9 @@ export const ShopGrid = ({ category, searchQuery, onProductClick }: { category: 
                <div className="bg-[#1e232e] w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-10 text-gray-800 border border-gray-800 shadow-3xl">
                  <ShoppingCart className="w-16 h-16" />
                </div>
-               <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">No Supply Found</h3>
+               <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">{t.noSupply}</h3>
                <p className="text-gray-600 text-[11px] font-black uppercase tracking-[0.4em] mt-4">
-                   {searchQuery ? `No items match "${searchQuery}"` : "Restocking system scheduled."}
+                   {searchQuery ? `${t.noMatch} "${searchQuery}"` : t.restock}
                </p>
              </div>
            ) : (
@@ -113,7 +132,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick }: { category: 
                            <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">
                                {/* Platform Badge */}
                                <div className="bg-black/70 backdrop-blur-xl px-2.5 py-1 rounded-lg text-[8px] font-black text-white border border-white/10 uppercase tracking-widest shadow-2xl flex items-center gap-1">
-                                  {getPlatformIcon(p.platform)} {p.platform === 'All Platforms' ? 'Cross-Play' : p.platform}
+                                  {getPlatformIcon(p.platform)} {p.platform === 'All Platforms' ? t.cross : p.platform}
                                </div>
                                {/* Country Badge */}
                                {p.country && p.country !== 'Global' && (

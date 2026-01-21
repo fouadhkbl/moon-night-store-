@@ -19,8 +19,8 @@ const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('home'); 
-  // Changed from boolean to role string
   const [adminRole, setAdminRole] = useState<'none' | 'full' | 'limited'>('none');
+  const [language, setLanguage] = useState<'en' | 'fr'>('en');
   
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,6 +28,23 @@ const App: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [toasts, setToasts] = useState<any[]>([]);
   const [targetOrderId, setTargetOrderId] = useState<string | null>(null);
+
+  const t = {
+    en: {
+        shopTitle: "SYSTEM SHOP",
+        dept: "Department",
+        searching: "Searching",
+        allGlobal: "All Global Inventory",
+        allDepts: "ALL DEPTS"
+    },
+    fr: {
+        shopTitle: "BOUTIQUE SYSTÈME",
+        dept: "Département",
+        searching: "Recherche",
+        allGlobal: "Inventaire Mondial",
+        allDepts: "TOUS DEPTS"
+    }
+  }[language];
 
   const addToast = (title: string, message: string, type: 'success'|'error'|'info' = 'info') => {
      const id = Math.random().toString(36).substr(2, 9);
@@ -38,34 +55,21 @@ const App: React.FC = () => {
   // --- VISITOR TRACKING ---
   useEffect(() => {
     const logVisitor = async () => {
-        // Prevent logging multiple times per browser session
         if (sessionStorage.getItem('moonnight_visit_logged')) return;
-        
         try {
-            // Get IP Address
             const response = await fetch('https://api.ipify.org?format=json');
             const data = await response.json();
             const ip = data.ip;
-
-            // Log to Database
-            const { error } = await supabase.from('access_logs').insert({
+            await supabase.from('access_logs').insert({
                 ip_address: ip,
                 user_id: session?.user?.id !== 'guest-user-123' ? session?.user?.id : null
             });
-
-            if (!error) {
-                sessionStorage.setItem('moonnight_visit_logged', 'true');
-            }
+            sessionStorage.setItem('moonnight_visit_logged', 'true');
         } catch (e) {
             console.error("Tracking Error", e);
         }
     };
-
-    // Wait for session to settle slightly before logging to catch User ID if possible, 
-    // but log anyway if guest
-    if (!isSessionLoading) {
-        logVisitor();
-    }
+    if (!isSessionLoading) logVisitor();
   }, [isSessionLoading, session]);
 
   useEffect(() => {
@@ -85,12 +89,7 @@ const App: React.FC = () => {
     const fetchCart = async () => {
       const isGuest = session?.user?.id === 'guest-user-123';
       if (!isGuest && session?.user) {
-        const { data } = await supabase
-          .from('cart_items')
-          .select('*, product:products(*)')
-          .eq('user_id', session.user.id)
-          .order('created_at', { ascending: true });
-        
+        const { data } = await supabase.from('cart_items').select('*, product:products(*)').eq('user_id', session.user.id).order('created_at', { ascending: true });
         if (data) setCart(data as CartItem[]);
       } else if (isGuest) {
         setCart([]); 
@@ -111,7 +110,7 @@ const App: React.FC = () => {
 
   const handleSearch = (query: string) => {
       setSearchQuery(query);
-      setSelectedCategory(null); // Clear category to search all
+      setSelectedCategory(null);
       setCurrentPage('shop');
       window.scrollTo(0, 0);
   };
@@ -123,7 +122,6 @@ const App: React.FC = () => {
 
   const handleAddToCart = async (product: Product, quantity: number) => {
      const isGuest = session?.user?.id === 'guest-user-123';
-     
      if (isGuest) {
        const existingIndex = cart.findIndex(item => item.product_id === product.id);
        if (existingIndex > -1) {
@@ -134,43 +132,20 @@ const App: React.FC = () => {
           setCart([...cart, { id: Math.random().toString(36).substr(2,9), product_id: product.id, quantity, product }]);
        }
      } else {
-       const { data: existing } = await supabase
-          .from('cart_items')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .eq('product_id', product.id)
-          .single();
-
+       const { data: existing } = await supabase.from('cart_items').select('*').eq('user_id', session.user.id).eq('product_id', product.id).single();
        if (existing) {
-          await supabase
-            .from('cart_items')
-            .update({ quantity: existing.quantity + quantity })
-            .eq('id', existing.id);
+          await supabase.from('cart_items').update({ quantity: existing.quantity + quantity }).eq('id', existing.id);
        } else {
-          await supabase
-            .from('cart_items')
-            .insert({
-               user_id: session.user.id,
-               product_id: product.id,
-               quantity
-            });
+          await supabase.from('cart_items').insert({ user_id: session.user.id, product_id: product.id, quantity });
        }
-
-       const { data: updatedCart } = await supabase
-         .from('cart_items')
-         .select('*, product:products(*)')
-         .eq('user_id', session.user.id)
-         .order('created_at', { ascending: true });
-         
+       const { data: updatedCart } = await supabase.from('cart_items').select('*, product:products(*)').eq('user_id', session.user.id).order('created_at', { ascending: true });
        if (updatedCart) setCart(updatedCart as CartItem[]);
      }
-     
      addToast('Success', `Inventory added to cart.`, 'success');
   };
 
   const handleUpdateCartQty = async (itemId: string, delta: number) => {
     const isGuest = session?.user?.id === 'guest-user-123';
-    
     if (isGuest) {
       setCart(prev => prev.map(item => {
         if (item.id === itemId) {
@@ -192,22 +167,18 @@ const App: React.FC = () => {
   const handleRemoveFromCart = async (itemId: string) => {
     const isGuest = session?.user?.id === 'guest-user-123';
     const item = cart.find(i => i.id === itemId);
-
     if (isGuest) {
        setCart(prev => prev.filter(i => i.id !== itemId));
     } else {
        await supabase.from('cart_items').delete().eq('id', itemId);
        setCart(prev => prev.filter(i => i.id !== itemId));
     }
-    
     if (item) addToast('Removed', `${item.product?.name} removed.`, 'info');
   };
 
   const handleClearCart = async () => {
     const isGuest = session?.user?.id === 'guest-user-123';
-    if (!isGuest) {
-      await supabase.from('cart_items').delete().eq('user_id', session.user.id);
-    }
+    if (!isGuest) await supabase.from('cart_items').delete().eq('user_id', session.user.id);
     setCart([]);
   };
 
@@ -215,7 +186,14 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-white font-sans flex flex-col selection:bg-blue-600 selection:text-white">
-      <Navbar session={session} onNavigate={handleNavigate} cartCount={cart.length} onSearch={handleSearch} />
+      <Navbar 
+        session={session} 
+        onNavigate={handleNavigate} 
+        cartCount={cart.length} 
+        onSearch={handleSearch} 
+        language={language}
+        setLanguage={setLanguage}
+      />
       
       <main className="flex-grow">
         {currentPage === 'home' && (
@@ -223,6 +201,7 @@ const App: React.FC = () => {
             onNavigate={handleNavigate} 
             onSelectCategory={setSelectedCategory} 
             onSearch={handleSearch}
+            language={language}
           />
         )}
         
@@ -230,9 +209,9 @@ const App: React.FC = () => {
           <div className="container mx-auto px-4 py-24 animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-24 gap-8">
                <div>
-                  <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-none mb-3">SYSTEM SHOP</h1>
+                  <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-none mb-3">{t.shopTitle}</h1>
                   <p className="text-gray-600 text-[12px] uppercase tracking-[0.4em] font-black">
-                      {searchQuery ? `Searching: "${searchQuery}"` : (selectedCategory ? `Department: ${selectedCategory}` : 'All Global Products')}
+                      {searchQuery ? `${t.searching}: "${searchQuery}"` : (selectedCategory ? `${t.dept}: ${selectedCategory}` : t.allGlobal)}
                   </p>
                </div>
                <div className="flex items-center gap-4 overflow-x-auto pb-6 scrollbar-hide max-w-full">
@@ -240,7 +219,7 @@ const App: React.FC = () => {
                     onClick={() => { setSelectedCategory(null); setSearchQuery(''); }}
                     className={`px-8 py-4 rounded-2xl text-[11px] font-black uppercase transition-all whitespace-nowrap tracking-[0.2em] shadow-2xl ${!selectedCategory && !searchQuery ? 'bg-blue-600 text-white' : 'bg-[#1e232e] text-gray-400 hover:text-white border border-gray-800'}`}
                   >
-                    ALL DEPTS
+                    {t.allDepts}
                   </button>
                   {Object.values(GameCategory).map((cat: string) => (
                     <button 
@@ -258,6 +237,7 @@ const App: React.FC = () => {
               category={selectedCategory} 
               searchQuery={searchQuery}
               onProductClick={(p) => setSelectedProduct(p)} 
+              language={language}
             />
           </div>
         )}

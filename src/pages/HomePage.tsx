@@ -2,7 +2,42 @@ import React from 'react';
 import { ChevronRight, Star, Coins, Zap, Sword, ArrowUpCircle, Gift, Users } from 'lucide-react';
 import { GameCategory } from '../types';
 
-export const HomePage = ({ onNavigate, onSelectCategory }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void, onSearch: (q: string) => void }) => {
+export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void, onSearch: (q: string) => void, language: 'en' | 'fr' }) => {
+
+  const t = {
+     en: {
+         premium: "Premium Gaming Marketplace",
+         desc: "Elite gaming inventory, instant fulfillment, and 24/7 security since 2014.",
+         browse: "Browse Full Shop",
+         depts: "Elite Departments",
+         products: "Global Products",
+         cats: {
+             [GameCategory.ACCOUNTS]: "Accounts",
+             [GameCategory.COINS]: "Coins",
+             [GameCategory.TOP_UP]: "Top-Ups",
+             [GameCategory.ITEMS]: "Items",
+             [GameCategory.BOOSTING]: "Boosting",
+             [GameCategory.GIFT_CARD]: "Cards"
+         }
+     },
+     fr: {
+         premium: "Marché Gaming Premium",
+         desc: "Inventaire d'élite, livraison instantanée et sécurité 24/7 depuis 2014.",
+         browse: "Voir la Boutique",
+         depts: "Départements d'Élite",
+         products: "Produits Mondiaux",
+         cats: {
+             [GameCategory.ACCOUNTS]: "Comptes",
+             [GameCategory.COINS]: "Pièces",
+             [GameCategory.TOP_UP]: "Recharges",
+             [GameCategory.ITEMS]: "Objets",
+             [GameCategory.BOOSTING]: "Boost",
+             [GameCategory.GIFT_CARD]: "Cartes"
+         }
+     }
+  };
+
+  const text = t[language];
 
   return (
     <div className="animate-fade-in">
@@ -19,14 +54,14 @@ export const HomePage = ({ onNavigate, onSelectCategory }: { onNavigate: (p: str
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-blue-600/10 border border-blue-600/40 text-blue-400 text-[11px] font-black uppercase tracking-[0.4em] mb-10 shadow-2xl">
-              <Star className="w-4 h-4 fill-blue-400" /> Premium Gaming Marketplace
+              <Star className="w-4 h-4 fill-blue-400" /> {text.premium}
             </div>
             <h1 className="text-7xl md:text-[10rem] font-black italic tracking-tighter text-white leading-[0.85] mb-10 uppercase">
               MOON <span className="text-blue-500">NIGHT</span><br />
               <span className="text-cyan-400">STORE</span>
             </h1>
             <p className="text-base md:text-xl text-gray-400 mb-12 leading-relaxed font-bold uppercase tracking-[0.2em] max-w-xl opacity-80">
-              Elite gaming inventory, instant fulfillment, and 24/7 security since 2014.
+              {text.desc}
             </p>
             
             <div className="flex flex-wrap gap-6">
@@ -34,7 +69,7 @@ export const HomePage = ({ onNavigate, onSelectCategory }: { onNavigate: (p: str
                 onClick={() => onNavigate('shop')}
                 className="bg-transparent border-2 border-gray-700 hover:border-white hover:bg-white hover:text-black text-white px-12 py-4 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter"
               >
-                Browse Full Shop <ChevronRight className="w-5 h-5" />
+                {text.browse} <ChevronRight className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -44,17 +79,17 @@ export const HomePage = ({ onNavigate, onSelectCategory }: { onNavigate: (p: str
       <section className="py-32 bg-[#0b0e14]">
         <div className="container mx-auto px-4">
           <div className="mb-24 text-center md:text-left">
-            <p className="text-blue-500 font-black uppercase text-[12px] tracking-[0.4em] mb-4">Elite Departments</p>
-            <h2 className="text-6xl md:text-8xl font-black text-white italic uppercase tracking-tighter leading-none">Global Products</h2>
+            <p className="text-blue-500 font-black uppercase text-[12px] tracking-[0.4em] mb-4">{text.depts}</p>
+            <h2 className="text-6xl md:text-8xl font-black text-white italic uppercase tracking-tighter leading-none">{text.products}</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {[
-              { id: GameCategory.ACCOUNTS, icon: Users, label: 'Accounts', color: 'from-pink-400/20' },
-              { id: GameCategory.COINS, icon: Coins, label: 'Coins', color: 'from-yellow-400/20' },
-              { id: GameCategory.TOP_UP, icon: Zap, label: 'Top-Ups', color: 'from-blue-400/20' },
-              { id: GameCategory.ITEMS, icon: Sword, label: 'Items', color: 'from-red-400/20' },
-              { id: GameCategory.BOOSTING, icon: ArrowUpCircle, label: 'Boosting', color: 'from-green-400/20' },
-              { id: GameCategory.GIFT_CARD, icon: Gift, label: 'Cards', color: 'from-purple-400/20' },
+              { id: GameCategory.ACCOUNTS, icon: Users, label: text.cats[GameCategory.ACCOUNTS], color: 'from-pink-400/20' },
+              { id: GameCategory.COINS, icon: Coins, label: text.cats[GameCategory.COINS], color: 'from-yellow-400/20' },
+              { id: GameCategory.TOP_UP, icon: Zap, label: text.cats[GameCategory.TOP_UP], color: 'from-blue-400/20' },
+              { id: GameCategory.ITEMS, icon: Sword, label: text.cats[GameCategory.ITEMS], color: 'from-red-400/20' },
+              { id: GameCategory.BOOSTING, icon: ArrowUpCircle, label: text.cats[GameCategory.BOOSTING], color: 'from-green-400/20' },
+              { id: GameCategory.GIFT_CARD, icon: Gift, label: text.cats[GameCategory.GIFT_CARD], color: 'from-purple-400/20' },
             ].map((cat) => (
               <button 
                 key={cat.id}
