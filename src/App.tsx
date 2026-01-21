@@ -72,16 +72,84 @@ const App: React.FC = () => {
     if (!isSessionLoading) logVisitor();
   }, [isSessionLoading, session]);
 
+  // --- AUTH & PROFILE SYNC ---
   useEffect(() => {
+    // Helper to sync provider info from Auth Metadata to Profile Table
+    const syncUserProfile = async (currentSession: any) => {
+        if (!currentSession?.user) return;
+        
+        const { user } = currentSession;
+        // Detect provider (google, discord, email) from app_metadata
+        const provider = user.app_metadata?.provider || 'email';
+        
+        try {
+            // Check existing profile
+            const { data: profile } = await supabase.from('profiles').select('auth_provider, username, avatar_url').eq('id', user.id).single();
+            
+            const updates: any = {};
+            let needsUpdate = false;
+
+            // 1. Sync Provider if missing or different
+            if (!profile || profile.auth_provider !== provider) {
+                updates.auth_provider = provider;
+                needsUpdate = true;
+            }
+
+            // 2. Sync Metadata (Avatar/Name) for Google/Discord users if profile is empty/default
+            if (provider !== 'email') {
+                const meta = user.user_metadata;
+                const newAvatar = meta.avatar_url || meta.picture;
+                const newName = meta.full_name || meta.name || meta.custom_claims?.global_name;
+
+                // Only update if profile has default/empty values
+                if (profile) {
+                    if ((!profile.username || profile.username === 'New User') && newName) {
+                        updates.username = newName;
+                        needsUpdate = true;
+                    }
+                    if (newAvatar && (!profile.avatar_url || profile.avatar_url.includes('unsplash'))) {
+                        updates.avatar_url = newAvatar;
+                        needsUpdate = true;
+                    }
+                }
+            }
+
+            if (needsUpdate) {
+                // Upsert handles both "New Profile" creation (if trigger missed) and "Update"
+                await supabase.from('profiles').upsert({
+                    id: user.id,
+                    email: user.email,
+                    updated_at: new Date().toISOString(),
+                    ...updates
+                }, { onConflict: 'id' });
+            }
+        } catch (err) {
+            console.error("Profile Sync Error:", err);
+        }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setSession(session);
-      else setSession({ user: { id: 'guest-user-123', email: 'guest@moonnight.com' } });
+      if (session) {
+          setSession(session);
+          syncUserProfile(session);
+      } else {
+          setSession({ user: { id: 'guest-user-123', email: 'guest@moonnight.com' } });
+      }
       setIsSessionLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
-      if (s) setSession(s);
-      else setSession({ user: { id: 'guest-user-123', email: 'guest@moonnight.com' } });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+          setSession(session);
+          // Sync on sign-in to ensure provider is correct immediately
+          if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+              syncUserProfile(session);
+          }
+      } else {
+          setSession({ user: { id: 'guest-user-123', email: 'guest@moonnight.com' } });
+      }
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
