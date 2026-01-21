@@ -223,6 +223,22 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
     }
   };
 
+  const handleDeleteAllProducts = async () => {
+    if (!window.confirm('DANGER: This will delete ALL products from the database. This action cannot be undone. Are you sure?')) return;
+    
+    if (!window.confirm('Are you absolutely sure? This will wipe the entire inventory.')) return;
+
+    // Delete products with price > -1 (matches all items)
+    const { error } = await supabase.from('products').delete().gt('price', -1);
+    
+    if (!error) {
+      addToast('Cleared', 'All inventory deleted.', 'success');
+      fetchData();
+    } else {
+      addToast('Error', error.message, 'error');
+    }
+  };
+
   const handleSaveProduct = async (productData: Partial<Product>) => {
     try {
       if (productData.id) {
@@ -481,12 +497,21 @@ export const AdminPanel = ({ session, addToast }: { session: any, addToast: any 
                 />
                 <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
              </div>
-             <button 
-                onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl uppercase text-xs tracking-widest"
-             >
-                <PlusCircle className="w-5 h-5" /> Add Product
-             </button>
+             
+             <div className="flex gap-2">
+                 <button 
+                    onClick={handleDeleteAllProducts}
+                    className="bg-red-900/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/20 font-black px-6 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl uppercase text-xs tracking-widest whitespace-nowrap"
+                 >
+                    <Trash2 className="w-5 h-5" /> Wipe All
+                 </button>
+                 <button 
+                    onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl uppercase text-xs tracking-widest whitespace-nowrap"
+                 >
+                    <PlusCircle className="w-5 h-5" /> Add Product
+                 </button>
+             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

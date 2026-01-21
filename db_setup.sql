@@ -1,5 +1,5 @@
 -- ==============================================================================
--- MOON NIGHT COMPLETE DATABASE SETUP (V13 - FULL CASCADE FIX)
+-- MOON NIGHT COMPLETE DATABASE SETUP (V18 - NO SEED DATA)
 -- Run this in the Supabase SQL Editor to fix Foreign Key constraints and Policies.
 -- ==============================================================================
 
@@ -100,6 +100,16 @@ create table if not exists public.order_items (
   quantity int not null,
   price_at_purchase decimal(10, 2) not null
 );
+
+-- MIGRATION: Fix Order Items product_id constraint to Set Null on Delete (Allows deleting products even if ordered)
+do $$
+begin
+  if exists (select 1 from information_schema.table_constraints where constraint_name = 'order_items_product_id_fkey' and table_name = 'order_items') then
+    alter table public.order_items drop constraint order_items_product_id_fkey;
+  end if;
+  alter table public.order_items add constraint order_items_product_id_fkey foreign key (product_id) references public.products(id) on delete set null;
+end;
+$$;
 
 -- 7. COUPONS TABLE
 create table if not exists public.coupons (
@@ -288,8 +298,3 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
-
--- Seed Data
-insert into public.products (name, description, price, category, image_url, is_trending, platform) 
-select 'Fortnite V-Bucks (13500)', 'Top up your V-Bucks instantly. Compatible with all platforms.', 79.99, 'Top Up', 'https://images.unsplash.com/photo-1589241062272-c0a000071964?auto=format&fit=crop&w=600&q=80', true, 'Multi'
-where not exists (select 1 from public.products);
