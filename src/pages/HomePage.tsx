@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy } from 'lucide-react';
+import { ChevronRight, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords } from 'lucide-react';
 import { GameCategory } from '../types';
 
 export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void, onSearch: (q: string) => void, language: 'en' | 'fr' }) => {
@@ -64,7 +64,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
               {text.desc}
             </p>
             
-            <div className="flex flex-wrap gap-6">
+            <div className="flex flex-wrap gap-6 items-center">
               <button 
                 onClick={() => onNavigate('shop')}
                 className="bg-transparent border-2 border-gray-700 hover:border-white hover:bg-white hover:text-black text-white px-12 py-4 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter"
@@ -77,6 +77,13 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
                 className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-12 py-4 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-2xl shadow-purple-600/30"
               >
                 <Trophy className="w-5 h-5" /> Points Shop
+              </button>
+
+              <button 
+                onClick={() => onNavigate('tournaments')}
+                className="bg-pink-900/10 hover:bg-pink-600 text-pink-400 hover:text-white border border-pink-500/30 px-8 py-3 rounded-2xl font-black text-xs transition-all flex items-center gap-2 uppercase tracking-widest shadow-xl"
+              >
+                <Swords className="w-4 h-4" /> Competitions
               </button>
             </div>
           </div>

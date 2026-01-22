@@ -33,9 +33,20 @@ export const TournamentsPage = ({ onNavigate, onSelectTournament }: { onNavigate
                 <h1 className="relative z-10 text-6xl md:text-8xl font-black text-white italic uppercase tracking-tighter mb-4">
                     Tourna<span className="text-cyan-400">ments</span>
                 </h1>
-                <p className="relative z-10 text-gray-400 text-sm font-bold uppercase tracking-widest max-w-xl mx-auto mb-12">
-                    Compete in exciting tournaments, showcase your skills, and win amazing prizes!
+                <p className="relative z-10 text-gray-400 text-sm font-bold uppercase tracking-widest max-w-xl mx-auto mb-8">
+                    Join Discord to Participate
                 </p>
+                
+                <div className="relative z-10 mb-12">
+                    <a 
+                        href="https://discord.gg/s4hcCn4s" 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752c4] text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-lg shadow-blue-600/20"
+                    >
+                        <Gamepad2 className="w-4 h-4" /> Join Discord Server
+                    </a>
+                </div>
 
                 {/* Stats Row */}
                 <div className="relative z-10 flex justify-center gap-12 mb-8">
