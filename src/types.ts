@@ -155,5 +155,6 @@ export enum GameCategory {
   KEYS = 'Keys',
   ITEMS = 'Items',
   BOOSTING = 'Boosting',
-  GIFT_CARD = 'Gift Card'
+  GIFT_CARD = 'Gift Card',
+  SUBSCRIPTION = 'Subscription'
 }

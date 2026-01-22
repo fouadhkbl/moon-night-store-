@@ -17,7 +17,8 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
              [GameCategory.KEYS]: "Keys",
              [GameCategory.ITEMS]: "Items",
              [GameCategory.BOOSTING]: "Boosting",
-             [GameCategory.GIFT_CARD]: "Cards"
+             [GameCategory.GIFT_CARD]: "Cards",
+             [GameCategory.SUBSCRIPTION]: "Subscription"
          },
          compete: "Competitions",
          competeDesc: "Join Tournaments"
@@ -34,7 +35,8 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
              [GameCategory.KEYS]: "Clés",
              [GameCategory.ITEMS]: "Objets",
              [GameCategory.BOOSTING]: "Boost",
-             [GameCategory.GIFT_CARD]: "Cartes"
+             [GameCategory.GIFT_CARD]: "Cartes",
+             [GameCategory.SUBSCRIPTION]: "Abonnement"
          },
          compete: "Compétitions",
          competeDesc: "Rejoindre les Tournois"
@@ -107,7 +109,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
             <p className="text-blue-500 font-black uppercase text-[12px] tracking-[0.4em] mb-4">{text.depts}</p>
             <h2 className="text-6xl md:text-8xl font-black text-white italic uppercase tracking-tighter leading-none">{text.products}</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-7 gap-6">
             {[
               { id: GameCategory.ACCOUNTS, icon: Users, label: text.cats[GameCategory.ACCOUNTS], color: 'from-pink-400/20' },
               { id: GameCategory.COINS, icon: Coins, label: text.cats[GameCategory.COINS], color: 'from-yellow-400/20' },
@@ -115,6 +117,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
               { id: GameCategory.ITEMS, icon: Sword, label: text.cats[GameCategory.ITEMS], color: 'from-red-400/20' },
               { id: GameCategory.BOOSTING, icon: ArrowUpCircle, label: text.cats[GameCategory.BOOSTING], color: 'from-green-400/20' },
               { id: GameCategory.GIFT_CARD, icon: Gift, label: text.cats[GameCategory.GIFT_CARD], color: 'from-purple-400/20' },
+              { id: GameCategory.SUBSCRIPTION, icon: Calendar, label: text.cats[GameCategory.SUBSCRIPTION], color: 'from-blue-400/20' },
             ].map((cat) => (
               <button 
                 key={cat.id}
