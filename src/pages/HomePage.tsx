@@ -67,7 +67,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
             <div className="flex flex-wrap gap-4 items-center">
               <button 
                 onClick={() => onNavigate('shop')}
-                className="h-[64px] bg-transparent border-2 border-yellow-500 hover:border-yellow-400 hover:bg-yellow-400 hover:text-black text-yellow-400 px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-lg shadow-yellow-500/10 hover:shadow-yellow-500/30"
+                className="h-[64px] bg-transparent border-2 border-red-600 hover:border-red-500 hover:bg-red-500 hover:text-white text-red-500 px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-lg shadow-red-600/10 hover:shadow-red-600/30"
               >
                 {text.browse} <ChevronRight className="w-5 h-5" />
               </button>
@@ -81,7 +81,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
 
               <button 
                 onClick={() => onNavigate('tournaments')}
-                className="h-[64px] bg-[#1e232e] border-2 border-pink-500 hover:bg-pink-600 hover:border-pink-600 text-white px-8 rounded-2xl font-black text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-[0_0_20px_rgba(236,72,153,0.2)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] active:scale-95"
+                className="h-[64px] bg-[#1e232e] border-2 border-pink-500 hover:bg-pink-600 hover:border-pink-600 text-white px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-[0_0_20px_rgba(236,72,153,0.2)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] active:scale-95 group"
               >
                 <Swords className="w-5 h-5 text-pink-500 group-hover:text-white transition-colors" /> 
                 <span>Competitions</span>
