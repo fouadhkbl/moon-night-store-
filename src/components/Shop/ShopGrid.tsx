@@ -30,7 +30,8 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
 
    useEffect(() => {
      setIsLoading(true);
-     let query = supabase.from('products').select('*');
+     // Only select items that are NOT hidden
+     let query = supabase.from('products').select('*').eq('is_hidden', false);
      
      if (category) {
          query = query.eq('category', category);

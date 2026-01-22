@@ -21,6 +21,7 @@ create table if not exists public.products (
   country text default 'Global', -- New Column for Region/Country
   is_trending boolean default false,
   is_vip boolean default false, -- New VIP Column
+  is_hidden boolean default false, -- New Hidden Column
   updated_at timestamp with time zone default timezone('utc'::text, now()),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -30,6 +31,9 @@ alter table public.products add column if not exists country text default 'Globa
 
 -- MIGRATION: Add is_vip column if it doesn't exist
 alter table public.products add column if not exists is_vip boolean default false;
+
+-- MIGRATION: Add is_hidden column if it doesn't exist
+alter table public.products add column if not exists is_hidden boolean default false;
 
 -- 3. PROFILES TABLE
 create table if not exists public.profiles (

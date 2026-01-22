@@ -11,6 +11,7 @@ export interface Product {
   country?: string; // New field for region/country
   is_trending: boolean;
   is_vip?: boolean; // New field for VIP status
+  is_hidden?: boolean; // New field for visibility
 }
 
 export interface Profile {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap, Crown } from 'lucide-react';
+import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap, Crown, Eye, EyeOff } from 'lucide-react';
 import { Profile, Product, GameCategory, Coupon, PointProduct } from '../../types';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number, points: number) => void }) => {
@@ -79,6 +79,7 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
     country: 'Global',
     is_trending: false,
     is_vip: false,
+    is_hidden: false,
     stock: 999
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -190,17 +191,17 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
             <textarea className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none h-24" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}></textarea>
           </div>
 
-          {/* TRENDING & VIP TOGGLES */}
+          {/* TRENDING, VIP & VISIBILITY TOGGLES */}
           <div className="pt-2">
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Product Highlights</label>
-            <div className="grid grid-cols-2 gap-4">
+            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Product Highlights & Visibility</label>
+            <div className="grid grid-cols-3 gap-3">
                 <button
                     type="button"
                     onClick={() => setFormData({...formData, is_trending: !formData.is_trending})}
                     className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all active:scale-95 ${formData.is_trending ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-[#0b0e14] border-gray-800 text-gray-500 hover:border-gray-600 hover:text-gray-300'}`}
                 >
                     <Zap className={`w-6 h-6 ${formData.is_trending ? "fill-white" : ""}`} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Trending (HOT)</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">Trending</span>
                 </button>
                 <button
                     type="button"
@@ -209,6 +210,14 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
                 >
                     <Crown className={`w-6 h-6 ${formData.is_vip ? "fill-black" : ""}`} />
                     <span className="text-[10px] font-black uppercase tracking-widest">VIP Trend</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setFormData({...formData, is_hidden: !formData.is_hidden})}
+                    className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all active:scale-95 ${formData.is_hidden ? 'bg-red-900/20 border-red-500 text-red-500 shadow-lg' : 'bg-[#0b0e14] border-gray-800 text-gray-500 hover:border-gray-600 hover:text-gray-300'}`}
+                >
+                    {formData.is_hidden ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
+                    <span className="text-[10px] font-black uppercase tracking-widest">{formData.is_hidden ? 'Hidden' : 'Visible'}</span>
                 </button>
             </div>
           </div>

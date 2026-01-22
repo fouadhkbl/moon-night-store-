@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift } from 'lucide-react';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal } from './AdminModals';
 
 // --- VISITOR LOG MODAL ---
@@ -923,9 +923,14 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
              {filteredProducts.map(p => (
-                <div key={p.id} className="bg-[#1e232e] rounded-3xl border border-gray-800 p-5 shadow-2xl flex flex-col group hover:border-blue-500/30 transition-all">
+                <div key={p.id} className={`bg-[#1e232e] rounded-3xl border p-5 shadow-2xl flex flex-col group transition-all relative ${p.is_hidden ? 'border-red-900/30 bg-red-900/5' : 'border-gray-800 hover:border-blue-500/30'}`}>
+                   {p.is_hidden && (
+                       <div className="absolute top-4 right-4 z-10 bg-red-600 text-white text-[9px] font-black px-2 py-1 rounded uppercase tracking-widest shadow-lg">
+                           Hidden
+                       </div>
+                   )}
                    <div className="flex gap-4 mb-6 items-start">
-                      <img src={p.image_url} className="w-20 h-20 rounded-2xl object-cover border border-gray-700 shadow-lg" alt="" />
+                      <img src={p.image_url} className={`w-20 h-20 rounded-2xl object-cover border border-gray-700 shadow-lg ${p.is_hidden ? 'grayscale opacity-70' : ''}`} alt="" />
                       <div className="min-w-0 flex-1">
                          <h3 className="text-white font-black italic truncate leading-tight mb-2 uppercase tracking-tighter text-lg">{p.name}</h3>
                          <div className="flex gap-2 flex-wrap mb-2">
