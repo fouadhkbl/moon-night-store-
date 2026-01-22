@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, Order, OrderItem, OrderMessage, PointRedemption, RedemptionMessage } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar, LayoutDashboard, ClipboardList, Copy, Users } from 'lucide-react';
+import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar, LayoutDashboard, ClipboardList, Copy, Users, Link } from 'lucide-react';
 
 // --- SHARED CHAT MODAL LOGIC (Order & Redemption) ---
 // Note: Created separate components for simplicity in state management types
@@ -415,6 +415,12 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
       addToast('Copied', 'Referral code copied to clipboard!', 'success');
   };
 
+  const copyReferralLink = (code: string) => {
+      const url = `${window.location.origin}/?ref=${code}`;
+      navigator.clipboard.writeText(url);
+      addToast('Link Copied', 'Referral link copied to clipboard!', 'success');
+  };
+
   if (isGuest && authMode === 'login') return (
     <div className="py-20 container mx-auto px-4">
       <LoginForm 
@@ -533,12 +539,20 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                                      <p className="text-[10px] text-green-400 font-black uppercase tracking-widest mb-1">Your Code</p>
                                      <div className="text-4xl font-mono font-black text-white tracking-widest">{profile?.referral_code || 'LOADING...'}</div>
                                  </div>
-                                 <button 
+                                 <div className="flex gap-3 ml-auto">
+                                    <button 
                                     onClick={() => copyToClipboard(profile?.referral_code || '')}
-                                    className="ml-auto bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg transition-all flex items-center gap-2 active:scale-95"
-                                 >
-                                     <Copy className="w-4 h-4" /> Copy Code
-                                 </button>
+                                    className="bg-[#1e232e] border border-gray-700 hover:border-gray-500 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg transition-all flex items-center gap-2 active:scale-95"
+                                    >
+                                        <Copy className="w-4 h-4" /> Code
+                                    </button>
+                                    <button 
+                                    onClick={() => copyReferralLink(profile?.referral_code || '')}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg transition-all flex items-center gap-2 active:scale-95"
+                                    >
+                                        <Link className="w-4 h-4" /> Link
+                                    </button>
+                                </div>
                              </div>
                          </div>
                      </div>

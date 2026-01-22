@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament } from '../../types';
+import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament, Announcement } from '../../types';
 import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save, Megaphone, Image, LogOut } from 'lucide-react';
-import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal } from './AdminModals';
+import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal, AnnouncementFormModal, ReferralEditorModal } from './AdminModals';
 
 const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
     return (
@@ -366,6 +366,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [pointRedemptions, setPointRedemptions] = useState<PointRedemption[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
   const [isLoading, setIsLoading] = useState(true);
@@ -374,10 +375,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   
   // System Settings State
   const [referralReward, setReferralReward] = useState('10');
-  const [announcementMode, setAnnouncementMode] = useState('rotation');
-  const [announcementText, setAnnouncementText] = useState('');
-  const [announcementBg, setAnnouncementBg] = useState('');
-  const [announcementColor, setAnnouncementColor] = useState('');
   const [saleCode, setSaleCode] = useState('');
   const [siteBackground, setSiteBackground] = useState('');
   
@@ -386,12 +383,15 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [isPointProductModalOpen, setIsPointProductModalOpen] = useState(false);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [isTournamentModalOpen, setIsTournamentModalOpen] = useState(false);
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
   const [isVisitsModalOpen, setIsVisitsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [editingPointProduct, setEditingPointProduct] = useState<Partial<PointProduct> | null>(null);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [editingReferral, setEditingReferral] = useState<Profile | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedRedemption, setSelectedRedemption] = useState<PointRedemption | null>(null);
   
@@ -450,20 +450,18 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         if (prData) setPointRedemptions(prData);
     }
 
-    // Fetch Settings
+    // Fetch Settings & Announcements
     if (role === 'full') {
         const { data: settings } = await supabase.from('app_settings').select('*');
         if (settings) {
             settings.forEach(item => {
                 if (item.key === 'referral_reward') setReferralReward(item.value);
-                if (item.key === 'announcement_mode') setAnnouncementMode(item.value);
-                if (item.key === 'announcement_text') setAnnouncementText(item.value);
-                if (item.key === 'announcement_bg') setAnnouncementBg(item.value);
-                if (item.key === 'announcement_color') setAnnouncementColor(item.value);
                 if (item.key === 'sale_code') setSaleCode(item.value);
                 if (item.key === 'site_background') setSiteBackground(item.value);
             });
         }
+        const { data: ann } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+        if (ann) setAnnouncements(ann);
     }
 
     // Fetch Orders - For Full and Limited (Not Shop Only)
@@ -502,12 +500,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (!error) { addToast('Deleted', 'Item removed.', 'success'); fetchData(); }
   };
-
-  const handleDeleteAllProducts = async () => { 
-      if(!window.confirm('DANGER: DELETE ALL PRODUCTS?')) return;
-      await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Hack to delete all
-      fetchData();
-  }; 
 
   const handleSaveProduct = async (data: any) => { 
       if(data.id) await supabase.from('products').update(data).eq('id', data.id);
@@ -549,6 +541,17 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       addToast('Updated', 'Balance synced.', 'success');
   };
 
+  const handleUpdateReferral = async (id: string, code: string, earnings: number) => {
+      const { error } = await supabase.from('profiles').update({ referral_code: code, referral_earnings: earnings }).eq('id', id);
+      if (error) {
+          addToast('Error', 'Code might be taken or invalid.', 'error');
+      } else {
+          setEditingReferral(null);
+          fetchData();
+          addToast('Updated', 'Affiliate details updated.', 'success');
+      }
+  };
+
   const handleDeleteUser = async (uid: string) => { 
       if(!window.confirm('Delete User?')) return;
       await supabase.from('profiles').delete().eq('id', uid);
@@ -569,13 +572,22 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       fetchData();
   };
 
+  const handleSaveAnnouncement = async (data: any) => {
+      if(data.id) await supabase.from('announcements').update(data).eq('id', data.id);
+      else await supabase.from('announcements').insert(data);
+      setIsAnnouncementModalOpen(false);
+      fetchData();
+  };
+
+  const handleDeleteAnnouncement = async (id: string) => {
+      if(!window.confirm('Delete Announcement?')) return;
+      await supabase.from('announcements').delete().eq('id', id);
+      fetchData();
+  };
+
   const handleSaveSettings = async () => {
       const updates = [
           { key: 'referral_reward', value: referralReward },
-          { key: 'announcement_mode', value: announcementMode },
-          { key: 'announcement_text', value: announcementText },
-          { key: 'announcement_bg', value: announcementBg },
-          { key: 'announcement_color', value: announcementColor },
           { key: 'sale_code', value: saleCode },
           { key: 'site_background', value: siteBackground }
       ];
@@ -882,12 +894,13 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                         <th className="p-6">Affiliate User</th>
                                         <th className="p-6">Code</th>
                                         <th className="p-6 text-center">Invited Users</th>
-                                        <th className="p-6 text-right">Total Earnings</th>
+                                        <th className="p-6">Total Earnings</th>
+                                        <th className="p-6 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-800">
                                     {affiliateProfiles.length === 0 ? (
-                                        <tr><td colSpan={4} className="p-8 text-center text-gray-500 text-xs font-bold uppercase tracking-widest">No active affiliates found.</td></tr>
+                                        <tr><td colSpan={5} className="p-8 text-center text-gray-500 text-xs font-bold uppercase tracking-widest">No active affiliates found.</td></tr>
                                     ) : (
                                         affiliateProfiles.map(p => {
                                             const inviteCount = profiles.filter(sub => sub.referred_by === p.id).length;
@@ -903,7 +916,10 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                                     </td>
                                                     <td className="p-6 font-mono text-blue-400 font-bold text-xs">{p.referral_code}</td>
                                                     <td className="p-6 text-center text-gray-400 font-bold text-xs">{inviteCount}</td>
-                                                    <td className="p-6 text-right font-mono text-green-400 font-black text-sm">{p.referral_earnings?.toFixed(2) || '0.00'} DH</td>
+                                                    <td className="p-6 font-mono text-green-400 font-black text-sm">{p.referral_earnings?.toFixed(2) || '0.00'} DH</td>
+                                                    <td className="p-6 text-right">
+                                                        <button onClick={() => setEditingReferral(p)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">Edit Details</button>
+                                                    </td>
                                                 </tr>
                                             );
                                         })
@@ -1051,64 +1067,69 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
 
                 {/* SYSTEM SETTINGS SECTION */}
                 {activeSection === 'system' && role === 'full' && (
-                    <div className="animate-slide-up max-w-2xl">
-                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Global Config</h2>
-                        <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 space-y-6">
-                            
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Referral Reward (DH)</label>
-                                <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={referralReward} onChange={e => setReferralReward(e.target.value)} />
-                            </div>
-
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Announcement Mode</label>
-                                <select className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500 appearance-none" value={announcementMode} onChange={e => setAnnouncementMode(e.target.value)}>
-                                    <option value="rotation">Auto Rotation (Sale/Referral)</option>
-                                    <option value="sale">Flash Sale Only</option>
-                                    <option value="referral">Referral Only</option>
-                                    <option value="custom">Custom Message (Styled)</option>
-                                    <option value="off">Disabled</option>
-                                </select>
-                            </div>
-
-                            {announcementMode === 'custom' && (
-                                <div className="space-y-4 bg-[#0b0e14]/50 p-4 rounded-xl border border-gray-800">
+                    <div className="animate-slide-up">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">System Configuration</h2>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div className="space-y-6">
+                                <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 space-y-6">
+                                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter border-b border-gray-800 pb-4">Global Settings</h3>
+                                    
                                     <div>
-                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Custom Text</label>
-                                        <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={announcementText} onChange={e => setAnnouncementText(e.target.value)} />
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Referral Reward (DH)</label>
+                                        <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={referralReward} onChange={e => setReferralReward(e.target.value)} />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Banner Background (Color or Gradient)</label>
-                                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-mono text-xs outline-none focus:border-indigo-500" value={announcementBg} onChange={e => setAnnouncementBg(e.target.value)} placeholder="linear-gradient(...) or #hex" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Text Color</label>
-                                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-mono text-xs outline-none focus:border-indigo-500" value={announcementColor} onChange={e => setAnnouncementColor(e.target.value)} placeholder="#ffffff" />
-                                        </div>
-                                    </div>
-                                    <div className="p-4 rounded-lg text-center font-bold text-xs uppercase tracking-widest border border-gray-700" style={{ background: announcementBg, color: announcementColor }}>
-                                        Preview: {announcementText}
-                                    </div>
-                                </div>
-                            )}
 
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Flash Sale Code</label>
-                                <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500 uppercase" value={saleCode} onChange={e => setSaleCode(e.target.value)} />
-                            </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Flash Sale Code</label>
+                                        <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500 uppercase" value={saleCode} onChange={e => setSaleCode(e.target.value)} />
+                                    </div>
 
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Site Background URL (Optional)</label>
-                                <div className="flex gap-2">
-                                    <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={siteBackground} onChange={e => setSiteBackground(e.target.value)} placeholder="https://..." />
-                                    {siteBackground && <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-800 flex-shrink-0"><img src={siteBackground} className="w-full h-full object-cover" /></div>}
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Site Background URL (Optional)</label>
+                                        <div className="flex gap-2">
+                                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={siteBackground} onChange={e => setSiteBackground(e.target.value)} placeholder="https://..." />
+                                            {siteBackground && <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-800 flex-shrink-0"><img src={siteBackground} className="w-full h-full object-cover" /></div>}
+                                        </div>
+                                    </div>
+
+                                    <button onClick={handleSaveSettings} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl uppercase tracking-widest text-xs shadow-lg shadow-indigo-900/20 transition-all flex items-center justify-center gap-2">
+                                        <Save className="w-4 h-4" /> Save Global Config
+                                    </button>
                                 </div>
                             </div>
 
-                            <button onClick={handleSaveSettings} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl uppercase tracking-widest text-xs shadow-lg shadow-indigo-900/20 transition-all flex items-center justify-center gap-2">
-                                <Save className="w-4 h-4" /> Save Configuration
-                            </button>
+                            <div className="space-y-6">
+                                 <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800">
+                                     <div className="flex justify-between items-center mb-6">
+                                         <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Announcements</h3>
+                                         <button onClick={() => { setEditingAnnouncement(null); setIsAnnouncementModalOpen(true); }} className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest flex items-center gap-2 shadow-lg hover:bg-indigo-700 transition-all">
+                                             <PlusCircle className="w-3 h-3" /> Add New
+                                         </button>
+                                     </div>
+                                     
+                                     <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar">
+                                         {announcements.length === 0 && <p className="text-center text-gray-500 text-xs py-8 uppercase font-bold tracking-widest">No active announcements.</p>}
+                                         {announcements.map(ann => (
+                                             <div key={ann.id} className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 relative group hover:border-indigo-500/50 transition-all">
+                                                 <div className="flex justify-between items-start mb-2">
+                                                     <div className="flex items-center gap-2">
+                                                         <div className={`w-2 h-2 rounded-full ${ann.is_active ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                                                         <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{ann.is_active ? 'Active' : 'Inactive'}</span>
+                                                     </div>
+                                                     <div className="flex gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                                         <button onClick={() => { setEditingAnnouncement(ann); setIsAnnouncementModalOpen(true); }} className="hover:text-white text-gray-400"><Edit2 className="w-3 h-3" /></button>
+                                                         <button onClick={() => handleDeleteAnnouncement(ann.id)} className="hover:text-red-500 text-gray-400"><Trash2 className="w-3 h-3" /></button>
+                                                     </div>
+                                                 </div>
+                                                 <div className="p-3 rounded-lg text-xs font-bold uppercase tracking-widest text-center shadow-inner" style={{ background: ann.background_color, color: ann.text_color }}>
+                                                     {ann.message}
+                                                 </div>
+                                             </div>
+                                         ))}
+                                     </div>
+                                 </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -1121,6 +1142,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         {isPointProductModalOpen && <PointProductFormModal product={editingPointProduct} onClose={() => setIsPointProductModalOpen(false)} onSave={handleSavePointProduct} />}
         {isCouponModalOpen && <CouponFormModal coupon={editingCoupon} onClose={() => setIsCouponModalOpen(false)} onSave={handleSaveCoupon} />}
         {isTournamentModalOpen && <TournamentFormModal tournament={editingTournament} onClose={() => setIsTournamentModalOpen(false)} onSave={handleSaveTournament} />}
+        {isAnnouncementModalOpen && <AnnouncementFormModal announcement={editingAnnouncement} onClose={() => setIsAnnouncementModalOpen(false)} onSave={handleSaveAnnouncement} />}
         {isVisitsModalOpen && <VisitHistoryModal logs={logs} onClose={() => setIsVisitsModalOpen(false)} />}
         
         {editingUser && (
@@ -1128,6 +1150,14 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                 user={editingUser} 
                 onClose={() => setEditingUser(null)} 
                 onSave={handleUpdateBalance} 
+            />
+        )}
+
+        {editingReferral && (
+            <ReferralEditorModal
+                user={editingReferral}
+                onClose={() => setEditingReferral(null)}
+                onSave={handleUpdateReferral}
             />
         )}
         

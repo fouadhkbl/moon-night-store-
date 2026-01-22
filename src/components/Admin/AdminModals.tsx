@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
-import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap, Crown, Eye, EyeOff, Swords } from 'lucide-react';
-import { Profile, Product, GameCategory, Coupon, PointProduct, Tournament } from '../../types';
+import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap, Crown, Eye, EyeOff, Swords, Megaphone, Palette, Type } from 'lucide-react';
+import { Profile, Product, GameCategory, Coupon, PointProduct, Tournament, Announcement } from '../../types';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number, points: number) => void }) => {
   const [amount, setAmount] = useState<string>(user.wallet_balance.toString());
@@ -10,7 +11,6 @@ export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, o
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    // Parse values, defaulting to 0 if invalid/empty
     const finalAmount = parseFloat(amount) || 0;
     const finalPoints = parseInt(points) || 0;
     
@@ -66,6 +66,138 @@ export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, o
       </div>
     </div>
   );
+};
+
+export const ReferralEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, code: string, earnings: number) => void }) => {
+    const [code, setCode] = useState(user.referral_code || '');
+    const [earnings, setEarnings] = useState<string>((user.referral_earnings || 0).toString());
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        const finalEarnings = parseFloat(earnings) || 0;
+        await onSave(user.id, code.toUpperCase(), finalEarnings);
+        setIsSaving(false);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-sm rounded-[2rem] border border-gray-800 shadow-3xl p-8 animate-slide-up">
+                <div className="text-center mb-8">
+                    <div className="w-16 h-16 bg-green-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-green-500 border border-green-500/20">
+                        <Ticket className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Edit Referral Info</h2>
+                    <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">Affiliate: {user.username}</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 text-center">Custom Referral Code</label>
+                        <input 
+                            required 
+                            type="text" 
+                            className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-xl font-mono font-black text-white uppercase outline-none focus:border-green-500 transition-all shadow-inner placeholder-gray-700 tracking-widest" 
+                            value={code} 
+                            onChange={e => setCode(e.target.value)} 
+                            placeholder="CODE123"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 text-center">Total Earnings (DH)</label>
+                        <input 
+                            required 
+                            type="number" 
+                            step="0.01" 
+                            className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-xl font-black text-green-400 italic outline-none focus:border-green-500 transition-all shadow-inner placeholder-gray-700" 
+                            value={earnings} 
+                            onChange={e => setEarnings(e.target.value)} 
+                            placeholder="0.00"
+                        />
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                        <button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-4 rounded-xl hover:bg-gray-700 transition uppercase text-xs">Cancel</button>
+                        <button type="submit" disabled={isSaving} className="flex-1 bg-green-600 text-white font-black py-4 rounded-xl hover:bg-green-700 transition flex items-center justify-center gap-2 uppercase text-xs shadow-xl shadow-green-600/30">
+                            {isSaving ? <Loader2 className="animate-spin" /> : <Save className="w-4 h-4" />} Save
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+export const AnnouncementFormModal = ({ announcement, onClose, onSave }: { announcement: Partial<Announcement> | null, onClose: () => void, onSave: (a: any) => void }) => {
+    const [formData, setFormData] = useState<Partial<Announcement>>(announcement || {
+        message: '',
+        background_color: 'linear-gradient(to right, #1e3a8a, #581c87, #1e3a8a)',
+        text_color: '#ffffff',
+        is_active: true
+    });
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        await onSave(formData);
+        setIsSaving(false);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up">
+                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]">
+                    <div className="flex items-center gap-3">
+                         <div className="bg-indigo-600/20 p-2 rounded-lg text-indigo-400"><Megaphone className="w-5 h-5" /></div>
+                         <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
+                             {announcement?.id ? 'Edit Announcement' : 'New Announcement'}
+                         </h2>
+                    </div>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition"><X /></button>
+                </div>
+                
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Message Text</label>
+                        <textarea required className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-indigo-500 outline-none h-24" value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})} placeholder="Enter announcement text..."></textarea>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Palette className="w-3 h-3" /> Background</label>
+                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white font-mono text-xs focus:border-indigo-500 outline-none" value={formData.background_color} onChange={e => setFormData({...formData, background_color: e.target.value})} placeholder="#hex or linear-gradient(...)" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Type className="w-3 h-3" /> Text Color</label>
+                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white font-mono text-xs focus:border-indigo-500 outline-none" value={formData.text_color} onChange={e => setFormData({...formData, text_color: e.target.value})} placeholder="#ffffff" />
+                        </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-gray-700" style={{ background: formData.background_color, color: formData.text_color }}>
+                        <p className="text-center text-xs font-black uppercase tracking-widest">{formData.message || 'Preview Text'}</p>
+                    </div>
+
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" className="hidden" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} />
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.is_active ? 'bg-indigo-600 border-indigo-500' : 'bg-gray-800 border-gray-700'}`}>
+                            {formData.is_active && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <span className="text-xs font-bold text-gray-400 group-hover:text-white">Active Status</span>
+                    </label>
+                </form>
+
+                <div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3">
+                    <button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-700 transition">Cancel</button>
+                    <button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-indigo-600 text-white font-black py-3 rounded-xl hover:bg-indigo-700 transition flex items-center justify-center gap-2">
+                        {isSaving ? <Loader2 className="animate-spin" /> : <Save className="w-4 h-4" />} Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export const ProductFormModal = ({ product, onClose, onSave }: { product: Partial<Product> | null, onClose: () => void, onSave: (p: any) => void }) => {

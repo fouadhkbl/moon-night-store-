@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { LogIn, Loader2, UserPlus, ArrowRight, Gamepad2, ShieldAlert, Users } from 'lucide-react';
 
@@ -173,6 +173,11 @@ export const SignupForm = ({ addToast, onAuthSuccess, onToggle }: { addToast: an
   const [referralCode, setReferralCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+      const storedRef = sessionStorage.getItem('moonnight_referral');
+      if (storedRef) setReferralCode(storedRef);
+  }, []);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();

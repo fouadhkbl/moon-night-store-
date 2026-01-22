@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-import { Product, CartItem, GameCategory, Tournament } from './types';
+import { Product, CartItem, GameCategory, Tournament, Announcement } from './types';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { ToastContainer } from './components/ToastContainer';
@@ -21,93 +21,54 @@ import { TournamentsPage } from './pages/TournamentsPage';
 import { TournamentDetailsPage } from './pages/TournamentDetailsPage';
 import { Loader2, ShoppingBag, X, Zap, Clock, Users, Megaphone } from 'lucide-react';
 
-// New Component: Flash Sale Banner with Rotation
-const AnnouncementBar = ({ settings }: { settings: any }) => {
-    const [timeLeft, setTimeLeft] = useState(3600 * 4); // 4 hours in seconds
+// New Component: Dynamic Announcement Bar
+const AnnouncementBar = () => {
+    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
     const [visible, setVisible] = useState(true);
-    const [mode, setMode] = useState<'sale' | 'referral' | 'custom'>('sale');
 
-    // Timer logic
     useEffect(() => {
-        const timer = setInterval(() => {
-            setTimeLeft(prev => (prev > 0 ? prev - 1 : 3600 * 4));
-        }, 1000);
-        return () => clearInterval(timer);
+        const fetchAnnouncements = async () => {
+            const { data } = await supabase
+                .from('announcements')
+                .select('*')
+                .eq('is_active', true)
+                .order('created_at', { ascending: false });
+            
+            if (data && data.length > 0) {
+                setAnnouncements(data);
+            }
+        };
+        fetchAnnouncements();
     }, []);
 
-    // Rotation logic
     useEffect(() => {
-        if (settings.mode === 'rotation') {
-            const rotation = setInterval(() => {
-                setMode(prev => prev === 'sale' ? 'referral' : 'sale');
-            }, 5000);
-            return () => clearInterval(rotation);
-        } else if (settings.mode === 'custom') {
-            setMode('custom');
-        } else if (settings.mode === 'sale') {
-            setMode('sale');
-        } else if (settings.mode === 'referral') {
-            setMode('referral');
+        if (announcements.length > 1) {
+            const interval = setInterval(() => {
+                setCurrentIndex((prev) => (prev + 1) % announcements.length);
+            }, 5000); // Rotate every 5 seconds
+            return () => clearInterval(interval);
         }
-    }, [settings.mode]);
+    }, [announcements]);
 
-    const formatTime = (seconds: number) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        return `${h}h ${m}m ${s}s`;
-    };
+    if (!visible || announcements.length === 0) return null;
 
-    if (!visible || settings.mode === 'off') return null;
-
-    // Dynamic Style logic
-    const barStyle = {
-        background: settings.announcement_bg || (mode === 'referral' ? 'linear-gradient(to right, #064e3b, #065f46)' : 'linear-gradient(to right, #1e3a8a, #581c87, #1e3a8a)'),
-        color: settings.announcement_color || '#ffffff'
-    };
+    const current = announcements[currentIndex];
 
     return (
-        <div style={barStyle} className="py-2 px-4 relative overflow-hidden shadow-2xl z-[60] transition-all duration-1000">
-            {/* Texture overlay only if using default gradients, if user set flat color we might want it plain, but keeping texture is fine */}
+        <div 
+            style={{ background: current.background_color, color: current.text_color }} 
+            className="py-2 px-4 relative overflow-hidden shadow-2xl z-[60] transition-all duration-1000 min-h-[40px] flex items-center"
+        >
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 pointer-events-none"></div>
             
-            <div className="container mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6 text-[10px] md:text-xs font-black uppercase tracking-widest relative z-10 animate-fade-in" key={mode}>
-                {mode === 'sale' && (
-                    <>
-                        <div className="flex items-center gap-2 animate-pulse text-yellow-400">
-                            <Zap className="w-4 h-4 fill-yellow-400" />
-                            <span>Flash Sale Active</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="opacity-80">Use Code:</span>
-                            <span className="bg-white text-black px-2 py-0.5 rounded border border-gray-300 font-mono select-all cursor-pointer hover:bg-gray-200 transition">{settings.sale_code || 'MOON20'}</span>
-                            <span className="opacity-80">for Discount</span>
-                        </div>
-                        <div className="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-white/10">
-                            <Clock className="w-3 h-3 text-red-400" />
-                            <span className="font-mono text-red-400 w-20">{formatTime(timeLeft)}</span>
-                        </div>
-                    </>
-                )}
-                {mode === 'referral' && (
-                    <>
-                        <div className="flex items-center gap-2 animate-bounce-slow text-green-400">
-                            <Users className="w-4 h-4" />
-                            <span>New Feature</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span>Refer a friend & Earn Cash!</span>
-                            <span className="bg-green-500 text-black px-2 py-0.5 rounded font-bold">Instantly</span>
-                        </div>
-                    </>
-                )}
-                {mode === 'custom' && (
-                    <div className="flex items-center gap-2">
-                        <Megaphone className="w-4 h-4" />
-                        <span className="tracking-widest">{settings.text}</span>
-                    </div>
-                )}
+            <div className="container mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6 text-[10px] md:text-xs font-black uppercase tracking-widest relative z-10 animate-fade-in" key={current.id}>
+                <div className="flex items-center gap-2">
+                    <Megaphone className="w-4 h-4" />
+                    <span className="tracking-widest">{current.message}</span>
+                </div>
             </div>
+            
             <button 
                 onClick={() => setVisible(false)} 
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 opacity-60 hover:opacity-100 transition-opacity"
@@ -184,13 +145,6 @@ const App: React.FC = () => {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   
   // App Config State
-  const [announcementSettings, setAnnouncementSettings] = useState({
-      mode: 'rotation',
-      text: 'Welcome to Moon Night Store!',
-      sale_code: 'MOON20',
-      announcement_bg: '',
-      announcement_color: '#ffffff'
-  });
   const [backgroundUrl, setBackgroundUrl] = useState('');
 
   const t = {
@@ -221,21 +175,23 @@ const App: React.FC = () => {
       const fetchSettings = async () => {
           const { data } = await supabase.from('app_settings').select('*');
           if (data) {
-              const newSettings: any = {};
               let bg = '';
               data.forEach((item: any) => {
-                  if (item.key === 'announcement_mode') newSettings.mode = item.value;
-                  if (item.key === 'announcement_text') newSettings.text = item.value;
-                  if (item.key === 'sale_code') newSettings.sale_code = item.value;
                   if (item.key === 'site_background') bg = item.value;
-                  if (item.key === 'announcement_bg') newSettings.announcement_bg = item.value;
-                  if (item.key === 'announcement_color') newSettings.announcement_color = item.value;
               });
-              setAnnouncementSettings(prev => ({ ...prev, ...newSettings }));
               setBackgroundUrl(bg);
           }
       };
       fetchSettings();
+  }, []);
+
+  // --- CAPTURE REFERRAL LINK ---
+  useEffect(() => {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref) {
+          sessionStorage.setItem('moonnight_referral', ref);
+      }
   }, []);
 
   // --- VISITOR TRACKING ---
@@ -460,7 +416,7 @@ const App: React.FC = () => {
             boxShadow: 'inset 0 0 0 2000px rgba(11, 14, 20, 0.9)' // Dark Overlay
         } : {}}
     >
-      {!isAdminPage && <AnnouncementBar settings={announcementSettings} />}
+      {!isAdminPage && <AnnouncementBar />}
       {!isAdminPage && (
           <Navbar 
             session={session} 

@@ -178,7 +178,17 @@ create table if not exists public.reviews (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 16. APP SETTINGS (Admin Config)
+-- 16. ANNOUNCEMENTS (New Table for Multiple Announcements)
+create table if not exists public.announcements (
+  id uuid default uuid_generate_v4() primary key,
+  message text not null,
+  background_color text default 'linear-gradient(to right, #1e3a8a, #581c87, #1e3a8a)',
+  text_color text default '#ffffff',
+  is_active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 17. APP SETTINGS (Admin Config)
 create table if not exists public.app_settings (
   key text primary key,
   value text not null
@@ -186,12 +196,8 @@ create table if not exists public.app_settings (
 
 -- Insert Default Settings
 insert into public.app_settings (key, value) values ('referral_reward', '10') on conflict do nothing;
-insert into public.app_settings (key, value) values ('announcement_mode', 'rotation') on conflict do nothing;
-insert into public.app_settings (key, value) values ('announcement_text', 'Welcome to Moon Night Store!') on conflict do nothing;
 insert into public.app_settings (key, value) values ('sale_code', 'MOON20') on conflict do nothing;
 insert into public.app_settings (key, value) values ('site_background', '') on conflict do nothing;
-insert into public.app_settings (key, value) values ('announcement_bg', 'linear-gradient(to right, #1e3a8a, #581c87, #1e3a8a)') on conflict do nothing;
-insert into public.app_settings (key, value) values ('announcement_color', '#ffffff') on conflict do nothing;
 
 -- ENABLE ROW LEVEL SECURITY
 alter table public.profiles enable row level security;
@@ -210,6 +216,7 @@ alter table public.donations enable row level security;
 alter table public.tournaments enable row level security;
 alter table public.reviews enable row level security;
 alter table public.app_settings enable row level security;
+alter table public.announcements enable row level security;
 
 -- SECURITY POLICIES (Previous policies remain, ensuring idempotent behavior)
 
@@ -220,12 +227,20 @@ drop policy if exists "Users insert own" on public.profiles;
 create policy "Users insert own" on public.profiles for insert with check (auth.uid() = id);
 drop policy if exists "Users update own" on public.profiles;
 create policy "Users update own" on public.profiles for update using (auth.uid() = id);
+drop policy if exists "Admin update all profiles" on public.profiles;
+create policy "Admin update all profiles" on public.profiles for update using (true);
 
 -- App Settings
 drop policy if exists "Public read settings" on public.app_settings;
 create policy "Public read settings" on public.app_settings for select using (true);
 drop policy if exists "Admin manage settings" on public.app_settings;
 create policy "Admin manage settings" on public.app_settings for all using (true);
+
+-- Announcements
+drop policy if exists "Public read announcements" on public.announcements;
+create policy "Public read announcements" on public.announcements for select using (true);
+drop policy if exists "Admin manage announcements" on public.announcements;
+create policy "Admin manage announcements" on public.announcements for all using (true);
 
 -- Products
 drop policy if exists "Public products" on public.products;
