@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product } from '../../types';
-import { ShoppingCart, Plus, Globe, Smartphone, Monitor, Gamepad2, Layers, Crown, Star } from 'lucide-react';
+import { ShoppingCart, Plus, Globe, Smartphone, Monitor, Gamepad2, Layers, Crown, Star, Eye } from 'lucide-react';
 
 export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { category: string | null, searchQuery: string, onProductClick: (p: Product) => void, language: 'en' | 'fr' }) => {
    const [products, setProducts] = useState<Product[]>([]);
@@ -85,6 +85,15 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
        return (4 + (hash % 10) / 10).toFixed(1);
    };
 
+   // Mock viewers generator for FOMO
+   const getViewers = (id: string) => {
+       // Deterministic but pseudo-random based on ID so it doesn't flicker on re-render, 
+       // but ideally this would be real-time or active
+       const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+       // Return a number between 3 and 18
+       return (hash % 15) + 3;
+   }
+
    return (
       <div className="animate-slide-up">
           <div className="flex overflow-x-auto overflow-y-hidden pb-2 mb-6 gap-4 md:justify-end no-scrollbar">
@@ -144,6 +153,15 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                                 className="w-full h-full object-cover group-hover:scale-110 transition duration-1000 brightness-75 group-hover:brightness-100" 
                                 alt={p.name} 
                             />
+                            
+                            {/* Live Viewers (FOMO) - Top Right */}
+                            <div className="absolute top-3 right-3 z-10">
+                                <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-full border border-white/10 flex items-center gap-1.5 animate-pulse">
+                                    <Eye className="w-3 h-3 text-red-400" />
+                                    <span className="text-[9px] font-black text-white tracking-wide">{getViewers(p.id)} viewing</span>
+                                </div>
+                            </div>
+
                             <div className="absolute top-3 left-3 flex flex-col gap-1 items-start z-10">
                                 <div className="bg-black/70 backdrop-blur-xl px-2.5 py-1 rounded-lg text-[8px] font-black text-white border border-white/10 uppercase tracking-widest shadow-2xl flex items-center gap-1">
                                     {getPlatformIcon(p.platform)} {p.platform === 'All Platforms' ? t.cross : p.platform}
@@ -155,7 +173,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                                 )}
                             </div>
                             
-                            <div className="absolute top-3 right-3 flex flex-col gap-2 z-10 items-end">
+                            <div className="absolute bottom-12 right-3 flex flex-col gap-2 z-10 items-end">
                                 {p.is_vip && (
                                     <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 px-2.5 py-1 rounded-lg text-[8px] font-black text-black border border-yellow-300 uppercase tracking-widest shadow-2xl flex items-center gap-1 animate-pulse">
                                         <Crown className="w-2 h-2" /> VIP
@@ -168,7 +186,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                                 )}
                             </div>
                             
-                            {/* Rating Badge (New) */}
+                            {/* Rating Badge */}
                             <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md flex items-center gap-1">
                                 <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
                                 <span className="text-[9px] font-bold text-white">{getRating(p.id)}</span>

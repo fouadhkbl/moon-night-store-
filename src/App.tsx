@@ -19,14 +19,63 @@ import { DonatePage } from './pages/DonatePage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { TournamentsPage } from './pages/TournamentsPage';
 import { TournamentDetailsPage } from './pages/TournamentDetailsPage';
-import { Loader2, ShoppingBag, X } from 'lucide-react';
+import { Loader2, ShoppingBag, X, Zap, Clock, Copy } from 'lucide-react';
+
+// New Component: Flash Sale Banner
+const AnnouncementBar = () => {
+    const [timeLeft, setTimeLeft] = useState(3600 * 4); // 4 hours in seconds
+    const [visible, setVisible] = useState(true);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTimeLeft(prev => (prev > 0 ? prev - 1 : 3600 * 4));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const formatTime = (seconds: number) => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        return `${h}h ${m}m ${s}s`;
+    };
+
+    if (!visible) return null;
+
+    return (
+        <div className="bg-gradient-to-r from-blue-900 via-purple-900 to-blue-900 text-white py-2 px-4 relative overflow-hidden shadow-2xl z-[60]">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+            <div className="container mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6 text-[10px] md:text-xs font-black uppercase tracking-widest relative z-10">
+                <div className="flex items-center gap-2 animate-pulse text-yellow-400">
+                    <Zap className="w-4 h-4 fill-yellow-400" />
+                    <span>Flash Sale Active</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-gray-300">Use Code:</span>
+                    <span className="bg-white text-black px-2 py-0.5 rounded border border-gray-300 font-mono select-all cursor-pointer hover:bg-gray-200 transition">MOON20</span>
+                    <span className="text-gray-300">for 20% OFF</span>
+                </div>
+                <div className="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-white/10">
+                    <Clock className="w-3 h-3 text-red-400" />
+                    <span className="font-mono text-red-400 w-20">{formatTime(timeLeft)}</span>
+                </div>
+            </div>
+            <button 
+                onClick={() => setVisible(false)} 
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white"
+            >
+                <X className="w-4 h-4" />
+            </button>
+        </div>
+    );
+};
 
 // New Component: Live Sales Notification
 const LiveSalesNotification = () => {
     const [visible, setVisible] = useState(false);
     const [message, setMessage] = useState('');
     
-    const locations = ['Casablanca', 'Rabat', 'Marrakech', 'Tangier', 'Agadir', 'Fes'];
+    const locations = ['Casablanca', 'Rabat', 'Marrakech', 'Tangier', 'Agadir', 'Fes', 'Paris', 'Dubai'];
     const items = ['Valorant Points', 'Steam Key', 'Netflix Account', 'Discord Nitro', 'GTA V Account', 'PUBG UC'];
 
     useEffect(() => {
@@ -56,8 +105,8 @@ const LiveSalesNotification = () => {
     if (!visible) return null;
 
     return (
-        <div className="fixed bottom-4 left-4 z-[90] bg-[#1e232e]/90 backdrop-blur-md border border-blue-500/30 p-4 rounded-2xl shadow-2xl animate-slide-up max-w-xs flex items-center gap-4">
-            <button onClick={() => setVisible(false)} className="absolute -top-2 -right-2 bg-black text-gray-400 rounded-full p-1 border border-gray-700 hover:text-white"><X className="w-3 h-3" /></button>
+        <div className="fixed bottom-4 left-4 z-[90] bg-[#1e232e]/90 backdrop-blur-md border border-blue-500/30 p-4 rounded-2xl shadow-2xl animate-slide-up max-w-xs flex items-center gap-4 cursor-pointer hover:border-blue-400 transition-colors">
+            <button onClick={(e) => { e.stopPropagation(); setVisible(false); }} className="absolute -top-2 -right-2 bg-black text-gray-400 rounded-full p-1 border border-gray-700 hover:text-white"><X className="w-3 h-3" /></button>
             <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg animate-pulse">
                 <ShoppingBag className="w-5 h-5" />
             </div>
@@ -337,6 +386,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-white font-sans flex flex-col selection:bg-blue-600 selection:text-white">
+      <AnnouncementBar />
       <Navbar 
         session={session} 
         onNavigate={handleNavigate} 
