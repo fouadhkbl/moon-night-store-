@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { CartItem, Coupon } from '../types';
-import { Check, Receipt, ShoppingCart, ArrowLeft, Loader2, Wallet, AlertCircle, CreditCard, ShieldCheck, Ticket, Clock } from 'lucide-react';
+import { Check, Receipt, ShoppingCart, ArrowLeft, Loader2, Wallet, AlertCircle, CreditCard, ShieldCheck, Ticket, Clock, Trophy } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -26,6 +26,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
   const [walletBalance, setWalletBalance] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'paypal'>('paypal');
   const [paypalLoaded, setPaypalLoaded] = useState(false);
+  const [earnedPoints, setEarnedPoints] = useState(0);
   
   // Coupon State
   const [couponCode, setCouponCode] = useState('');
@@ -180,25 +181,50 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
     setIsProcessing(true);
     
     try {
+      // 1. Fetch Fresh Profile Data
+      const { data: profileData, error: profileFetchError } = await supabase
+        .from('profiles')
+        .select('wallet_balance, discord_points')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileFetchError) throw new Error("Failed to fetch user profile.");
+      
+      const currentBalance = profileData.wallet_balance;
+      const currentPoints = profileData.discord_points || 0;
+
+      // 2. Validate Funds if Wallet
       if (method === 'Wallet') {
-          if (walletBalance < finalTotal) throw new Error("Insufficient wallet funds.");
-          
-          const newBalance = walletBalance - finalTotal;
-          const { error: balanceError } = await supabase.from('profiles')
-            .update({ wallet_balance: newBalance })
-            .eq('id', session.user.id);
-          
-          if (balanceError) throw balanceError;
-          setWalletBalance(newBalance);
+          if (currentBalance < finalTotal) throw new Error("Insufficient wallet funds.");
       }
 
-      // Update Coupon Usage if applicable
+      // 3. Calculate Reward Points (10 DH = 100 Points => 10x)
+      const points = Math.floor(finalTotal * 10);
+      setEarnedPoints(points);
+
+      // 4. Update Profile (Wallet & Points)
+      const profileUpdates: any = {
+          discord_points: currentPoints + points
+      };
+      
+      if (method === 'Wallet') {
+          profileUpdates.wallet_balance = currentBalance - finalTotal;
+      }
+
+      const { error: balanceError } = await supabase.from('profiles')
+        .update(profileUpdates)
+        .eq('id', session.user.id);
+      
+      if (balanceError) throw balanceError;
+      
+      if (method === 'Wallet') setWalletBalance(profileUpdates.wallet_balance);
+
+      // 5. Update Coupon Usage
       if (appliedCoupon) {
-          // Ideally use RPC, but direct update for simplicity if RPC missing
           await supabase.from('coupons').update({ usage_count: appliedCoupon.usage_count + 1 }).eq('id', appliedCoupon.id);
       }
 
-      // Create Order in Database (Always in DH)
+      // 6. Create Order
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -223,6 +249,16 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
       if (itemsError) throw itemsError;
 
+      // 7. Log Points Transaction
+      if (points > 0) {
+          await supabase.from('point_transactions').insert({
+              user_id: session.user.id,
+              points_amount: points,
+              money_equivalent: finalTotal,
+              status: 'completed'
+          });
+      }
+
       setCreatedOrderId(order.id);
       setShowSuccess(true);
       onClearCart();
@@ -242,13 +278,27 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
         <h2 className="text-4xl font-black text-white italic mb-4">PAYMENT SUCCESSFUL!</h2>
         <p className="text-gray-400 mb-6 max-w-md mx-auto">Your order has been placed. You can now chat with support in the order details.</p>
         
-        {/* Active Delivery Time Notice */}
-        <div className="max-w-md mx-auto bg-blue-900/20 border border-blue-500/30 rounded-2xl p-6 mb-10 flex flex-col items-center gap-3">
-             <Clock className="w-8 h-8 text-blue-400" />
-             <div>
-                <h4 className="text-white font-black uppercase italic tracking-tighter">Delivery Info</h4>
-                <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mt-1">Your order will be delivered during active hours: <span className="text-yellow-400">9AM - 9PM</span></p>
-             </div>
+        <div className="max-w-md mx-auto space-y-4 mb-10">
+            {earnedPoints > 0 && (
+                <div className="bg-purple-900/20 border border-purple-500/30 rounded-2xl p-4 flex items-center gap-4 animate-slide-up">
+                    <div className="p-3 bg-purple-600/20 rounded-full text-purple-400 border border-purple-500/20 shadow-lg">
+                        <Trophy className="w-6 h-6" />
+                    </div>
+                    <div className="text-left">
+                        <p className="text-purple-200 text-xs font-bold uppercase tracking-widest">Reward Unlocked</p>
+                        <p className="text-white font-black text-xl italic tracking-tighter">+{earnedPoints} Points</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Active Delivery Time Notice */}
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-2xl p-6 flex flex-col items-center gap-3">
+                 <Clock className="w-8 h-8 text-blue-400" />
+                 <div>
+                    <h4 className="text-white font-black uppercase italic tracking-tighter">Delivery Info</h4>
+                    <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mt-1">Your order will be delivered during active hours: <span className="text-yellow-400">9AM - 9PM</span></p>
+                 </div>
+            </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -311,6 +361,13 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
                            <span>Processing Fee</span>
                            <span>+ {processingFee.toFixed(2)} DH</span>
                        </div>
+                       
+                       {/* Rewards Preview */}
+                       <div className="flex justify-between text-purple-400 text-xs font-black uppercase tracking-widest">
+                           <span className="flex items-center gap-1"><Trophy className="w-3 h-3" /> Rewards</span>
+                           <span>+{Math.floor(finalTotal * 10)} PTS</span>
+                       </div>
+
                        <div className="flex justify-between text-white text-xl font-black italic tracking-tighter pt-2">
                            <span>Total</span>
                            <span className="text-yellow-400">{finalTotal.toFixed(2)} DH</span>
