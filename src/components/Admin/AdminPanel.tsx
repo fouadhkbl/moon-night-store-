@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart } from 'lucide-react';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal } from './AdminModals';
-
-// ... (Previous modal components: VisitHistoryModal, AdminRedemptionModal, AdminOrderModal - NO CHANGES NEEDED HERE, Keeping them for context but minimizing output)
-// RE-INCLUDING THEM AS IS TO ENSURE FILE INTEGRITY
 
 const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
     return (
@@ -62,7 +59,6 @@ const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () =
 };
 
 const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption: PointRedemption, currentUser: Profile, onClose: () => void }) => {
-    // ... (Code from previous step - keeping it exactly same)
     const [messages, setMessages] = useState<RedemptionMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [status, setStatus] = useState(redemption.status);
@@ -188,7 +184,6 @@ const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption
 };
 
 const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
-    // ... (Keeping exact same code as previous, just adding it here to satisfy full file replacement requirement)
     const [messages, setMessages] = useState<OrderMessage[]>([]);
     const [items, setItems] = useState<OrderItem[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -201,11 +196,9 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 
     useEffect(() => {
         const fetchDetails = async () => {
-            // Fetch Messages
             const { data: msgData } = await supabase.from('order_messages').select('*').eq('order_id', order.id).order('created_at', { ascending: true });
             if (msgData) setMessages(msgData);
             
-            // Fetch Order Items
             const { data: itemsData } = await supabase.from('order_items').select('*, product:products(*)').eq('order_id', order.id);
             if (itemsData) setItems(itemsData);
 
@@ -236,7 +229,6 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
         const msgText = newMessage.trim();
         setNewMessage(''); 
 
-        // Optimistic Update
         const tempId = `temp-admin-${Date.now()}`;
         const optimisicMsg: OrderMessage = {
             id: tempId,
@@ -248,7 +240,6 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
         setMessages(prev => [...prev, optimisicMsg]);
         scrollToBottom();
 
-        // Send to DB
         const { data, error } = await supabase.from('order_messages').insert({
             order_id: order.id,
             sender_id: currentUser.id,
@@ -271,7 +262,6 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
             <div className="bg-[#1e232e] w-full max-w-5xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
-                {/* Info Side */}
                 <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto custom-scrollbar">
                     <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-4">Order #{order.id.slice(0,6)}</h3>
                     
@@ -295,7 +285,6 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
                         </div>
                     </div>
 
-                    {/* ITEMS LIST */}
                     <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Archive className="w-3 h-3"/> Purchased Items</p>
                         <div className="space-y-3">
@@ -328,7 +317,6 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
                     <button onClick={onClose} className="mt-8 w-full py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:bg-gray-800 transition uppercase text-xs font-black tracking-widest">Close</button>
                 </div>
 
-                {/* Chat Side */}
                 <div className="w-full md:w-7/12 flex flex-col h-full bg-[#1e232e]">
                     <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-[#1e232e]">
                         <span className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2"><MessageSquare className="w-4 h-4 text-purple-500"/> Live Chat with Customer</span>
@@ -439,10 +427,8 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         const { data: oData } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
         if (oData) setOrders(oData);
         
-        // Calculate Revenue manually from orders fetched
         const totalRevenue = oData?.reduce((acc, curr) => curr.status !== 'canceled' ? acc + Number(curr.total_amount) : acc, 0) || 0;
         
-        // Fetch Real Stats
         const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
         const { count: orderCount } = await supabase.from('orders').select('*', { count: 'exact', head: true });
         
@@ -466,24 +452,65 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ... (Keep existing handlers: handleDeleteProduct, handleDeleteAllProducts, handleSaveProduct, handleSavePointProduct, handleDeletePointProduct, handleUpdateBalance, handleDeleteUser, handleSaveCoupon, handleDeleteCoupon, handleDeletePointTransaction)
-  // FOR BREVITY I AM NOT PASTING THE IDENTICAL HANDLER CODE BLOCKS, ASSUME THEY EXIST HERE 
-  
-  // Re-declare essential handlers for completeness in this file update context
+  // --- ACTIONS ---
   const handleDeleteProduct = async (id: string) => {
     if (!window.confirm('WARNING: Are you sure you want to delete this product forever?')) return;
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (!error) { addToast('Deleted', 'Item removed.', 'success'); fetchData(); }
   };
-  const handleDeleteAllProducts = async () => { /* ... */ }; // Truncated for brevity
-  const handleSaveProduct = async (data: any) => { /* ... */ }; 
-  const handleSavePointProduct = async (data: any) => { /* ... */ };
-  const handleDeletePointProduct = async (id: string) => { /* ... */ };
-  const handleUpdateBalance = async (uid: string, bal: number, pts: number) => { /* ... */ };
-  const handleDeleteUser = async (uid: string) => { /* ... */ };
-  const handleSaveCoupon = async (data: any) => { /* ... */ };
-  const handleDeleteCoupon = async (id: string) => { /* ... */ };
 
+  const handleDeleteAllProducts = async () => { 
+      if(!window.confirm('DANGER: DELETE ALL PRODUCTS?')) return;
+      await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Hack to delete all
+      fetchData();
+  }; 
+
+  const handleSaveProduct = async (data: any) => { 
+      if(data.id) await supabase.from('products').update(data).eq('id', data.id);
+      else await supabase.from('products').insert(data);
+      setIsProductModalOpen(false);
+      fetchData();
+  };
+
+  const handleSavePointProduct = async (data: any) => { 
+      if(data.id) await supabase.from('point_products').update(data).eq('id', data.id);
+      else await supabase.from('point_products').insert(data);
+      setIsPointProductModalOpen(false);
+      fetchData();
+  };
+
+  const handleDeletePointProduct = async (id: string) => { 
+      if(!window.confirm('Delete Reward?')) return;
+      await supabase.from('point_products').delete().eq('id', id);
+      fetchData();
+  };
+
+  const handleUpdateBalance = async (uid: string, bal: number, pts: number) => { 
+      await supabase.from('profiles').update({ wallet_balance: bal, discord_points: pts }).eq('id', uid);
+      setEditingUser(null);
+      fetchData();
+      addToast('Updated', 'Balance synced.', 'success');
+  };
+
+  const handleDeleteUser = async (uid: string) => { 
+      if(!window.confirm('Delete User?')) return;
+      await supabase.from('profiles').delete().eq('id', uid);
+      fetchData();
+      addToast('Deleted', 'User removed.', 'success');
+  };
+
+  const handleSaveCoupon = async (data: any) => { 
+      if(data.id) await supabase.from('coupons').update(data).eq('id', data.id);
+      else await supabase.from('coupons').insert(data);
+      setIsCouponModalOpen(false);
+      fetchData();
+  };
+
+  const handleDeleteCoupon = async (id: string) => { 
+      if(!window.confirm('Delete Coupon?')) return;
+      await supabase.from('coupons').delete().eq('id', id);
+      fetchData();
+  };
 
   // --- FILTERS ---
   const filteredProducts = products.filter(p => 
@@ -611,7 +638,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         </div>
       )}
 
-      {/* ... (Orders Section - Kept same) */}
+      {/* ORDERS SECTION */}
       {activeSection === 'orders' && role !== 'shop' && (
           <div className="space-y-6 animate-slide-up">
               <div className="relative">
@@ -673,7 +700,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           </div>
       )}
 
-      {/* NEW DONATIONS SECTION */}
+      {/* DONATIONS SECTION */}
       {activeSection === 'donations' && (role !== 'shop') && (
           <div className="space-y-6 animate-slide-up">
               <div className="relative">
@@ -718,11 +745,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           </div>
       )}
 
-      {/* ... (Keep Redemptions, Products, PointsShop, Users, Coupons sections exactly as they were) */}
-      {/* Shortened primarily for brevity in response, assuming full replacement contains all previous sections */}
+      {/* REDEMPTIONS SECTION */}
       {activeSection === 'redemptions' && (role === 'full' || role === 'limited') && (
           <div className="space-y-6 animate-slide-up">
-              {/* Redemptions Table Logic (Copied from previous) */}
               <div className="relative">
                 <input 
                   type="text" 
@@ -734,7 +759,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                 <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
              </div>
              <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
-                 {filteredRedemptions.length === 0 ? <p className="text-center py-12 text-gray-500 font-black">No redemptions found</p> : (
+                 {filteredRedemptions.length === 0 ? <p className="text-center py-12 text-gray-500 font-black uppercase tracking-widest">No redemptions found</p> : (
                      <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left">
                             <thead className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
@@ -759,9 +784,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           </div>
       )}
 
+      {/* PRODUCTS SECTION */}
       {activeSection === 'products' && (
         <div className="space-y-6 animate-slide-up">
-          {/* Products Grid Logic (Copied from previous) */}
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
              <div className="relative flex-1">
                 <input type="text" placeholder="Filter inventory..." className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none shadow-xl" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
@@ -794,8 +819,171 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         </div>
       )}
 
-      {/* Points Shop, Users, Coupons sections logic omitted for brevity in response but should be present in full file */}
-      {/* ... */}
+      {/* POINTS SHOP SECTION */}
+      {activeSection === 'pointsShop' && (
+        <div className="space-y-6 animate-slide-up">
+          <div className="flex flex-col sm:flex-row gap-4 justify-between">
+             <div className="relative flex-1">
+                <input type="text" placeholder="Search rewards..." className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none shadow-xl" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
+             </div>
+             <div className="flex gap-2">
+                 <button onClick={() => { setEditingPointProduct(null); setIsPointProductModalOpen(true); }} className="bg-purple-600 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xl uppercase text-xs tracking-widest"><PlusCircle className="w-5 h-5" /> Add Reward</button>
+             </div>
+          </div>
+          
+          {filteredPointProducts.length === 0 ? (
+              <div className="bg-[#1e232e] rounded-3xl border border-gray-800 p-12 text-center">
+                  <p className="text-gray-500 font-black uppercase tracking-widest">No rewards found</p>
+              </div>
+          ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                 {filteredPointProducts.map(p => (
+                    <div key={p.id} className="bg-[#1e232e] rounded-3xl border border-gray-800 hover:border-purple-500/30 p-5 shadow-2xl flex flex-col transition-all">
+                       <div className="flex gap-4 mb-4 items-start">
+                          <img src={p.image_url} className="w-16 h-16 rounded-2xl object-cover border border-gray-700" alt="" />
+                          <div className="min-w-0 flex-1">
+                             <h3 className="text-white font-black italic truncate mb-1 uppercase text-sm">{p.name}</h3>
+                             <p className="text-lg font-black text-purple-400 italic">{p.cost} PTS</p>
+                          </div>
+                       </div>
+                       <div className="grid grid-cols-2 gap-3 mt-auto">
+                          <button onClick={() => { setEditingPointProduct(p); setIsPointProductModalOpen(true); }} className="flex items-center justify-center gap-2 bg-gray-800 text-white font-black py-3 rounded-2xl text-[10px] uppercase tracking-widest"><Edit2 className="w-3 h-3" /> Edit</button>
+                          <button onClick={() => handleDeletePointProduct(p.id)} className="flex items-center justify-center gap-2 bg-red-900/10 text-red-500 font-black py-3 rounded-2xl text-[10px] uppercase tracking-widest"><Trash2 className="w-3 h-3" /> Delete</button>
+                       </div>
+                    </div>
+                 ))}
+              </div>
+          )}
+        </div>
+      )}
+
+      {/* USERS SECTION */}
+      {activeSection === 'users' && role === 'full' && (
+          <div className="space-y-6 animate-slide-up">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                    <input 
+                      type="text" 
+                      placeholder="Search users..." 
+                      className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none shadow-xl"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                    />
+                    <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
+                </div>
+                {/* Filter Toggles */}
+                <div className="flex bg-[#1e232e] p-1 rounded-2xl border border-gray-800">
+                    {['all', 'email', 'google', 'discord'].map(prov => (
+                        <button 
+                            key={prov}
+                            onClick={() => setProviderFilter(prov as any)}
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${providerFilter === prov ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-white'}`}
+                        >
+                            {prov}
+                        </button>
+                    ))}
+                </div>
+             </div>
+
+             <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
+                 {filteredUsers.length === 0 ? <p className="text-center py-12 text-gray-500 font-black uppercase tracking-widest">No users found</p> : (
+                     <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-left">
+                            <thead className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
+                                <tr>
+                                    <th className="p-6">User</th>
+                                    <th className="p-6">Contact</th>
+                                    <th className="p-6">Wallet</th>
+                                    <th className="p-6">Points</th>
+                                    <th className="p-6">Provider</th>
+                                    <th className="p-6 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-800">
+                                {filteredUsers.map(u => (
+                                    <tr key={u.id} className="hover:bg-[#151a23] transition-colors">
+                                        <td className="p-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden"><img src={u.avatar_url} className="w-full h-full object-cover" alt=""/></div>
+                                                <span className="text-white font-bold text-xs">{u.username}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-6 text-gray-500 text-xs font-mono">{u.email}</td>
+                                        <td className="p-6 font-black text-yellow-400 italic text-sm">{u.wallet_balance.toFixed(2)} DH</td>
+                                        <td className="p-6 font-black text-purple-400 italic text-sm">{u.discord_points} PTS</td>
+                                        <td className="p-6"><div className="w-8 h-8 bg-[#0b0e14] rounded-lg flex items-center justify-center border border-gray-700"><ProviderIcon provider={u.auth_provider} /></div></td>
+                                        <td className="p-6 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button onClick={() => setEditingUser(u)} className="bg-blue-900/20 text-blue-400 p-2 rounded-lg hover:bg-blue-600 hover:text-white transition"><Edit2 className="w-4 h-4"/></button>
+                                                <button onClick={() => handleDeleteUser(u.id)} className="bg-red-900/20 text-red-500 p-2 rounded-lg hover:bg-red-600 hover:text-white transition"><Trash2 className="w-4 h-4"/></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                     </div>
+                 )}
+             </div>
+          </div>
+      )}
+
+      {/* COUPONS SECTION */}
+      {activeSection === 'coupons' && role === 'full' && (
+          <div className="space-y-6 animate-slide-up">
+              <div className="flex flex-col sm:flex-row gap-4 justify-between">
+                 <div className="relative flex-1">
+                    <input type="text" placeholder="Search coupons..." className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none shadow-xl" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                    <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
+                 </div>
+                 <button onClick={() => { setEditingCoupon(null); setIsCouponModalOpen(true); }} className="bg-blue-600 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xl uppercase text-xs tracking-widest"><PlusCircle className="w-5 h-5" /> Create Coupon</button>
+              </div>
+
+              {filteredCoupons.length === 0 ? (
+                  <div className="bg-[#1e232e] rounded-3xl border border-gray-800 p-12 text-center">
+                      <p className="text-gray-500 font-black uppercase tracking-widest">No coupons found</p>
+                  </div>
+              ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                     {filteredCoupons.map(c => (
+                        <div key={c.id} className={`bg-[#1e232e] rounded-3xl border p-6 shadow-xl flex flex-col relative overflow-hidden ${!c.is_active ? 'opacity-60 border-red-900/50' : 'border-gray-800 hover:border-blue-500/30'}`}>
+                           <div className="flex justify-between items-start mb-4">
+                               <div className="bg-[#0b0e14] border border-gray-700 border-dashed px-3 py-1 rounded-lg text-white font-mono font-bold tracking-widest text-sm">
+                                   {c.code}
+                               </div>
+                               <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded ${c.is_active ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'}`}>
+                                   {c.is_active ? 'Active' : 'Inactive'}
+                               </span>
+                           </div>
+                           
+                           <div className="flex items-center gap-2 mb-4">
+                               <div className="p-3 bg-blue-600/10 rounded-xl text-blue-500">
+                                   {c.discount_type === 'percent' ? <Percent className="w-6 h-6" /> : <Wallet className="w-6 h-6" />}
+                               </div>
+                               <div>
+                                   <p className="text-2xl font-black text-white italic tracking-tighter leading-none">
+                                       {c.discount_value} {c.discount_type === 'percent' ? '%' : 'DH'}
+                                   </p>
+                                   <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Discount</p>
+                               </div>
+                           </div>
+
+                           <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6">
+                               <span>Used: <span className="text-white">{c.usage_count}</span></span>
+                               <span>Max: <span className="text-white">{c.max_uses || '∞'}</span></span>
+                           </div>
+
+                           <div className="grid grid-cols-2 gap-3 mt-auto">
+                              <button onClick={() => { setEditingCoupon(c); setIsCouponModalOpen(true); }} className="flex items-center justify-center gap-2 bg-gray-800 text-white font-black py-3 rounded-2xl text-[10px] uppercase tracking-widest"><Edit2 className="w-3 h-3" /> Edit</button>
+                              <button onClick={() => handleDeleteCoupon(c.id)} className="flex items-center justify-center gap-2 bg-red-900/10 text-red-500 font-black py-3 rounded-2xl text-[10px] uppercase tracking-widest"><Trash2 className="w-3 h-3" /> Delete</button>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+              )}
+          </div>
+      )}
 
       {/* Modals */}
       {isProductModalOpen && (activeSection === 'products') && (
