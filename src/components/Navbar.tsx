@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Profile } from '../types';
@@ -18,6 +18,9 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const isGuest = session?.user?.id === 'guest-user-123';
+  
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     // If we have a user, fetch/set the profile
@@ -65,6 +68,26 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
     }
   }, [session?.user?.id, isGuest]);
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isMenuOpen &&
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (searchTerm.trim()) {
@@ -86,6 +109,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
         <div className="flex items-center gap-4 relative z-10">
           <div className="relative">
               <button 
+                ref={buttonRef}
                 onClick={() => setIsMenuOpen(!isMenuOpen)} 
                 className="text-gray-400 hover:text-white p-2"
               >
@@ -94,7 +118,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
               
               {/* Dropdown Menu (3 lines in corner) */}
               {isMenuOpen && (
-                  <div className="absolute top-12 left-0 w-64 bg-[#1e232e] border border-gray-800 rounded-2xl shadow-2xl p-2 z-[60] animate-slide-up">
+                  <div ref={menuRef} className="absolute top-12 left-0 w-64 bg-[#1e232e] border border-gray-800 rounded-2xl shadow-2xl p-2 z-[60] animate-slide-up">
                       <button onClick={() => handleMenuClick('home')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
                           <Home className="w-4 h-4 text-blue-500" /> Home
                       </button>

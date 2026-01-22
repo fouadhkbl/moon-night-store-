@@ -89,8 +89,8 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
 
    return (
       <div className="animate-slide-up">
-          {/* Filters Bar - Horizontal Scroll on Mobile */}
-          <div className="flex overflow-x-auto pb-2 mb-6 gap-4 md:justify-end no-scrollbar">
+          {/* Filters Bar - Horizontal Scroll on Mobile - Overflow Y Hidden to prevent vertical scroll */}
+          <div className="flex overflow-x-auto overflow-y-hidden pb-2 mb-6 gap-4 md:justify-end no-scrollbar">
               {/* Platform Filter */}
               <div className="relative group flex-shrink-0">
                  <select 

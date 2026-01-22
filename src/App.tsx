@@ -325,14 +325,14 @@ const App: React.FC = () => {
         
         {currentPage === 'shop' && (
           <div className="container mx-auto px-4 py-12 animate-fade-in">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-8">
                <div>
                   <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-none mb-3">{t.shopTitle}</h1>
                   <p className="text-gray-600 text-[12px] uppercase tracking-[0.4em] font-black">
                       {searchQuery ? `${t.searching}: "${searchQuery}"` : (selectedCategory ? `${t.dept}: ${selectedCategory}` : t.allGlobal)}
                   </p>
                </div>
-               <div className="flex items-center gap-4 overflow-x-auto pb-6 scrollbar-hide max-w-full">
+               <div className="flex items-center gap-4 overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide max-w-full">
                   <button 
                     onClick={() => { setSelectedCategory(null); setSearchQuery(''); }}
                     className={`px-8 py-4 rounded-2xl text-[11px] font-black uppercase transition-all whitespace-nowrap tracking-[0.2em] shadow-2xl ${!selectedCategory && !searchQuery ? 'bg-blue-600 text-white' : 'bg-[#1e232e] text-gray-400 hover:text-white border border-gray-800'}`}

@@ -34,6 +34,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, session, addToast }) => {
             <ul className="space-y-2 text-gray-400 text-sm">
               <li><button onClick={() => onNavigate('home')} className="hover:text-blue-400 text-left">Home</button></li>
               <li><button onClick={() => onNavigate('shop')} className="hover:text-blue-400 text-left">Shop</button></li>
+              <li><button onClick={() => onNavigate('donate')} className="hover:text-blue-400 text-left">Donate</button></li>
               <li><a href="#" className="hover:text-blue-400">Sell to Us</a></li>
               <li><a href="#" className="hover:text-blue-400">Contact</a></li>
             </ul>
@@ -50,8 +51,14 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, session, addToast }) => {
           <div>
             <h4 className="text-white font-bold mb-4">Payment Methods</h4>
             <div className="flex gap-2">
-               <div className="bg-white p-1 rounded w-10 h-6 flex items-center justify-center"><span className="text-blue-900 font-bold text-xs italic">VISA</span></div>
-               <div className="bg-white p-1 rounded w-10 h-6 flex items-center justify-center"><span className="text-blue-600 font-bold text-xs italic">Pay</span><span className="text-blue-400 font-bold text-xs italic">Pal</span></div>
+               <div className="bg-white p-1 rounded w-10 h-6 flex items-center justify-center" title="Visa"><span className="text-blue-900 font-bold text-xs italic">VISA</span></div>
+               <div className="bg-white p-1 rounded w-10 h-6 flex items-center justify-center" title="Mastercard">
+                   <svg className="w-8 h-5" viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                       <circle cx="7" cy="8" r="7" fill="#EB001B"/>
+                       <circle cx="17" cy="8" r="7" fill="#F79E1B" fillOpacity="0.8"/>
+                   </svg>
+               </div>
+               <div className="bg-white p-1 rounded w-10 h-6 flex items-center justify-center" title="PayPal"><span className="text-blue-600 font-bold text-xs italic">Pay</span><span className="text-blue-400 font-bold text-xs italic">Pal</span></div>
             </div>
             <p className="mt-4 text-gray-500 text-xs">© 2024 Moon Night Project. All rights reserved. Designed & Developed by Fouad.</p>
           </div>

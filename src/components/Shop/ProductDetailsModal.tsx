@@ -39,7 +39,8 @@ export const ProductDetailsModal = ({ product, onClose, onAddToCart }: { product
             {/* Mobile Header: Mini Photo + Title */}
             <div className="md:hidden flex gap-5 mb-6 pr-8">
                 <div className="w-24 h-24 rounded-2xl bg-[#0b0e14] border border-gray-800 flex-shrink-0 overflow-hidden shadow-lg">
-                    <img src={product.image_url} className="w-full h-full object-cover" alt={product.name} />
+                    {/* Changed object-cover to object-contain to fully show image on mobile as requested */}
+                    <img src={product.image_url} className="w-full h-full object-contain" alt={product.name} />
                 </div>
                 <div className="flex flex-col justify-center">
                     <h2 className="text-xl font-black text-white italic leading-tight uppercase tracking-tighter mb-2 line-clamp-3">{product.name}</h2>

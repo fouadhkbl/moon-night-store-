@@ -442,5 +442,5 @@ create policy "No public access to secrets" on public.system_secrets for all usi
 
 -- Insert PayPal Secret (Upsert)
 insert into public.system_secrets (key, value) 
-values ('PAYPAL_CLIENT_SECRET', 'EHybB4bwcpyLwYhaMitKdsjmIJPPQ7nBXNOG17nFlQ1WKBaTAzasxkGqAnxuQ4KlnqLOTbY3l1DWotff')
+values ('PAYPAL_CLIENT_SECRET', 'EC1RPFQYPMaro4bSOQDvvpEocT-KfVwh5k1uTDH-vlWEXCiXK6Fi5baj15siumIAqFRGwc4pMptDyx26')
 on conflict (key) do update set value = excluded.value;
