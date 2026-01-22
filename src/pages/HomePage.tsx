@@ -68,28 +68,32 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
               {text.desc}
             </p>
             
-            <div className="flex flex-wrap gap-4 items-center">
-              <button 
-                onClick={() => onNavigate('shop')}
-                className="h-[64px] bg-transparent border-2 border-red-600 hover:border-red-500 hover:bg-red-500 hover:text-white text-red-500 px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-lg shadow-red-600/10 hover:shadow-red-600/30"
-              >
-                {text.browse} <ChevronRight className="w-5 h-5" />
-              </button>
-              
-              <button 
-                onClick={() => onNavigate('pointsShop')}
-                className="h-[64px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-2xl shadow-purple-600/30"
-              >
-                <Trophy className="w-5 h-5" /> Points Shop
-              </button>
+            <div className="flex flex-col gap-5 max-w-fit">
+              <div className="flex flex-wrap gap-4 items-center">
+                <button 
+                  onClick={() => onNavigate('shop')}
+                  className="h-[64px] bg-transparent border-2 border-red-600 hover:border-red-500 hover:bg-red-500 hover:text-white text-red-500 px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-lg shadow-red-600/10 hover:shadow-red-600/30"
+                >
+                  {text.browse} <ChevronRight className="w-5 h-5" />
+                </button>
+                
+                <button 
+                  onClick={() => onNavigate('pointsShop')}
+                  className="h-[64px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-2xl shadow-purple-600/30"
+                >
+                  <Trophy className="w-5 h-5" /> Points Shop
+                </button>
+              </div>
 
-              <button 
-                onClick={() => onNavigate('tournaments')}
-                className="h-[64px] bg-[#1e232e] border-2 border-pink-500 hover:bg-pink-600 hover:border-pink-600 text-white px-8 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-[0_0_20px_rgba(236,72,153,0.2)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] active:scale-95 group"
-              >
-                <Swords className="w-5 h-5 text-pink-500 group-hover:text-white transition-colors" /> 
-                <span>{text.compete}</span>
-              </button>
+              <div className="flex justify-center w-full">
+                <button 
+                    onClick={() => onNavigate('tournaments')}
+                    className="h-[52px] bg-[#1e232e] border border-pink-500 hover:bg-pink-600 hover:border-pink-600 text-white px-8 rounded-xl font-black text-sm transition-all flex items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(236,72,153,0.2)] hover:shadow-[0_0_25px_rgba(236,72,153,0.4)] active:scale-95 group"
+                >
+                    <Swords className="w-4 h-4 text-pink-500 group-hover:text-white transition-colors" /> 
+                    <span>{text.compete}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
