@@ -122,7 +122,7 @@ export const LeaderboardPage = ({ onNavigate, type = 'donations' }: { onNavigate
                             <h3 className="text-xl font-black text-white italic uppercase tracking-tighter truncate">{profile.username}</h3>
                             <div className="flex gap-2">
                                 <span className="text-[9px] bg-[#0b0e14] px-2 py-0.5 rounded text-gray-500 font-bold uppercase tracking-widest border border-gray-700">Verified</span>
-                                {index < 3 && <span className="text-[9px] bg-yellow-500/20 px-2 py-0.5 rounded text-yellow-500 font-bold uppercase tracking-widest border border-yellow-500/30 flex items-center gap-1"><Star className="w-2 h-2"/> Top 3</span>}
+                                {index < 3 && <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-widest border flex items-center gap-1 ${isDonation ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30' : 'bg-purple-500/20 text-purple-500 border-purple-500/30'}`}><Star className="w-2 h-2"/> Top 3</span>}
                             </div>
                         </div>
 
