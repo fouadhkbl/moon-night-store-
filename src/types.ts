@@ -10,6 +10,7 @@ export interface Product {
   platform: string;
   country?: string; // New field for region/country
   is_trending: boolean;
+  is_vip?: boolean; // New field for VIP status
 }
 
 export interface Profile {

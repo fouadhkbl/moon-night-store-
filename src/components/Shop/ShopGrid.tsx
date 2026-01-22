@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product } from '../../types';
-import { ShoppingCart, Plus, Globe, Smartphone, Monitor, Gamepad2, Layers } from 'lucide-react';
+import { ShoppingCart, Plus, Globe, Smartphone, Monitor, Gamepad2, Layers, Crown } from 'lucide-react';
 
 export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { category: string | null, searchQuery: string, onProductClick: (p: Product) => void, language: 'en' | 'fr' }) => {
    const [products, setProducts] = useState<Product[]>([]);
@@ -120,7 +120,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                  {products.map(p => (
                      <div 
                        key={p.id} 
-                       className="bg-[#1e232e] rounded-2xl overflow-hidden border border-gray-800 hover:border-blue-500/60 transition-all duration-500 cursor-pointer group shadow-2xl flex flex-col h-full active:scale-95" 
+                       className={`bg-[#1e232e] rounded-2xl overflow-hidden border transition-all duration-500 cursor-pointer group shadow-2xl flex flex-col h-full active:scale-95 ${p.is_vip ? 'border-yellow-500/30 hover:border-yellow-500/60' : 'border-gray-800 hover:border-blue-500/60'}`}
                        onClick={() => onProductClick(p)}
                      >
                         <div className="relative aspect-[3/4] overflow-hidden">
@@ -129,7 +129,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                             className="w-full h-full object-cover group-hover:scale-110 transition duration-1000 brightness-75 group-hover:brightness-100" 
                             alt={p.name} 
                            />
-                           <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">
+                           <div className="absolute top-3 left-3 flex flex-col gap-1 items-start z-10">
                                {/* Platform Badge */}
                                <div className="bg-black/70 backdrop-blur-xl px-2.5 py-1 rounded-lg text-[8px] font-black text-white border border-white/10 uppercase tracking-widest shadow-2xl flex items-center gap-1">
                                   {getPlatformIcon(p.platform)} {p.platform === 'All Platforms' ? t.cross : p.platform}
@@ -142,20 +142,28 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                                )}
                            </div>
                            
-                           {p.is_trending && (
-                             <div className="absolute top-3 right-3 bg-blue-600 px-2.5 py-1 rounded-lg text-[8px] font-black text-white border border-blue-400 uppercase tracking-widest shadow-2xl animate-pulse">
-                               HOT
-                             </div>
-                           )}
+                           {/* STATUS BADGES */}
+                           <div className="absolute top-3 right-3 flex flex-col gap-2 z-10 items-end">
+                               {p.is_vip && (
+                                   <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 px-2.5 py-1 rounded-lg text-[8px] font-black text-black border border-yellow-300 uppercase tracking-widest shadow-2xl flex items-center gap-1 animate-pulse">
+                                       <Crown className="w-2 h-2" /> VIP
+                                   </div>
+                               )}
+                               {p.is_trending && (
+                                 <div className="bg-blue-600 px-2.5 py-1 rounded-lg text-[8px] font-black text-white border border-blue-400 uppercase tracking-widest shadow-2xl">
+                                   HOT
+                                 </div>
+                               )}
+                           </div>
                         </div>
                         <div className="p-4 flex flex-col flex-1 justify-between bg-gradient-to-b from-[#1e232e] to-[#151a23]">
                            <div>
-                             <h3 className="font-black text-white text-sm md:text-base truncate group-hover:text-blue-400 transition-colors uppercase italic tracking-tighter mb-1 leading-none">{p.name}</h3>
+                             <h3 className={`font-black text-sm md:text-base truncate transition-colors uppercase italic tracking-tighter mb-1 leading-none ${p.is_vip ? 'text-yellow-400 group-hover:text-yellow-200' : 'text-white group-hover:text-blue-400'}`}>{p.name}</h3>
                              <p className="text-gray-600 text-[9px] font-black uppercase tracking-[0.2em]">{p.category.toUpperCase()}</p>
                            </div>
                            <div className="flex items-center justify-between mt-4">
                               <div className="text-yellow-400 font-black italic text-xl md:text-2xl tracking-tighter leading-none">{p.price.toFixed(2)} <span className="text-[10px] md:text-xs">DH</span></div>
-                              <div className="bg-blue-600/10 p-2.5 rounded-xl text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-xl active:scale-90">
+                              <div className={`p-2.5 rounded-xl transition-all shadow-xl active:scale-90 ${p.is_vip ? 'bg-yellow-500/10 text-yellow-500 group-hover:bg-yellow-500 group-hover:text-black' : 'bg-blue-600/10 text-blue-400 group-hover:bg-blue-600 group-hover:text-white'}`}>
                                 <Plus className="w-4 h-4" />
                               </div>
                            </div>

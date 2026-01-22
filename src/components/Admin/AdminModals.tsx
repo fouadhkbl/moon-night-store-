@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap } from 'lucide-react';
+import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap, Crown } from 'lucide-react';
 import { Profile, Product, GameCategory, Coupon, PointProduct } from '../../types';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number, points: number) => void }) => {
@@ -78,6 +78,7 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
     description: '',
     country: 'Global',
     is_trending: false,
+    is_vip: false,
     stock: 999
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -188,13 +189,29 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Description</label>
             <textarea className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none h-24" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}></textarea>
           </div>
-          <label className="flex items-center gap-3 cursor-pointer group">
-            <input type="checkbox" className="hidden" checked={formData.is_trending} onChange={e => setFormData({...formData, is_trending: e.target.checked})} />
-            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${formData.is_trending ? 'bg-blue-600 border-blue-500' : 'bg-gray-800 border-gray-700'}`}>
-              {formData.is_trending && <Check className="w-3 h-3 text-white" />}
+
+          {/* TRENDING & VIP TOGGLES */}
+          <div className="pt-2">
+            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Product Highlights</label>
+            <div className="grid grid-cols-2 gap-4">
+                <button
+                    type="button"
+                    onClick={() => setFormData({...formData, is_trending: !formData.is_trending})}
+                    className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all active:scale-95 ${formData.is_trending ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-[#0b0e14] border-gray-800 text-gray-500 hover:border-gray-600 hover:text-gray-300'}`}
+                >
+                    <Zap className={`w-6 h-6 ${formData.is_trending ? "fill-white" : ""}`} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Trending (HOT)</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setFormData({...formData, is_vip: !formData.is_vip})}
+                    className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all active:scale-95 ${formData.is_vip ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-400 text-black shadow-lg shadow-yellow-500/20' : 'bg-[#0b0e14] border-gray-800 text-gray-500 hover:border-gray-600 hover:text-gray-300'}`}
+                >
+                    <Crown className={`w-6 h-6 ${formData.is_vip ? "fill-black" : ""}`} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">VIP Trend</span>
+                </button>
             </div>
-            <span className="text-xs font-bold text-gray-400 group-hover:text-white">Mark as Trending</span>
-          </label>
+          </div>
         </form>
 
         <div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3">
