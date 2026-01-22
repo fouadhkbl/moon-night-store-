@@ -68,7 +68,7 @@ export const LoginForm = ({ onAuthSuccess, onToggle }: { onAuthSuccess: (s: any)
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: 'https://moon-night.store/',
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -213,7 +213,7 @@ export const SignupForm = ({ addToast, onAuthSuccess, onToggle }: { addToast: an
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: 'https://moon-night.store/',
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
