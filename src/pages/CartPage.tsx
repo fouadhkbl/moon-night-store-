@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { CartItem } from '../types';
-import { ShoppingCart, ArrowLeft, Minus, Plus, Trash2, ArrowRight } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Minus, Plus, Trash2, ArrowRight, AlertTriangle } from 'lucide-react';
 
 export const CartPage = ({ cart, onUpdateQty, onRemove, onNavigate, addToast }: { 
   cart: CartItem[], 
@@ -9,7 +9,11 @@ export const CartPage = ({ cart, onUpdateQty, onRemove, onNavigate, addToast }: 
   onNavigate: (p: string) => void,
   addToast: any
 }) => {
-  const total = useMemo(() => cart.reduce((acc, item) => acc + (item.product?.price || 0) * item.quantity, 0), [cart]);
+  const total = useMemo(() => cart.reduce((acc, item) => {
+    // Safety check: ensure product and price exist
+    if (!item.product) return acc;
+    return acc + (item.product.price || 0) * item.quantity;
+  }, 0), [cart]);
 
   if (cart.length === 0) {
     return (
@@ -42,14 +46,22 @@ export const CartPage = ({ cart, onUpdateQty, onRemove, onNavigate, addToast }: 
         <div className="lg:col-span-2 space-y-4">
           {cart.map((item) => (
             <div key={item.id} className="bg-[#1e232e] rounded-3xl border border-gray-800 p-5 md:p-6 flex gap-4 md:gap-6 items-center shadow-2xl">
-              <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden flex-shrink-0 shadow-lg">
-                <img src={item.product?.image_url} alt={item.product?.name} className="w-full h-full object-cover" />
+              <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden flex-shrink-0 shadow-lg bg-gray-900 flex items-center justify-center">
+                {item.product?.image_url ? (
+                   <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover" />
+                ) : (
+                   <AlertTriangle className="w-8 h-8 text-yellow-500" />
+                )}
               </div>
               <div className="flex-grow min-w-0">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-white font-black text-sm md:text-xl italic truncate leading-none mb-2 uppercase tracking-tighter">{item.product?.name}</h3>
-                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{item.product?.category} • {item.product?.platform}</p>
+                    <h3 className="text-white font-black text-sm md:text-xl italic truncate leading-none mb-2 uppercase tracking-tighter">
+                        {item.product?.name || "Unavailable Item"}
+                    </h3>
+                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">
+                        {item.product ? `${item.product.category} • ${item.product.platform}` : "Item no longer available"}
+                    </p>
                   </div>
                   <button onClick={() => onRemove(item.id)} className="p-2 text-gray-500 hover:text-red-500 transition">
                     <Trash2 className="w-5 h-5" />
@@ -58,7 +70,7 @@ export const CartPage = ({ cart, onUpdateQty, onRemove, onNavigate, addToast }: 
                 
                 <div className="flex justify-between items-end mt-4">
                   <div className="text-yellow-400 font-black italic text-lg md:text-2xl tracking-tighter">
-                    {item.product?.price.toFixed(2)} DH
+                    {item.product?.price ? item.product.price.toFixed(2) : "0.00"} DH
                   </div>
                   <div className="flex items-center gap-3 bg-[#0b0e14] px-3 py-2 rounded-xl border border-gray-800">
                     <button onClick={() => onUpdateQty(item.id, -1)} className="text-gray-400 hover:text-blue-500 transition p-1"><Minus className="w-4 h-4" /></button>
@@ -87,7 +99,8 @@ export const CartPage = ({ cart, onUpdateQty, onRemove, onNavigate, addToast }: 
 
           <button 
             onClick={() => onNavigate('checkout')}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 shadow-2xl shadow-blue-600/30 mb-4 uppercase tracking-widest"
+            disabled={total === 0}
+            className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 shadow-2xl shadow-blue-600/30 mb-4 uppercase tracking-widest ${total === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
              Proceed to Checkout <ArrowRight className="w-5 h-5" />
           </button>
@@ -105,7 +118,8 @@ export const CartPage = ({ cart, onUpdateQty, onRemove, onNavigate, addToast }: 
          </div>
          <button 
             onClick={() => onNavigate('checkout')}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-2xl shadow-blue-600/30 active:scale-95 transition-transform uppercase tracking-tighter"
+            disabled={total === 0}
+            className={`bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-2xl shadow-blue-600/30 active:scale-95 transition-transform uppercase tracking-tighter ${total === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
          >
             Checkout <ArrowRight className="w-5 h-5" />
          </button>

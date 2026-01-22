@@ -56,7 +56,8 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
      query.then(({ data }) => { 
        if (data) {
            // Client-side sorting: VIP -> Trending -> Normal
-           const sortedData = data.sort((a, b) => {
+           // CRITICAL FIX: Use [...data] to avoid mutating read-only array from Supabase
+           const sortedData = [...data].sort((a, b) => {
                // Priority 1: VIP
                const aVip = a.is_vip ? 1 : 0;
                const bVip = b.is_vip ? 1 : 0;

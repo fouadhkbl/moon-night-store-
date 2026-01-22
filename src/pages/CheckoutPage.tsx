@@ -288,7 +288,8 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
                        {cart.map(item => (
                            <div key={item.id} className="flex justify-between items-center text-sm">
                                <span className="text-gray-400 font-bold truncate max-w-[200px]">{item.quantity}x {item.product?.name}</span>
-                               <span className="text-white font-mono">{(item.product!.price * item.quantity).toFixed(2)} DH</span>
+                               {/* CRITICAL FIX: Safe access to product price */}
+                               <span className="text-white font-mono">{((item.product?.price || 0) * item.quantity).toFixed(2)} DH</span>
                            </div>
                        ))}
                    </div>

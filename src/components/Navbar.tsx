@@ -20,6 +20,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
   const isGuest = session?.user?.id === 'guest-user-123';
 
   useEffect(() => {
+    // If we have a user, fetch/set the profile
     if (session?.user) {
       if (isGuest) {
           setProfile({
@@ -36,36 +37,30 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
       }
 
       const fetchProfile = async () => {
-        let attempts = 0;
-        let data = null;
-        
-        while (attempts < 3 && !data) {
-             const { data: profileData } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-              
-             if (profileData) {
-                 data = profileData;
-             } else {
-                 await new Promise(r => setTimeout(r, 500)); 
-                 attempts++;
-             }
-        }
-        
-        if (data) setProfile(data);
+         // Simple fetch without loop
+         const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+         if (profileData) {
+             setProfile(profileData);
+         }
       };
       
       fetchProfile();
       
-      const channel = supabase.channel('public:profiles')
+      // Subscribe to profile changes for real-time updates (e.g. balance)
+      const channel = supabase.channel(`public:profiles:${session.user.id}`)
           .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${session.user.id}` }, payload => {
               setProfile(payload.new as Profile);
           })
           .subscribe();
           
       return () => { supabase.removeChannel(channel); }
+    } else {
+        setProfile(null);
     }
   }, [session?.user?.id, isGuest]);
 

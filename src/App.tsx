@@ -81,8 +81,10 @@ const App: React.FC = () => {
         if (!currentSession?.user) return;
         
         const { user } = currentSession;
-        // Detect provider (google, discord, email) from app_metadata
-        // app_metadata.provider usually holds 'google', 'discord', 'email' etc.
+        
+        // CRITICAL: Skip sync for Guest users to prevent DB errors
+        if (user.id === 'guest-user-123') return;
+
         const provider = user.app_metadata?.provider || 'email';
         
         try {
@@ -162,8 +164,14 @@ const App: React.FC = () => {
     const fetchCart = async () => {
       const isGuest = session?.user?.id === 'guest-user-123';
       if (!isGuest && session?.user) {
+        // Fetch cart items and related product info
         const { data } = await supabase.from('cart_items').select('*, product:products(*)').eq('user_id', session.user.id).order('created_at', { ascending: true });
-        if (data) setCart(data as CartItem[]);
+        
+        if (data) {
+             // Filter out items where the product might have been deleted (product is null)
+             const validItems = data.filter(item => item.product !== null);
+             setCart(validItems as CartItem[]);
+        }
       } else if (isGuest) {
         setCart([]); 
       }
@@ -224,7 +232,10 @@ const App: React.FC = () => {
           await supabase.from('cart_items').insert({ user_id: session.user.id, product_id: product.id, quantity });
        }
        const { data: updatedCart } = await supabase.from('cart_items').select('*, product:products(*)').eq('user_id', session.user.id).order('created_at', { ascending: true });
-       if (updatedCart) setCart(updatedCart as CartItem[]);
+       if (updatedCart) {
+           const validItems = updatedCart.filter(item => item.product !== null);
+           setCart(validItems as CartItem[]);
+       }
      }
      addToast('Success', `Inventory added to cart.`, 'success');
   };
@@ -258,7 +269,7 @@ const App: React.FC = () => {
        await supabase.from('cart_items').delete().eq('id', itemId);
        setCart(prev => prev.filter(i => i.id !== itemId));
     }
-    if (item) addToast('Removed', `${item.product?.name} removed.`, 'info');
+    if (item && item.product) addToast('Removed', `${item.product.name} removed.`, 'info');
   };
 
   const handleClearCart = async () => {
