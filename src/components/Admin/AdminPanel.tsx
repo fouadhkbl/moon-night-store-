@@ -357,7 +357,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 };
 
 export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' | 'shop' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations' | 'tournaments' | 'system'>(role === 'shop' ? 'products' : 'stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations' | 'tournaments' | 'system' | 'affiliates'>(role === 'shop' ? 'products' : 'stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [pointProducts, setPointProducts] = useState<PointProduct[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -376,6 +376,8 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [referralReward, setReferralReward] = useState('10');
   const [announcementMode, setAnnouncementMode] = useState('rotation');
   const [announcementText, setAnnouncementText] = useState('');
+  const [announcementBg, setAnnouncementBg] = useState('');
+  const [announcementColor, setAnnouncementColor] = useState('');
   const [saleCode, setSaleCode] = useState('');
   const [siteBackground, setSiteBackground] = useState('');
   
@@ -456,6 +458,8 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                 if (item.key === 'referral_reward') setReferralReward(item.value);
                 if (item.key === 'announcement_mode') setAnnouncementMode(item.value);
                 if (item.key === 'announcement_text') setAnnouncementText(item.value);
+                if (item.key === 'announcement_bg') setAnnouncementBg(item.value);
+                if (item.key === 'announcement_color') setAnnouncementColor(item.value);
                 if (item.key === 'sale_code') setSaleCode(item.value);
                 if (item.key === 'site_background') setSiteBackground(item.value);
             });
@@ -570,6 +574,8 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           { key: 'referral_reward', value: referralReward },
           { key: 'announcement_mode', value: announcementMode },
           { key: 'announcement_text', value: announcementText },
+          { key: 'announcement_bg', value: announcementBg },
+          { key: 'announcement_color', value: announcementColor },
           { key: 'sale_code', value: saleCode },
           { key: 'site_background', value: siteBackground }
       ];
@@ -619,6 +625,11 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const filteredDonations = donations.filter(d => 
       (d.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Affiliate Logic
+  const affiliateProfiles = profiles.filter(p => (p.referral_earnings || 0) > 0 || profiles.some(sub => sub.referred_by === p.id));
+  const totalPayoutPending = affiliateProfiles.reduce((acc, curr) => acc + (curr.referral_earnings || 0), 0);
+  const totalReferrals = profiles.filter(p => p.referred_by).length;
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-white flex font-sans selection:bg-blue-500 selection:text-white">
@@ -676,6 +687,10 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                         <button onClick={() => setActiveSection('users')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'users' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
                             <Users className="w-4 h-4" /> Users
                         </button>
+
+                        <button onClick={() => setActiveSection('affiliates')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'affiliates' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                            <Percent className="w-4 h-4" /> Affiliates
+                        </button>
                         
                         <button onClick={() => setActiveSection('coupons')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'coupons' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
                             <Ticket className="w-4 h-4" /> Coupons
@@ -723,6 +738,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                         <div className="flex gap-4">
                             <button onClick={() => setIsVisitsModalOpen(true)} className="bg-[#1e232e] border border-gray-800 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:border-blue-500 transition-all shadow-xl">
                                 <Globe className="w-5 h-5 text-blue-500" /> View Live Traffic Logs
+                            </button>
+                            <button onClick={() => setActiveSection('system')} className="bg-[#1e232e] border border-gray-800 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:border-yellow-500 transition-all shadow-xl">
+                                <Megaphone className="w-5 h-5 text-yellow-500" /> Manage Announcements
                             </button>
                         </div>
                     </div>
@@ -835,6 +853,61 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                             </td>
                                         </tr>
                                     ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* AFFILIATES SECTION (Full Admin) */}
+                {activeSection === 'affiliates' && role === 'full' && (
+                    <div className="animate-slide-up">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Affiliate Program</h2>
+                        
+                        <div className="grid grid-cols-2 gap-6 mb-8">
+                            <div className="bg-[#1e232e] p-6 rounded-[2rem] border border-gray-800 shadow-xl">
+                                <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-1">Total Payout Pending</p>
+                                <h3 className="text-4xl font-black text-yellow-400 italic tracking-tighter">{totalPayoutPending.toFixed(2)} DH</h3>
+                            </div>
+                            <div className="bg-[#1e232e] p-6 rounded-[2rem] border border-gray-800 shadow-xl">
+                                <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-1">Total Referrals</p>
+                                <h3 className="text-4xl font-black text-green-400 italic tracking-tighter">{totalReferrals}</h3>
+                            </div>
+                        </div>
+
+                        <div className="bg-[#1e232e] rounded-[2rem] border border-gray-800 overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="bg-[#151a23] text-gray-500 text-[9px] font-black uppercase tracking-[0.2em]">
+                                    <tr>
+                                        <th className="p-6">Affiliate User</th>
+                                        <th className="p-6">Code</th>
+                                        <th className="p-6 text-center">Invited Users</th>
+                                        <th className="p-6 text-right">Total Earnings</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-800">
+                                    {affiliateProfiles.length === 0 ? (
+                                        <tr><td colSpan={4} className="p-8 text-center text-gray-500 text-xs font-bold uppercase tracking-widest">No active affiliates found.</td></tr>
+                                    ) : (
+                                        affiliateProfiles.map(p => {
+                                            const inviteCount = profiles.filter(sub => sub.referred_by === p.id).length;
+                                            return (
+                                                <tr key={p.id} className="hover:bg-[#0b0e14] transition-colors">
+                                                    <td className="p-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden">
+                                                                {p.avatar_url && <img src={p.avatar_url} className="w-full h-full object-cover" />}
+                                                            </div>
+                                                            <span className="text-white font-bold text-xs">{p.username}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-6 font-mono text-blue-400 font-bold text-xs">{p.referral_code}</td>
+                                                    <td className="p-6 text-center text-gray-400 font-bold text-xs">{inviteCount}</td>
+                                                    <td className="p-6 text-right font-mono text-green-400 font-black text-sm">{p.referral_earnings?.toFixed(2) || '0.00'} DH</td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -993,15 +1066,30 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                     <option value="rotation">Auto Rotation (Sale/Referral)</option>
                                     <option value="sale">Flash Sale Only</option>
                                     <option value="referral">Referral Only</option>
-                                    <option value="custom">Custom Message</option>
+                                    <option value="custom">Custom Message (Styled)</option>
                                     <option value="off">Disabled</option>
                                 </select>
                             </div>
 
                             {announcementMode === 'custom' && (
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Custom Text</label>
-                                    <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={announcementText} onChange={e => setAnnouncementText(e.target.value)} />
+                                <div className="space-y-4 bg-[#0b0e14]/50 p-4 rounded-xl border border-gray-800">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Custom Text</label>
+                                        <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={announcementText} onChange={e => setAnnouncementText(e.target.value)} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Banner Background (Color or Gradient)</label>
+                                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-mono text-xs outline-none focus:border-indigo-500" value={announcementBg} onChange={e => setAnnouncementBg(e.target.value)} placeholder="linear-gradient(...) or #hex" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Text Color</label>
+                                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-mono text-xs outline-none focus:border-indigo-500" value={announcementColor} onChange={e => setAnnouncementColor(e.target.value)} placeholder="#ffffff" />
+                                        </div>
+                                    </div>
+                                    <div className="p-4 rounded-lg text-center font-bold text-xs uppercase tracking-widest border border-gray-700" style={{ background: announcementBg, color: announcementColor }}>
+                                        Preview: {announcementText}
+                                    </div>
                                 </div>
                             )}
 

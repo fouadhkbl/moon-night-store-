@@ -60,9 +60,17 @@ const AnnouncementBar = ({ settings }: { settings: any }) => {
 
     if (!visible || settings.mode === 'off') return null;
 
+    // Dynamic Style logic
+    const barStyle = {
+        background: settings.announcement_bg || (mode === 'referral' ? 'linear-gradient(to right, #064e3b, #065f46)' : 'linear-gradient(to right, #1e3a8a, #581c87, #1e3a8a)'),
+        color: settings.announcement_color || '#ffffff'
+    };
+
     return (
-        <div className={`text-white py-2 px-4 relative overflow-hidden shadow-2xl z-[60] transition-colors duration-1000 ${mode === 'sale' ? 'bg-gradient-to-r from-blue-900 via-purple-900 to-blue-900' : mode === 'referral' ? 'bg-gradient-to-r from-green-900 via-emerald-800 to-green-900' : 'bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900'}`}>
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+        <div style={barStyle} className="py-2 px-4 relative overflow-hidden shadow-2xl z-[60] transition-all duration-1000">
+            {/* Texture overlay only if using default gradients, if user set flat color we might want it plain, but keeping texture is fine */}
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 pointer-events-none"></div>
+            
             <div className="container mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6 text-[10px] md:text-xs font-black uppercase tracking-widest relative z-10 animate-fade-in" key={mode}>
                 {mode === 'sale' && (
                     <>
@@ -71,9 +79,9 @@ const AnnouncementBar = ({ settings }: { settings: any }) => {
                             <span>Flash Sale Active</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-gray-300">Use Code:</span>
+                            <span className="opacity-80">Use Code:</span>
                             <span className="bg-white text-black px-2 py-0.5 rounded border border-gray-300 font-mono select-all cursor-pointer hover:bg-gray-200 transition">{settings.sale_code || 'MOON20'}</span>
-                            <span className="text-gray-300">for Discount</span>
+                            <span className="opacity-80">for Discount</span>
                         </div>
                         <div className="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-white/10">
                             <Clock className="w-3 h-3 text-red-400" />
@@ -88,21 +96,21 @@ const AnnouncementBar = ({ settings }: { settings: any }) => {
                             <span>New Feature</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-white">Refer a friend & Earn Cash!</span>
+                            <span>Refer a friend & Earn Cash!</span>
                             <span className="bg-green-500 text-black px-2 py-0.5 rounded font-bold">Instantly</span>
                         </div>
                     </>
                 )}
                 {mode === 'custom' && (
                     <div className="flex items-center gap-2">
-                        <Megaphone className="w-4 h-4 text-blue-400" />
-                        <span className="text-white tracking-widest">{settings.text}</span>
+                        <Megaphone className="w-4 h-4" />
+                        <span className="tracking-widest">{settings.text}</span>
                     </div>
                 )}
             </div>
             <button 
                 onClick={() => setVisible(false)} 
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 opacity-60 hover:opacity-100 transition-opacity"
             >
                 <X className="w-4 h-4" />
             </button>
@@ -179,7 +187,9 @@ const App: React.FC = () => {
   const [announcementSettings, setAnnouncementSettings] = useState({
       mode: 'rotation',
       text: 'Welcome to Moon Night Store!',
-      sale_code: 'MOON20'
+      sale_code: 'MOON20',
+      announcement_bg: '',
+      announcement_color: '#ffffff'
   });
   const [backgroundUrl, setBackgroundUrl] = useState('');
 
@@ -218,6 +228,8 @@ const App: React.FC = () => {
                   if (item.key === 'announcement_text') newSettings.text = item.value;
                   if (item.key === 'sale_code') newSettings.sale_code = item.value;
                   if (item.key === 'site_background') bg = item.value;
+                  if (item.key === 'announcement_bg') newSettings.announcement_bg = item.value;
+                  if (item.key === 'announcement_color') newSettings.announcement_color = item.value;
               });
               setAnnouncementSettings(prev => ({ ...prev, ...newSettings }));
               setBackgroundUrl(bg);

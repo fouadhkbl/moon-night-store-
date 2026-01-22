@@ -190,6 +190,8 @@ insert into public.app_settings (key, value) values ('announcement_mode', 'rotat
 insert into public.app_settings (key, value) values ('announcement_text', 'Welcome to Moon Night Store!') on conflict do nothing;
 insert into public.app_settings (key, value) values ('sale_code', 'MOON20') on conflict do nothing;
 insert into public.app_settings (key, value) values ('site_background', '') on conflict do nothing;
+insert into public.app_settings (key, value) values ('announcement_bg', 'linear-gradient(to right, #1e3a8a, #581c87, #1e3a8a)') on conflict do nothing;
+insert into public.app_settings (key, value) values ('announcement_color', '#ffffff') on conflict do nothing;
 
 -- ENABLE ROW LEVEL SECURITY
 alter table public.profiles enable row level security;
@@ -209,7 +211,7 @@ alter table public.tournaments enable row level security;
 alter table public.reviews enable row level security;
 alter table public.app_settings enable row level security;
 
--- SECURITY POLICIES
+-- SECURITY POLICIES (Previous policies remain, ensuring idempotent behavior)
 
 -- Profiles
 drop policy if exists "Public profiles" on public.profiles;
