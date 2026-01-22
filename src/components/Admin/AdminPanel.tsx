@@ -296,7 +296,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
                                     </div>
                                     <div className="min-w-0">
                                         <p className="text-white font-bold text-xs truncate leading-tight">{item.product?.name || 'Item Removed'}</p>
-                                        <p className="text-[10px] text-gray-500 font-mono mt-0.5">
+                                        <p className="text-white font-bold text-[10px]">
                                             Qty: {item.quantity} <span className="text-gray-600">|</span> <span className="text-yellow-400">{item.price_at_purchase.toFixed(2)} DH</span>
                                         </p>
                                     </div>
@@ -374,7 +374,8 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [adminProfile, setAdminProfile] = useState<Profile | null>(null);
   
   // System Settings State
-  const [referralReward, setReferralReward] = useState('10');
+  const [inviteReward, setInviteReward] = useState('5');
+  const [orderCommission, setOrderCommission] = useState('5');
   const [saleCode, setSaleCode] = useState('');
   const [siteBackground, setSiteBackground] = useState('');
   
@@ -455,7 +456,8 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         const { data: settings } = await supabase.from('app_settings').select('*');
         if (settings) {
             settings.forEach(item => {
-                if (item.key === 'referral_reward') setReferralReward(item.value);
+                if (item.key === 'affiliate_invite_reward') setInviteReward(item.value);
+                if (item.key === 'affiliate_order_reward_percentage') setOrderCommission(item.value);
                 if (item.key === 'sale_code') setSaleCode(item.value);
                 if (item.key === 'site_background') setSiteBackground(item.value);
             });
@@ -587,7 +589,8 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
 
   const handleSaveSettings = async () => {
       const updates = [
-          { key: 'referral_reward', value: referralReward },
+          { key: 'affiliate_invite_reward', value: inviteReward },
+          { key: 'affiliate_order_reward_percentage', value: orderCommission },
           { key: 'sale_code', value: saleCode },
           { key: 'site_background', value: siteBackground }
       ];
@@ -1075,11 +1078,19 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                 <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 space-y-6">
                                     <h3 className="text-xl font-black text-white italic uppercase tracking-tighter border-b border-gray-800 pb-4">Global Settings</h3>
                                     
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Referral Reward (DH)</label>
-                                        <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={referralReward} onChange={e => setReferralReward(e.target.value)} />
+                                    <h4 className="text-indigo-400 font-black uppercase tracking-widest text-xs mt-4 mb-2">Affiliate Program</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Invite Reward (DH)</label>
+                                            <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={inviteReward} onChange={e => setInviteReward(e.target.value)} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Order Commission (%)</label>
+                                            <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={orderCommission} onChange={e => setOrderCommission(e.target.value)} />
+                                        </div>
                                     </div>
 
+                                    <h4 className="text-yellow-400 font-black uppercase tracking-widest text-xs mt-4 mb-2">Store Config</h4>
                                     <div>
                                         <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Flash Sale Code</label>
                                         <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500 uppercase" value={saleCode} onChange={e => setSaleCode(e.target.value)} />
@@ -1133,7 +1144,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                         </div>
                     </div>
                 )}
-
             </div>
         </main>
 

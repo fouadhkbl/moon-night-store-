@@ -195,7 +195,8 @@ create table if not exists public.app_settings (
 );
 
 -- Insert Default Settings
-insert into public.app_settings (key, value) values ('referral_reward', '10') on conflict do nothing;
+insert into public.app_settings (key, value) values ('affiliate_invite_reward', '5') on conflict do nothing;
+insert into public.app_settings (key, value) values ('affiliate_order_reward_percentage', '5') on conflict do nothing;
 insert into public.app_settings (key, value) values ('sale_code', 'MOON20') on conflict do nothing;
 insert into public.app_settings (key, value) values ('site_background', '') on conflict do nothing;
 

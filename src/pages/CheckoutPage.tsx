@@ -182,7 +182,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
     setIsProcessing(true);
     
     try {
-      // 1. Fetch Fresh Profile Data & Check if first order
+      // 1. Fetch Fresh Profile Data
       const { data: profileData, error: profileFetchError } = await supabase
         .from('profiles')
         .select('wallet_balance, discord_points, referred_by')
@@ -190,15 +190,6 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
         .single();
 
       if (profileFetchError) throw new Error("Failed to fetch user profile.");
-      
-      // Check existing orders count
-      const { count: orderCount } = await supabase
-          .from('orders')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', session.user.id)
-          .neq('status', 'canceled'); // Only count valid orders
-
-      const isFirstOrder = orderCount === 0;
       
       const currentBalance = profileData.wallet_balance;
       const currentPoints = profileData.discord_points || 0;
@@ -269,20 +260,24 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
           });
       }
 
-      // 8. REFERRAL REWARD LOGIC (First Purchase Only)
-      if (isFirstOrder && profileData.referred_by) {
-          // Get reward amount from settings or default to 10
-          const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'referral_reward').single();
-          const rewardAmount = setting ? parseFloat(setting.value) : 10.00;
+      // 8. REFERRAL REWARD LOGIC (Commission per completed order)
+      if (profileData.referred_by) {
+          // Get commission percentage from settings
+          const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'affiliate_order_reward_percentage').single();
+          const commissionPercentage = setting ? parseFloat(setting.value) : 5.00;
 
-          // Get referrer details to update balance
-          const { data: referrer } = await supabase.from('profiles').select('wallet_balance, referral_earnings').eq('id', profileData.referred_by).single();
-          
-          if (referrer) {
-              await supabase.from('profiles').update({
-                  wallet_balance: referrer.wallet_balance + rewardAmount,
-                  referral_earnings: (referrer.referral_earnings || 0) + rewardAmount
-              }).eq('id', profileData.referred_by);
+          if (commissionPercentage > 0) {
+              const commissionAmount = (finalTotal * commissionPercentage) / 100;
+
+              // Get referrer details to update balance
+              const { data: referrer } = await supabase.from('profiles').select('wallet_balance, referral_earnings').eq('id', profileData.referred_by).single();
+              
+              if (referrer) {
+                  await supabase.from('profiles').update({
+                      wallet_balance: (referrer.wallet_balance || 0) + commissionAmount,
+                      referral_earnings: (referrer.referral_earnings || 0) + commissionAmount
+                  }).eq('id', profileData.referred_by);
+              }
           }
       }
 

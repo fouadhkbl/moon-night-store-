@@ -198,8 +198,6 @@ export const SignupForm = ({ addToast, onAuthSuccess, onToggle }: { addToast: an
           if (!refError && referrer) {
               referrerId = referrer.id;
           } else {
-              // Should we block signup or just ignore invalid code?
-              // Let's just ignore but warn in console
               console.warn("Invalid referral code");
           }
       }
@@ -218,6 +216,23 @@ export const SignupForm = ({ addToast, onAuthSuccess, onToggle }: { addToast: an
       });
 
       if (signupError) throw signupError;
+
+      // 3. Process Referral Reward (Invite Reward)
+      if (data.session && referrerId) {
+          const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'affiliate_invite_reward').single();
+          const inviteReward = setting ? parseFloat(setting.value) : 5.00;
+
+          if (inviteReward > 0) {
+              const { data: referrerProfile } = await supabase.from('profiles').select('wallet_balance, referral_earnings').eq('id', referrerId).single();
+              
+              if (referrerProfile) {
+                  await supabase.from('profiles').update({
+                      wallet_balance: (referrerProfile.wallet_balance || 0) + inviteReward,
+                      referral_earnings: (referrerProfile.referral_earnings || 0) + inviteReward
+                  }).eq('id', referrerId);
+              }
+          }
+      }
 
       if (data.session) {
         onAuthSuccess(data.session);
