@@ -45,7 +45,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
 
   return (
     <div className="animate-fade-in">
-      <section className="relative min-h-[850px] flex items-center overflow-hidden">
+      <section className="relative min-h-[950px] flex items-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img 
             src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1920&q=80" 
@@ -55,7 +55,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
           <div className="absolute inset-0 bg-gradient-to-r from-[#0b0e14] via-[#0b0e14]/90 to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0b0e14]"></div>
         </div>
-        <div className="container mx-auto px-4 relative z-20 pt-20 pb-20">
+        <div className="container mx-auto px-4 relative z-20 pt-32 pb-40">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-blue-600/10 border border-blue-600/40 text-blue-400 text-[11px] font-black uppercase tracking-[0.4em] mb-10 shadow-2xl">
               <Star className="w-4 h-4 fill-blue-400" /> {text.premium}
