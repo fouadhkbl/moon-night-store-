@@ -349,7 +349,8 @@ const App: React.FC = () => {
                       {searchQuery ? `${t.searching}: "${searchQuery}"` : (selectedCategory ? `${t.dept}: ${selectedCategory}` : t.allGlobal)}
                   </p>
                </div>
-               <div className="flex items-center gap-4 overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide max-w-full">
+               {/* Updated scrollbar class to custom-scrollbar to enable scrolling on PC */}
+               <div className="flex items-center gap-4 overflow-x-auto overflow-y-hidden pb-4 custom-scrollbar max-w-full">
                   <button 
                     onClick={() => { setSelectedCategory(null); setSearchQuery(''); }}
                     className={`px-8 py-4 rounded-2xl text-[11px] font-black uppercase transition-all whitespace-nowrap tracking-[0.2em] shadow-2xl ${!selectedCategory && !searchQuery ? 'bg-blue-600 text-white' : 'bg-[#1e232e] text-gray-400 hover:text-white border border-gray-800'}`}
@@ -370,7 +371,7 @@ const App: React.FC = () => {
             
             <ShopGrid 
               category={selectedCategory} 
-              searchQuery={searchQuery}
+              searchQuery={searchQuery} 
               onProductClick={(p) => setSelectedProduct(p)} 
               language={language}
             />
