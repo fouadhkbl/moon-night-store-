@@ -67,23 +67,24 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
             <div className="flex flex-wrap gap-4 items-center">
               <button 
                 onClick={() => onNavigate('shop')}
-                className="bg-transparent border-2 border-gray-700 hover:border-white hover:bg-white hover:text-black text-white px-10 py-4 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter"
+                className="h-[64px] bg-transparent border-2 border-gray-700 hover:border-white hover:bg-white hover:text-black text-white px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter"
               >
                 {text.browse} <ChevronRight className="w-5 h-5" />
               </button>
               
               <button 
                 onClick={() => onNavigate('pointsShop')}
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-10 py-4 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-2xl shadow-purple-600/30"
+                className="h-[64px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-2xl shadow-purple-600/30"
               >
                 <Trophy className="w-5 h-5" /> Points Shop
               </button>
 
               <button 
                 onClick={() => onNavigate('tournaments')}
-                className="bg-gradient-to-r from-pink-900/20 to-rose-900/20 hover:from-pink-600 hover:to-rose-600 text-pink-300 hover:text-white border border-pink-500/30 hover:border-pink-500 px-8 py-4 rounded-2xl font-black text-xs transition-all flex items-center gap-2 uppercase tracking-widest shadow-xl shadow-pink-900/10 active:scale-95"
+                className="h-[64px] bg-[#1e232e] border-2 border-pink-500 hover:bg-pink-600 hover:border-pink-600 text-white px-8 rounded-2xl font-black text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-[0_0_20px_rgba(236,72,153,0.2)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] active:scale-95"
               >
-                <Swords className="w-4 h-4" /> Competitions
+                <Swords className="w-5 h-5 text-pink-500 group-hover:text-white transition-colors" /> 
+                <span>Competitions</span>
               </button>
             </div>
           </div>
