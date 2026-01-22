@@ -46,6 +46,7 @@ create table if not exists public.profiles (
   vip_level int default 0,
   vip_points int default 0,
   discord_points int default 0, -- NEW: Discord Points
+  total_donated decimal(10, 2) default 0.00, -- NEW: Donation Tracking
   updated_at timestamp with time zone default timezone('utc'::text, now()),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique(email)
@@ -56,6 +57,7 @@ alter table public.profiles add column if not exists wallet_balance decimal(10, 
 alter table public.profiles add column if not exists vip_level int default 0;
 alter table public.profiles add column if not exists vip_points int default 0;
 alter table public.profiles add column if not exists discord_points int default 0;
+alter table public.profiles add column if not exists total_donated decimal(10, 2) default 0.00;
 alter table public.profiles add column if not exists avatar_url text default 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=200&q=80';
 alter table public.profiles add column if not exists username text;
 alter table public.profiles add column if not exists password text;
@@ -212,8 +214,17 @@ create table if not exists public.redemption_messages (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 14. DONATIONS (NEW - For Donation Page)
+create table if not exists public.donations (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) on delete set null,
+  amount decimal(10, 2) not null,
+  transaction_id text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
 
--- 14. SECURITY POLICIES
+
+-- 15. SECURITY POLICIES
 alter table public.profiles enable row level security;
 alter table public.products enable row level security;
 alter table public.cart_items enable row level security;
@@ -226,6 +237,7 @@ alter table public.point_transactions enable row level security;
 alter table public.point_products enable row level security;
 alter table public.point_redemptions enable row level security;
 alter table public.redemption_messages enable row level security;
+alter table public.donations enable row level security;
 
 -- PROFILES
 drop policy if exists "Profiles are viewable by everyone" on public.profiles;
@@ -388,8 +400,14 @@ create policy "Admin can view all redemption messages" on public.redemption_mess
 drop policy if exists "Admin can insert redemption messages" on public.redemption_messages;
 create policy "Admin can insert redemption messages" on public.redemption_messages for insert with check (true);
 
+-- DONATIONS (NEW POLICIES)
+drop policy if exists "Donations are viewable by everyone" on public.donations;
+create policy "Donations are viewable by everyone" on public.donations for select using (true);
 
--- 15. TRIGGERS
+drop policy if exists "Users can insert donations" on public.donations;
+create policy "Users can insert donations" on public.donations for insert with check (true);
+
+-- 16. TRIGGERS
 create or replace function public.handle_updated_at()
 returns trigger as $$
 begin
@@ -408,7 +426,7 @@ create trigger on_products_updated
   before update on public.products
   for each row execute procedure public.handle_updated_at();
 
--- 16. SYSTEM CONFIG (Secrets)
+-- 17. SYSTEM CONFIG (Secrets)
 create table if not exists public.system_secrets (
   key text primary key,
   value text not null,

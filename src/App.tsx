@@ -14,6 +14,8 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { Dashboard } from './pages/Dashboard';
 import { TopUpPage } from './pages/TopUpPage';
 import { PointsShopPage } from './pages/PointsShopPage';
+import { DonatePage } from './pages/DonatePage';
+import { LeaderboardPage } from './pages/LeaderboardPage';
 import { Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -33,14 +35,14 @@ const App: React.FC = () => {
 
   const t = {
     en: {
-        shopTitle: "SYSTEM SHOP",
+        shopTitle: "SHOP",
         dept: "Department",
         searching: "Searching",
         allGlobal: "All Global Inventory",
         allDepts: "ALL DEPTS"
     },
     fr: {
-        shopTitle: "BOUTIQUE SYSTÈME",
+        shopTitle: "BOUTIQUE",
         dept: "Département",
         searching: "Recherche",
         allGlobal: "Inventaire Mondial",
@@ -307,6 +309,18 @@ const App: React.FC = () => {
                 onNavigate={handleNavigate}
                 addToast={addToast}
             />
+        )}
+
+        {currentPage === 'donate' && (
+            <DonatePage 
+                session={session}
+                onNavigate={handleNavigate}
+                addToast={addToast}
+            />
+        )}
+
+        {currentPage === 'leaderboard' && (
+            <LeaderboardPage onNavigate={handleNavigate} />
         )}
         
         {currentPage === 'shop' && (

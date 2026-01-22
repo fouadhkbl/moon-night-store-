@@ -23,7 +23,8 @@ export interface Profile {
   wallet_balance: number;
   vip_level: number;
   vip_points: number;
-  discord_points: number; // Added discord_points
+  discord_points: number; 
+  total_donated: number; // Added total_donated
   auth_provider?: string;
 }
 
@@ -118,6 +119,15 @@ export interface PointRedemption {
   created_at: string;
   point_product?: PointProduct;
   profile?: Profile; // For Admin
+}
+
+export interface Donation {
+  id: string;
+  user_id: string;
+  amount: number;
+  transaction_id?: string;
+  created_at: string;
+  profile?: Profile;
 }
 
 export enum GameCategory {

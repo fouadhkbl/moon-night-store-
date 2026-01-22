@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Profile } from '../types';
 
@@ -31,7 +31,8 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                 wallet_balance: 0.00,
                 vip_level: 0,
                 vip_points: 0,
-                discord_points: 0
+                discord_points: 0,
+                total_donated: 0
           });
           return;
       }
@@ -72,18 +73,48 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
       }
   };
 
+  const handleMenuClick = (page: string) => {
+      onNavigate(page);
+      setIsMenuOpen(false);
+  };
+
   const placeholder = language === 'en' ? "Search Game, Item, or Category..." : "Rechercher un jeu, un objet ou une catégorie...";
 
   return (
     <nav className="sticky top-0 z-50 bg-[#0b0e14] border-b border-gray-800 h-16 flex items-center shadow-lg">
       <div className="container mx-auto px-4 flex justify-between items-center relative h-full">
         <div className="flex items-center gap-4 relative z-10">
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)} 
-            className="lg:hidden text-gray-400 hover:text-white"
-          >
-            <Menu />
-          </button>
+          <div className="relative">
+              <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)} 
+                className="text-gray-400 hover:text-white p-2"
+              >
+                {isMenuOpen ? <X /> : <Menu />}
+              </button>
+              
+              {/* Dropdown Menu (3 lines in corner) */}
+              {isMenuOpen && (
+                  <div className="absolute top-12 left-0 w-64 bg-[#1e232e] border border-gray-800 rounded-2xl shadow-2xl p-2 z-[60] animate-slide-up">
+                      <button onClick={() => handleMenuClick('home')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
+                          <Home className="w-4 h-4 text-blue-500" /> Home
+                      </button>
+                      <button onClick={() => handleMenuClick('shop')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
+                          <ShoppingBag className="w-4 h-4 text-cyan-500" /> Shop
+                      </button>
+                      <button onClick={() => handleMenuClick('pointsShop')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
+                          <Trophy className="w-4 h-4 text-purple-500" /> Points Shop
+                      </button>
+                      <div className="h-px bg-gray-800 my-1"></div>
+                      <button onClick={() => handleMenuClick('donate')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
+                          <Heart className="w-4 h-4 text-red-500" /> Donate
+                      </button>
+                      <button onClick={() => handleMenuClick('leaderboard')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
+                          <Medal className="w-4 h-4 text-yellow-500" /> Donation Leaderboard
+                      </button>
+                  </div>
+              )}
+          </div>
+
           <div 
             onClick={() => onNavigate('home')} 
             className="flex items-center gap-2 cursor-pointer"
@@ -167,6 +198,9 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                 </div>
                 <button onClick={() => onNavigate('dashboard')} className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-blue-600 hover:text-white flex items-center gap-3 transition-colors">
                 <LayoutDashboard className="w-4 h-4" /> My Profile
+                </button>
+                <button onClick={() => onNavigate('donate')} className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-red-600 hover:text-white flex items-center gap-3 transition-colors border-t border-gray-800">
+                <Heart className="w-4 h-4" /> Donate
                 </button>
             </div>
           </div>
