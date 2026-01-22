@@ -499,6 +499,12 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
     if (!error) { addToast('Deleted', 'Item removed.', 'success'); fetchData(); }
   };
 
+  const handleDeleteAllProducts = async () => { 
+      if(!window.confirm('DANGER: DELETE ALL PRODUCTS?')) return;
+      await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Hack to delete all
+      fetchData();
+  }; 
+
   const handleSaveProduct = async (data: any) => { 
       if(data.id) await supabase.from('products').update(data).eq('id', data.id);
       else await supabase.from('products').insert(data);
@@ -575,10 +581,43 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       addToast('Saved', 'System settings updated.', 'success');
   };
 
-  // --- FILTERS ---
+  // --- SAFE FILTERS (Crash Prevention) ---
   const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchQuery.toLowerCase())
+    (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.category || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredPointProducts = pointProducts.filter(p => 
+      (p.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredTournaments = tournaments.filter(t => 
+      (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (t.game_name || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredUsers = profiles.filter(u => {
+    const matchesSearch = (u.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (u.username || '').toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (providerFilter === 'all') return matchesSearch;
+    return matchesSearch && u.auth_provider === providerFilter;
+  });
+  
+  const filteredCoupons = coupons.filter(c => (c.code || '').includes(searchQuery.toUpperCase()));
+
+  const filteredOrders = orders.filter(o => 
+      (o.id || '').includes(searchQuery) || 
+      (o.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredRedemptions = pointRedemptions.filter(pr => 
+      (pr.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (pr.point_product?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredDonations = donations.filter(d => 
+      (d.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -737,7 +776,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                             </button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {tournaments.map(t => (
+                            {filteredTournaments.map(t => (
                                 <div key={t.id} className="bg-[#1e232e] p-6 rounded-[2rem] border border-gray-800 relative overflow-hidden group">
                                     <div className="flex justify-between items-start mb-4 relative z-10">
                                         <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">{t.title}</h3>
