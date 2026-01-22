@@ -45,7 +45,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
 
   return (
     <div className="animate-fade-in">
-      <section className="relative h-[750px] flex items-center overflow-hidden">
+      <section className="relative min-h-[850px] flex items-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img 
             src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1920&q=80" 
@@ -55,12 +55,12 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
           <div className="absolute inset-0 bg-gradient-to-r from-[#0b0e14] via-[#0b0e14]/90 to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0b0e14]"></div>
         </div>
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-4 relative z-20 pt-20 pb-20">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-blue-600/10 border border-blue-600/40 text-blue-400 text-[11px] font-black uppercase tracking-[0.4em] mb-10 shadow-2xl">
               <Star className="w-4 h-4 fill-blue-400" /> {text.premium}
             </div>
-            <h1 className="text-7xl md:text-[10rem] font-black italic tracking-tighter text-white leading-[0.85] mb-10 uppercase">
+            <h1 className="text-6xl md:text-8xl lg:text-[9rem] font-black italic tracking-tighter text-white leading-[0.85] mb-10 uppercase">
               MOON <span className="text-blue-500">NIGHT</span><br />
               <span className="text-cyan-400">STORE</span>
             </h1>
@@ -68,7 +68,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
               {text.desc}
             </p>
             
-            <div className="flex flex-col gap-5 max-w-fit">
+            <div className="flex flex-col gap-6 max-w-fit relative z-30">
               <div className="flex flex-wrap gap-4 items-center">
                 <button 
                   onClick={() => onNavigate('shop')}
@@ -88,7 +88,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
               <div className="flex justify-center w-full">
                 <button 
                     onClick={() => onNavigate('tournaments')}
-                    className="h-[52px] bg-[#1e232e] border border-pink-500 hover:bg-pink-600 hover:border-pink-600 text-white px-8 rounded-xl font-black text-sm transition-all flex items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(236,72,153,0.2)] hover:shadow-[0_0_25px_rgba(236,72,153,0.4)] active:scale-95 group"
+                    className="h-[52px] bg-[#1e232e] border border-pink-500 hover:bg-pink-600 hover:border-pink-600 text-white px-10 rounded-xl font-black text-sm transition-all flex items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(236,72,153,0.2)] hover:shadow-[0_0_25px_rgba(236,72,153,0.4)] active:scale-95 group relative z-40"
                 >
                     <Swords className="w-4 h-4 text-pink-500 group-hover:text-white transition-colors" /> 
                     <span>{text.compete}</span>
@@ -99,7 +99,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
         </div>
       </section>
 
-      <section className="py-32 bg-[#0b0e14]">
+      <section className="py-32 bg-[#0b0e14] relative z-10">
         <div className="container mx-auto px-4">
           <div className="mb-24 text-center md:text-left">
             <p className="text-blue-500 font-black uppercase text-[12px] tracking-[0.4em] mb-4">{text.depts}</p>
