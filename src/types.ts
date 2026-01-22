@@ -12,6 +12,7 @@ export interface Product {
   is_trending: boolean;
   is_vip?: boolean; // New field for VIP status
   is_hidden?: boolean; // New field for visibility
+  created_at: string;
 }
 
 export interface Profile {
@@ -123,7 +124,7 @@ export interface PointRedemption {
 export enum GameCategory {
   ACCOUNTS = 'Accounts',
   COINS = 'Coins',
-  TOP_UP = 'Top Up',
+  KEYS = 'Keys',
   ITEMS = 'Items',
   BOOSTING = 'Boosting',
   GIFT_CARD = 'Gift Card'

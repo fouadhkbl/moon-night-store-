@@ -24,7 +24,8 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount }) => {
                 avatar_url: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=200&q=80',
                 wallet_balance: 0.00,
                 vip_level: 0,
-                vip_points: 0
+                vip_points: 0,
+                discord_points: 0
           });
           return;
       }

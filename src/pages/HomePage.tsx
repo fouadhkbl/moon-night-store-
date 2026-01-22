@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, Star, Coins, Zap, Sword, ArrowUpCircle, Gift, Users, Trophy } from 'lucide-react';
+import { ChevronRight, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy } from 'lucide-react';
 import { GameCategory } from '../types';
 
 export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void, onSearch: (q: string) => void, language: 'en' | 'fr' }) => {
@@ -14,7 +14,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
          cats: {
              [GameCategory.ACCOUNTS]: "Accounts",
              [GameCategory.COINS]: "Coins",
-             [GameCategory.TOP_UP]: "Top-Ups",
+             [GameCategory.KEYS]: "Keys",
              [GameCategory.ITEMS]: "Items",
              [GameCategory.BOOSTING]: "Boosting",
              [GameCategory.GIFT_CARD]: "Cards"
@@ -29,7 +29,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
          cats: {
              [GameCategory.ACCOUNTS]: "Comptes",
              [GameCategory.COINS]: "Pièces",
-             [GameCategory.TOP_UP]: "Recharges",
+             [GameCategory.KEYS]: "Clés",
              [GameCategory.ITEMS]: "Objets",
              [GameCategory.BOOSTING]: "Boost",
              [GameCategory.GIFT_CARD]: "Cartes"
@@ -93,7 +93,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
             {[
               { id: GameCategory.ACCOUNTS, icon: Users, label: text.cats[GameCategory.ACCOUNTS], color: 'from-pink-400/20' },
               { id: GameCategory.COINS, icon: Coins, label: text.cats[GameCategory.COINS], color: 'from-yellow-400/20' },
-              { id: GameCategory.TOP_UP, icon: Zap, label: text.cats[GameCategory.TOP_UP], color: 'from-blue-400/20' },
+              { id: GameCategory.KEYS, icon: Key, label: text.cats[GameCategory.KEYS], color: 'from-cyan-400/20' },
               { id: GameCategory.ITEMS, icon: Sword, label: text.cats[GameCategory.ITEMS], color: 'from-red-400/20' },
               { id: GameCategory.BOOSTING, icon: ArrowUpCircle, label: text.cats[GameCategory.BOOSTING], color: 'from-green-400/20' },
               { id: GameCategory.GIFT_CARD, icon: Gift, label: text.cats[GameCategory.GIFT_CARD], color: 'from-purple-400/20' },

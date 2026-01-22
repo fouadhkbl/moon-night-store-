@@ -54,7 +54,24 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
      }
 
      query.then(({ data }) => { 
-       if (data) setProducts(data); 
+       if (data) {
+           // Client-side sorting: VIP -> Trending -> Normal
+           const sortedData = data.sort((a, b) => {
+               // Priority 1: VIP
+               const aVip = a.is_vip ? 1 : 0;
+               const bVip = b.is_vip ? 1 : 0;
+               if (aVip !== bVip) return bVip - aVip; // Descending
+
+               // Priority 2: Trending
+               const aTrend = a.is_trending ? 1 : 0;
+               const bTrend = b.is_trending ? 1 : 0;
+               if (aTrend !== bTrend) return bTrend - aTrend; // Descending
+
+               // Priority 3: Created Date (Newest first)
+               return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+           });
+           setProducts(sortedData);
+       } 
        setIsLoading(false);
      }); 
    }, [category, searchQuery, selectedRegion, selectedPlatform]);
