@@ -109,7 +109,8 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
             <p className="text-blue-500 font-black uppercase text-[12px] tracking-[0.4em] mb-4">{text.depts}</p>
             <h2 className="text-6xl md:text-8xl font-black text-white italic uppercase tracking-tighter leading-none">{text.products}</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-7 gap-6">
+          {/* Changed grid to flex with overflow for horizontal scrolling */}
+          <div className="flex overflow-x-auto gap-6 pb-12 custom-scrollbar snap-x snap-mandatory">
             {[
               { id: GameCategory.ACCOUNTS, icon: Users, label: text.cats[GameCategory.ACCOUNTS], color: 'from-pink-400/20' },
               { id: GameCategory.COINS, icon: Coins, label: text.cats[GameCategory.COINS], color: 'from-yellow-400/20' },
@@ -122,7 +123,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
               <button 
                 key={cat.id}
                 onClick={() => { onSelectCategory(cat.id); onNavigate('shop'); }}
-                className="group relative bg-[#1e232e] border border-gray-800 p-10 rounded-[2.5rem] flex flex-col items-center gap-6 hover:border-blue-500 transition-all duration-500 overflow-hidden shadow-2xl hover:-translate-y-4"
+                className="min-w-[200px] md:min-w-[240px] snap-center group relative bg-[#1e232e] border border-gray-800 p-10 rounded-[2.5rem] flex flex-col items-center gap-6 hover:border-blue-500 transition-all duration-500 overflow-hidden shadow-2xl hover:-translate-y-4"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                 <div className="relative z-10 text-gray-500 group-hover:text-blue-400 transition-all duration-500 group-hover:scale-125">
