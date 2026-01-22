@@ -1,4 +1,5 @@
 
+
 -- ==============================================================================
 -- MOON NIGHT COMPLETE DATABASE SETUP (V25 - POINTS CHAT)
 -- Run this in the Supabase SQL Editor to fix Foreign Key constraints and Policies.
@@ -398,3 +399,22 @@ drop trigger if exists on_products_updated on public.products;
 create trigger on_products_updated
   before update on public.products
   for each row execute procedure public.handle_updated_at();
+
+-- 16. SYSTEM CONFIG (Secrets)
+create table if not exists public.system_secrets (
+  key text primary key,
+  value text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS
+alter table public.system_secrets enable row level security;
+
+-- Only service role (admin) can access
+drop policy if exists "No public access to secrets" on public.system_secrets;
+create policy "No public access to secrets" on public.system_secrets for all using (false);
+
+-- Insert PayPal Secret (Upsert)
+insert into public.system_secrets (key, value) 
+values ('PAYPAL_CLIENT_SECRET', 'EHybB4bwcpyLwYhaMitKdsjmIJPPQ7nBXNOG17nFlQ1WKBaTAzasxkGqAnxuQ4KlnqLOTbY3l1DWotff')
+on conflict (key) do update set value = excluded.value;

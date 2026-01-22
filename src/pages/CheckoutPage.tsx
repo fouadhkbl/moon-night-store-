@@ -48,8 +48,8 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
   const totalAfterDiscount = Math.max(0, subtotal - discountAmount);
   
   // Calculate Fees based on payment method
-  // 0% for Wallet (Solde), 1.5% for PayPal/Card
-  const feePercentage = paymentMethod === 'wallet' ? 0 : 0.015; 
+  // 0% for Wallet (Solde), 1.3% for PayPal/Card
+  const feePercentage = paymentMethod === 'wallet' ? 0 : 0.013; 
   const processingFee = totalAfterDiscount * feePercentage;
   const finalTotal = totalAfterDiscount + processingFee;
 
@@ -304,7 +304,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
                            </div>
                        )}
                        <div className="flex justify-between text-gray-400 text-xs font-black uppercase tracking-widest">
-                           <span>Fee ({paymentMethod === 'wallet' ? '0%' : '1.5%'})</span>
+                           <span>Fee ({paymentMethod === 'wallet' ? '0%' : '1.3%'})</span>
                            <span>+ {processingFee.toFixed(2)} DH</span>
                        </div>
                        <div className="flex justify-between text-white text-xl font-black italic tracking-tighter pt-2">

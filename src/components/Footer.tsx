@@ -53,7 +53,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, session, addToast }) => {
                <div className="bg-white p-1 rounded w-10 h-6 flex items-center justify-center"><span className="text-blue-900 font-bold text-xs italic">VISA</span></div>
                <div className="bg-white p-1 rounded w-10 h-6 flex items-center justify-center"><span className="text-blue-600 font-bold text-xs italic">Pay</span><span className="text-blue-400 font-bold text-xs italic">Pal</span></div>
             </div>
-            <p className="mt-4 text-gray-500 text-xs">© 2024 Moon Night Project. All rights reserved. Developed by Fouad.</p>
+            <p className="mt-4 text-gray-500 text-xs">© 2024 Moon Night Project. All rights reserved. Designed & Developed by Fouad.</p>
           </div>
         </div>
       </div>
