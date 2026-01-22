@@ -67,7 +67,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
             <div className="flex flex-wrap gap-4 items-center">
               <button 
                 onClick={() => onNavigate('shop')}
-                className="h-[64px] bg-transparent border-2 border-gray-700 hover:border-white hover:bg-white hover:text-black text-white px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter"
+                className="h-[64px] bg-transparent border-2 border-yellow-500 hover:border-yellow-400 hover:bg-yellow-400 hover:text-black text-yellow-400 px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-lg shadow-yellow-500/10 hover:shadow-yellow-500/30"
               >
                 {text.browse} <ChevronRight className="w-5 h-5" />
               </button>
