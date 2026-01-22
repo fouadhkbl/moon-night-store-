@@ -19,18 +19,27 @@ import { DonatePage } from './pages/DonatePage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { TournamentsPage } from './pages/TournamentsPage';
 import { TournamentDetailsPage } from './pages/TournamentDetailsPage';
-import { Loader2, ShoppingBag, X, Zap, Clock, Copy } from 'lucide-react';
+import { Loader2, ShoppingBag, X, Zap, Clock, Users } from 'lucide-react';
 
-// New Component: Flash Sale Banner
+// New Component: Flash Sale Banner with Rotation
 const AnnouncementBar = () => {
     const [timeLeft, setTimeLeft] = useState(3600 * 4); // 4 hours in seconds
     const [visible, setVisible] = useState(true);
+    const [mode, setMode] = useState<'sale' | 'referral'>('sale');
 
     useEffect(() => {
         const timer = setInterval(() => {
             setTimeLeft(prev => (prev > 0 ? prev - 1 : 3600 * 4));
         }, 1000);
         return () => clearInterval(timer);
+    }, []);
+
+    // Rotate messages every 5 seconds
+    useEffect(() => {
+        const rotation = setInterval(() => {
+            setMode(prev => prev === 'sale' ? 'referral' : 'sale');
+        }, 5000);
+        return () => clearInterval(rotation);
     }, []);
 
     const formatTime = (seconds: number) => {
@@ -43,22 +52,37 @@ const AnnouncementBar = () => {
     if (!visible) return null;
 
     return (
-        <div className="bg-gradient-to-r from-blue-900 via-purple-900 to-blue-900 text-white py-2 px-4 relative overflow-hidden shadow-2xl z-[60]">
+        <div className={`text-white py-2 px-4 relative overflow-hidden shadow-2xl z-[60] transition-colors duration-1000 ${mode === 'sale' ? 'bg-gradient-to-r from-blue-900 via-purple-900 to-blue-900' : 'bg-gradient-to-r from-green-900 via-emerald-800 to-green-900'}`}>
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
-            <div className="container mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6 text-[10px] md:text-xs font-black uppercase tracking-widest relative z-10">
-                <div className="flex items-center gap-2 animate-pulse text-yellow-400">
-                    <Zap className="w-4 h-4 fill-yellow-400" />
-                    <span>Flash Sale Active</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-gray-300">Use Code:</span>
-                    <span className="bg-white text-black px-2 py-0.5 rounded border border-gray-300 font-mono select-all cursor-pointer hover:bg-gray-200 transition">MOON20</span>
-                    <span className="text-gray-300">for 20% OFF</span>
-                </div>
-                <div className="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-white/10">
-                    <Clock className="w-3 h-3 text-red-400" />
-                    <span className="font-mono text-red-400 w-20">{formatTime(timeLeft)}</span>
-                </div>
+            <div className="container mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6 text-[10px] md:text-xs font-black uppercase tracking-widest relative z-10 animate-fade-in" key={mode}>
+                {mode === 'sale' ? (
+                    <>
+                        <div className="flex items-center gap-2 animate-pulse text-yellow-400">
+                            <Zap className="w-4 h-4 fill-yellow-400" />
+                            <span>Flash Sale Active</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-gray-300">Use Code:</span>
+                            <span className="bg-white text-black px-2 py-0.5 rounded border border-gray-300 font-mono select-all cursor-pointer hover:bg-gray-200 transition">MOON20</span>
+                            <span className="text-gray-300">for 20% OFF</span>
+                        </div>
+                        <div className="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-white/10">
+                            <Clock className="w-3 h-3 text-red-400" />
+                            <span className="font-mono text-red-400 w-20">{formatTime(timeLeft)}</span>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="flex items-center gap-2 animate-bounce-slow text-green-400">
+                            <Users className="w-4 h-4" />
+                            <span>New Feature</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-white">Refer a friend & Earn Cash!</span>
+                            <span className="bg-green-500 text-black px-2 py-0.5 rounded font-bold">Instantly</span>
+                        </div>
+                    </>
+                )}
             </div>
             <button 
                 onClick={() => setVisible(false)} 

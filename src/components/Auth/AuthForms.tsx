@@ -1,12 +1,12 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../../supabaseClient';
-import { LogIn, Loader2, UserPlus, ArrowRight, Gamepad2, ShieldAlert } from 'lucide-react';
+import { LogIn, Loader2, UserPlus, ArrowRight, Gamepad2, ShieldAlert, Users } from 'lucide-react';
 
 const getFriendlyErrorMessage = (errorMsg: string) => {
   if (!errorMsg) return 'An unexpected system error occurred.';
   const msg = errorMsg.toString().toLowerCase();
   
-  // Specific Supabase Error Mapping
   if (msg.includes('email rate limit exceeded')) return 'Security: Too many attempts. Please wait 60 seconds.';
   if (msg.includes('rate limit')) return 'System busy. Please try again in a minute.';
   if (msg.includes('invalid login credentials')) return 'Invalid email address or password.';
@@ -170,6 +170,7 @@ export const SignupForm = ({ addToast, onAuthSuccess, onToggle }: { addToast: an
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -178,14 +179,35 @@ export const SignupForm = ({ addToast, onAuthSuccess, onToggle }: { addToast: an
     setLoading(true);
     setError('');
 
+    let referrerId = null;
+
     try {
+      // 1. Check Referral Code if provided
+      if (referralCode.trim()) {
+          const { data: referrer, error: refError } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('referral_code', referralCode.trim().toUpperCase())
+              .single();
+          
+          if (!refError && referrer) {
+              referrerId = referrer.id;
+          } else {
+              // Should we block signup or just ignore invalid code?
+              // Let's just ignore but warn in console
+              console.warn("Invalid referral code");
+          }
+      }
+
+      // 2. Sign Up
       const { data, error: signupError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             username: username,
-            avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`
+            avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`,
+            referrer_id: referrerId // Pass referrer ID to be handled by trigger
           }
         }
       });
@@ -196,9 +218,8 @@ export const SignupForm = ({ addToast, onAuthSuccess, onToggle }: { addToast: an
         onAuthSuccess(data.session);
         addToast('Welcome!', 'Account created successfully.', 'success');
       } else if (data.user) {
-         // If email confirmation is enabled, session might be null
          addToast('Check Email', 'Please verify your email address.', 'info');
-         onToggle(); // Go to login
+         onToggle(); 
       }
     } catch (err: any) {
       setError(getFriendlyErrorMessage(err.message));
@@ -286,6 +307,16 @@ export const SignupForm = ({ addToast, onAuthSuccess, onToggle }: { addToast: an
                 onChange={e => setPassword(e.target.value)} 
                 className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-5 text-white focus:border-blue-500 outline-none transition-all shadow-inner font-medium placeholder:text-gray-700" 
                 placeholder="••••••••" 
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1 flex items-center gap-2"><Users className="w-3 h-3 text-purple-500" /> Referral Code (Optional)</label>
+              <input 
+                type="text" 
+                value={referralCode} 
+                onChange={e => setReferralCode(e.target.value.toUpperCase())} 
+                className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-5 text-white focus:border-purple-500 outline-none transition-all shadow-inner font-medium placeholder:text-gray-700 uppercase tracking-widest" 
+                placeholder="FRIEND123" 
               />
             </div>
             <button 

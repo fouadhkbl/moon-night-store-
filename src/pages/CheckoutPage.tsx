@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { CartItem, Coupon } from '../types';
@@ -181,14 +182,23 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
     setIsProcessing(true);
     
     try {
-      // 1. Fetch Fresh Profile Data
+      // 1. Fetch Fresh Profile Data & Check if first order
       const { data: profileData, error: profileFetchError } = await supabase
         .from('profiles')
-        .select('wallet_balance, discord_points')
+        .select('wallet_balance, discord_points, referred_by')
         .eq('id', session.user.id)
         .single();
 
       if (profileFetchError) throw new Error("Failed to fetch user profile.");
+      
+      // Check existing orders count
+      const { count: orderCount } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', session.user.id)
+          .neq('status', 'canceled'); // Only count valid orders
+
+      const isFirstOrder = orderCount === 0;
       
       const currentBalance = profileData.wallet_balance;
       const currentPoints = profileData.discord_points || 0;
@@ -257,6 +267,23 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
               money_equivalent: finalTotal,
               status: 'completed'
           });
+      }
+
+      // 8. REFERRAL REWARD LOGIC (First Purchase Only)
+      if (isFirstOrder && profileData.referred_by) {
+          // Get reward amount from settings or default to 10
+          const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'referral_reward').single();
+          const rewardAmount = setting ? parseFloat(setting.value) : 10.00;
+
+          // Get referrer details to update balance
+          const { data: referrer } = await supabase.from('profiles').select('wallet_balance, referral_earnings').eq('id', profileData.referred_by).single();
+          
+          if (referrer) {
+              await supabase.from('profiles').update({
+                  wallet_balance: referrer.wallet_balance + rewardAmount,
+                  referral_earnings: (referrer.referral_earnings || 0) + rewardAmount
+              }).eq('id', profileData.referred_by);
+          }
       }
 
       setCreatedOrderId(order.id);
@@ -341,7 +368,6 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
                        {cart.map(item => (
                            <div key={item.id} className="flex justify-between items-center text-sm">
                                <span className="text-gray-400 font-bold truncate max-w-[200px]">{item.quantity}x {item.product?.name}</span>
-                               {/* CRITICAL FIX: Safe access to product price */}
                                <span className="text-white font-mono">{((item.product?.price || 0) * item.quantity).toFixed(2)} DH</span>
                            </div>
                        ))}

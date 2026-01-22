@@ -26,7 +26,15 @@ export interface Profile {
   vip_points: number;
   discord_points: number; 
   total_donated: number; 
+  referral_code?: string;
+  referred_by?: string;
+  referral_earnings?: number;
   auth_provider?: string;
+}
+
+export interface AppSetting {
+  key: string;
+  value: string;
 }
 
 export interface Review {

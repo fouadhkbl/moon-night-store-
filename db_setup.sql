@@ -13,6 +13,9 @@ create table if not exists public.profiles (
   vip_points int default 0,
   discord_points int default 0,
   total_donated decimal(10,2) default 0.00,
+  referral_code text unique,
+  referred_by uuid references public.profiles(id) on delete set null,
+  referral_earnings decimal(10,2) default 0.00,
   auth_provider text default 'email',
   updated_at timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
@@ -175,6 +178,15 @@ create table if not exists public.reviews (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 16. APP SETTINGS (Admin Config)
+create table if not exists public.app_settings (
+  key text primary key,
+  value text not null
+);
+
+-- Insert Default Settings
+insert into public.app_settings (key, value) values ('referral_reward', '10') on conflict do nothing;
+
 -- ENABLE ROW LEVEL SECURITY
 alter table public.profiles enable row level security;
 alter table public.products enable row level security;
@@ -191,6 +203,7 @@ alter table public.redemption_messages enable row level security;
 alter table public.donations enable row level security;
 alter table public.tournaments enable row level security;
 alter table public.reviews enable row level security;
+alter table public.app_settings enable row level security;
 
 -- SECURITY POLICIES
 
@@ -201,6 +214,10 @@ drop policy if exists "Users insert own" on public.profiles;
 create policy "Users insert own" on public.profiles for insert with check (auth.uid() = id);
 drop policy if exists "Users update own" on public.profiles;
 create policy "Users update own" on public.profiles for update using (auth.uid() = id);
+
+-- App Settings (Read Public, Write Admin/All for simplicity in this context)
+create policy "Public read settings" on public.app_settings for select using (true);
+create policy "Admin manage settings" on public.app_settings for all using (true);
 
 -- Products (Read Public, Write Admin/All for now to enable Admin Panel usage)
 drop policy if exists "Public products" on public.products;
@@ -252,13 +269,20 @@ create policy "Insert donations" on public.donations for insert with check (true
 -- AUTO PROFILE CREATION TRIGGER
 create or replace function public.handle_new_user()
 returns trigger as $$
+declare
+  new_referral_code text;
 begin
-  insert into public.profiles (id, email, username, avatar_url)
+  -- Generate a random 8-char referral code
+  new_referral_code := upper(substring(md5(random()::text) from 1 for 8));
+
+  insert into public.profiles (id, email, username, avatar_url, referred_by, referral_code)
   values (
     new.id, 
     new.email, 
     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', 'New User'),
-    coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', '')
+    coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', ''),
+    (new.raw_user_meta_data->>'referrer_id')::uuid,
+    new_referral_code
   );
   return new;
 end;

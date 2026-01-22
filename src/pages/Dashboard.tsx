@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, Order, OrderItem, OrderMessage, PointRedemption, RedemptionMessage } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar, LayoutDashboard, ClipboardList } from 'lucide-react';
+import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar, LayoutDashboard, ClipboardList, Copy, Users } from 'lucide-react';
 
 // --- SHARED CHAT MODAL LOGIC (Order & Redemption) ---
 // Note: Created separate components for simplicity in state management types
@@ -342,10 +343,11 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [pointRedemptions, setPointRedemptions] = useState<PointRedemption[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wallet' | 'points'>(initialTab || 'overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wallet' | 'points' | 'referrals'>(initialTab || 'overview');
   const [authMode, setAuthMode] = useState<'none' | 'login' | 'signup'>('none');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedRedemption, setSelectedRedemption] = useState<PointRedemption | null>(null);
+  const [referralCount, setReferralCount] = useState(0);
   
   const isGuest = session?.user?.id === 'guest-user-123';
 
@@ -367,6 +369,10 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
             const { data: pData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
             if (pData) setProfile(pData);
             
+            // Get Referral Count
+            const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('referred_by', session.user.id);
+            setReferralCount(count || 0);
+
             const { data: oData } = await supabase.from('orders').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
             if (oData) {
                 setOrders(oData);
@@ -402,6 +408,11 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
         addToast("Deleted", "Order removed from history.", "success");
         setOrders(prev => prev.filter(o => o.id !== orderId));
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+      navigator.clipboard.writeText(text);
+      addToast('Copied', 'Referral code copied to clipboard!', 'success');
   };
 
   if (isGuest && authMode === 'login') return (
@@ -478,6 +489,9 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
              <button onClick={() => setActiveTab('points')} className={`flex-none lg:w-full text-left p-4 lg:p-6 flex items-center gap-3 lg:gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all whitespace-nowrap ${activeTab === 'points' ? 'bg-purple-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>
                  <Coins className="w-4 h-4" /> Discord Points
              </button>
+             <button onClick={() => setActiveTab('referrals')} className={`flex-none lg:w-full text-left p-4 lg:p-6 flex items-center gap-3 lg:gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all whitespace-nowrap ${activeTab === 'referrals' ? 'bg-green-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>
+                 <Users className="w-4 h-4" /> Referrals
+             </button>
           </div>
           <div className="lg:col-span-3">
              {activeTab === 'overview' && (
@@ -499,6 +513,50 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                     </div>
                 </div>
              )}
+             
+             {activeTab === 'referrals' && (
+                 <div className="space-y-8 animate-slide-up">
+                     {/* Invite Card */}
+                     <div className="bg-gradient-to-br from-green-800 to-[#1e232e] border border-green-500/20 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                         <div className="absolute -right-20 -top-20 w-64 h-64 bg-green-500/20 rounded-full blur-3xl"></div>
+                         <div className="relative z-10">
+                             <div className="flex items-center gap-3 mb-4">
+                                 <div className="p-3 bg-green-500/20 rounded-xl text-green-400"><Users className="w-6 h-6" /></div>
+                                 <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Invite & Earn</h3>
+                             </div>
+                             <p className="text-gray-300 text-xs font-medium leading-relaxed max-w-lg mb-8">
+                                 Share your unique code with friends. When they sign up and make their first purchase, you'll instantly receive cash in your wallet!
+                             </p>
+                             
+                             <div className="bg-[#0b0e14]/50 p-6 rounded-2xl border border-green-500/30 flex flex-col md:flex-row items-center gap-6">
+                                 <div className="text-center md:text-left">
+                                     <p className="text-[10px] text-green-400 font-black uppercase tracking-widest mb-1">Your Code</p>
+                                     <div className="text-4xl font-mono font-black text-white tracking-widest">{profile?.referral_code || 'LOADING...'}</div>
+                                 </div>
+                                 <button 
+                                    onClick={() => copyToClipboard(profile?.referral_code || '')}
+                                    className="ml-auto bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg transition-all flex items-center gap-2 active:scale-95"
+                                 >
+                                     <Copy className="w-4 h-4" /> Copy Code
+                                 </button>
+                             </div>
+                         </div>
+                     </div>
+
+                     {/* Stats */}
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-xl">
+                             <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Total Earnings</p>
+                             <h3 className="text-4xl font-black text-yellow-400 italic tracking-tighter">{profile?.referral_earnings?.toFixed(2) || '0.00'} DH</h3>
+                         </div>
+                         <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-xl">
+                             <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Friends Invited</p>
+                             <h3 className="text-4xl font-black text-white italic tracking-tighter">{referralCount}</h3>
+                         </div>
+                     </div>
+                 </div>
+             )}
+
              {activeTab === 'orders' && (
                 <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-2xl">
                    <h3 className="font-black text-white text-2xl mb-8 italic uppercase tracking-tighter">Trade History</h3>

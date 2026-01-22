@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords } from 'lucide-react';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal } from './AdminModals';
 
 const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
@@ -59,6 +60,10 @@ const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () =
 };
 
 const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption: PointRedemption, currentUser: Profile, onClose: () => void }) => {
+    // ... (Same as previous content, omitted for brevity as it's large and unchanged)
+    // To respect output limits, assuming this component exists or I should paste it fully if I am replacing the whole file. 
+    // Since I am replacing the file, I must include ALL content.
+    
     const [messages, setMessages] = useState<RedemptionMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [status, setStatus] = useState(redemption.status);
@@ -184,6 +189,7 @@ const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption
 };
 
 const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
+    // ... (Same as previous content)
     const [messages, setMessages] = useState<OrderMessage[]>([]);
     const [items, setItems] = useState<OrderItem[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -356,7 +362,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 };
 
 export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' | 'shop' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations' | 'tournaments'>(role === 'shop' ? 'products' : 'stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations' | 'tournaments' | 'system'>(role === 'shop' ? 'products' : 'stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [pointProducts, setPointProducts] = useState<PointProduct[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -370,6 +376,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [referralReward, setReferralReward] = useState('10');
   
   // Modal States
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -427,6 +434,12 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
             .select('*, profile:profiles(*), point_product:point_products(*)')
             .order('created_at', { ascending: false });
         if (prData) setPointRedemptions(prData);
+    }
+
+    // Fetch Settings
+    if (role === 'full') {
+        const { data: settings } = await supabase.from('app_settings').select('*').eq('key', 'referral_reward').single();
+        if (settings) setReferralReward(settings.value);
     }
 
     // Fetch Orders - For Full and Limited (Not Shop Only)
@@ -532,6 +545,11 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       fetchData();
   };
 
+  const handleSaveSettings = async () => {
+      await supabase.from('app_settings').upsert({ key: 'referral_reward', value: referralReward });
+      addToast('Saved', 'System settings updated.', 'success');
+  };
+
   // --- FILTERS ---
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -570,6 +588,11 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const filteredDonations = donations.filter(d => 
       d.profile?.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const topReferrers = profiles
+    .filter(p => (p.referral_earnings || 0) > 0)
+    .sort((a,b) => (b.referral_earnings || 0) - (a.referral_earnings || 0))
+    .slice(0, 10);
 
   const ProviderIcon = ({ provider }: { provider?: string }) => {
     if (provider === 'google') return (
@@ -632,10 +655,68 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                 <button onClick={() => setActiveSection('coupons')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'coupons' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
                     <Ticket className="w-4 h-4" /> Coupons
                 </button>
+                <button onClick={() => setActiveSection('system')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'system' ? 'bg-gray-700 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+                    <Settings className="w-4 h-4" /> System
+                </button>
               </>
           )}
         </div>
       </div>
+
+      {/* SYSTEM SECTION */}
+      {activeSection === 'system' && role === 'full' && (
+          <div className="space-y-8 animate-slide-up">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* General Settings */}
+                  <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-xl">
+                      <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-6 flex items-center gap-3">
+                          <Settings className="w-5 h-5 text-gray-400" /> App Configuration
+                      </h3>
+                      <div className="space-y-6">
+                          <div>
+                              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Referral Reward Amount (DH)</label>
+                              <div className="flex gap-2">
+                                  <input 
+                                    type="number" 
+                                    className="bg-[#0b0e14] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none flex-1 font-bold" 
+                                    value={referralReward}
+                                    onChange={e => setReferralReward(e.target.value)}
+                                  />
+                                  <button onClick={handleSaveSettings} className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-lg flex items-center gap-2">
+                                      <Save className="w-4 h-4" /> Save
+                                  </button>
+                              </div>
+                              <p className="text-[10px] text-gray-600 mt-2 font-medium">Amount credited to a referrer's wallet when their invitee makes a first purchase.</p>
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* Top Referrers */}
+                  <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-xl">
+                      <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-6 flex items-center gap-3">
+                          <Users className="w-5 h-5 text-green-400" /> Top Referrers
+                      </h3>
+                      <div className="space-y-4">
+                          {topReferrers.length === 0 ? <p className="text-gray-600 text-xs font-bold uppercase tracking-widest">No referral data yet.</p> : topReferrers.map((user, idx) => (
+                              <div key={user.id} className="flex items-center justify-between p-4 bg-[#0b0e14] rounded-2xl border border-gray-800">
+                                  <div className="flex items-center gap-3">
+                                      <span className="text-gray-600 font-black text-lg">#{idx + 1}</span>
+                                      <div>
+                                          <p className="text-white font-bold text-sm">{user.username}</p>
+                                          <p className="text-[10px] text-gray-500 font-mono">{user.email}</p>
+                                      </div>
+                                  </div>
+                                  <div className="text-right">
+                                      <p className="text-green-400 font-black italic">{user.referral_earnings?.toFixed(2)} DH</p>
+                                      <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest">Earned</p>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
 
       {activeSection === 'stats' && role !== 'shop' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-slide-up">
@@ -876,7 +957,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                            <p className="text-[10px] text-pink-400 font-black uppercase tracking-widest mb-4">{t.game_name}</p>
                            
                            <div className="flex justify-between text-xs font-bold text-gray-500 mb-6">
-                               <span>{new Date(t.start_date).toLocaleDateString()}</span>
+                               <span>{new Date(t.start_date).toLocaleDateString()}</p>
                                <span>{t.current_participants} / {t.max_participants} Players</span>
                            </div>
 
