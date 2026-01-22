@@ -234,12 +234,18 @@ create table if not exists public.tournaments (
   status text default 'open', -- open, live, past
   entry_fee text default 'Free',
   prize_pool text,
+  prize_2nd text, -- NEW: 2nd place prize
+  prize_3rd text, -- NEW: 3rd place prize
   max_participants int default 100,
   current_participants int default 0,
   format text default 'Solo',
   rules text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- MIGRATION: Add prize columns if they don't exist
+alter table public.tournaments add column if not exists prize_2nd text;
+alter table public.tournaments add column if not exists prize_3rd text;
 
 -- 16. SECURITY POLICIES
 alter table public.profiles enable row level security;

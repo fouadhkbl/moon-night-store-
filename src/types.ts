@@ -140,6 +140,8 @@ export interface Tournament {
   status: 'open' | 'live' | 'past';
   entry_fee: string;
   prize_pool: string;
+  prize_2nd?: string;
+  prize_3rd?: string;
   max_participants: number;
   current_participants: number;
   format: string;

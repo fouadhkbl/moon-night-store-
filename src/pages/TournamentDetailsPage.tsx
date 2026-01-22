@@ -105,9 +105,9 @@ export const TournamentDetailsPage = ({ tournament, onNavigate }: { tournament: 
                                 </div>
                             </div>
 
-                            <button className="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl uppercase tracking-widest text-xs shadow-xl shadow-blue-600/20 transition-all active:scale-95">
+                            <a href="https://discord.gg/s4hcCn4s" target="_blank" rel="noreferrer" className="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl uppercase tracking-widest text-xs shadow-xl shadow-blue-600/20 transition-all active:scale-95 flex items-center justify-center">
                                 Join Now (Discord)
-                            </button>
+                            </a>
                         </div>
 
                         {/* Prizes Card */}
@@ -115,7 +115,7 @@ export const TournamentDetailsPage = ({ tournament, onNavigate }: { tournament: 
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-lg font-black text-white italic uppercase tracking-tighter">Prizes</h3>
                                 <div className="px-2 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded text-yellow-500 text-[10px] font-black uppercase tracking-widest">
-                                    {tournament.prize_pool}
+                                    Total: {tournament.prize_pool}
                                 </div>
                             </div>
                             
@@ -126,18 +126,33 @@ export const TournamentDetailsPage = ({ tournament, onNavigate }: { tournament: 
                                     </div>
                                     <div>
                                         <p className="text-[10px] text-yellow-500 font-black uppercase tracking-widest">1st Place</p>
-                                        <p className="text-white font-bold text-lg">Winner Take All</p>
+                                        <p className="text-white font-bold text-lg">{tournament.prize_pool}</p>
                                     </div>
                                 </div>
-                                <div className="bg-[#0b0e14] border border-gray-800 p-4 rounded-xl flex items-center gap-4 opacity-60">
-                                    <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center text-white">
-                                        <Award className="w-6 h-6" />
+                                
+                                {tournament.prize_2nd && (
+                                    <div className="bg-gradient-to-r from-gray-800/40 to-[#0b0e14] border border-gray-600/30 p-4 rounded-xl flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-gray-400 rounded-lg flex items-center justify-center text-black shadow-lg">
+                                            <Award className="w-6 h-6 fill-black" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">2nd Place</p>
+                                            <p className="text-white font-bold text-sm">{tournament.prize_2nd}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">2nd Place</p>
-                                        <p className="text-white font-bold text-sm">Runner Up</p>
+                                )}
+
+                                {tournament.prize_3rd && (
+                                    <div className="bg-gradient-to-r from-orange-900/20 to-[#0b0e14] border border-orange-700/30 p-4 rounded-xl flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-orange-700 rounded-lg flex items-center justify-center text-white shadow-lg">
+                                            <Medal className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-orange-500 font-black uppercase tracking-widest">3rd Place</p>
+                                            <p className="text-white font-bold text-sm">{tournament.prize_3rd}</p>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     </div>

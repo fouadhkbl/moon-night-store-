@@ -244,6 +244,8 @@ export const TournamentFormModal = ({ tournament, onClose, onSave }: { tournamen
         status: 'open',
         entry_fee: 'Free',
         prize_pool: '50$ + Nitro',
+        prize_2nd: '',
+        prize_3rd: '',
         max_participants: 100,
         current_participants: 0,
         format: 'Solo',
@@ -285,12 +287,23 @@ export const TournamentFormModal = ({ tournament, onClose, onSave }: { tournamen
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Prize Pool</label>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Prize Pool (1st Place)</label>
                             <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.prize_pool} onChange={e => setFormData({...formData, prize_pool: e.target.value})} placeholder="50$ + Nitro" />
                         </div>
                         <div>
                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Entry Fee</label>
                             <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.entry_fee} onChange={e => setFormData({...formData, entry_fee: e.target.value})} placeholder="Free" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">2nd Place Prize</label>
+                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.prize_2nd || ''} onChange={e => setFormData({...formData, prize_2nd: e.target.value})} placeholder="Optional" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">3rd Place Prize</label>
+                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.prize_3rd || ''} onChange={e => setFormData({...formData, prize_3rd: e.target.value})} placeholder="Optional" />
                         </div>
                     </div>
 
