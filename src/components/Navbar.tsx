@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home, Swords, LogOut } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home, Swords, LogOut, Crown } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Profile } from '../types';
 
@@ -131,8 +131,13 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                       <button onClick={() => handleMenuClick('donate')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
                           <Heart className="w-4 h-4 text-red-500" /> Donate
                       </button>
+                      {/* Renamed Leaderboard to Best Donators */}
                       <button onClick={() => handleMenuClick('leaderboard')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
-                          <Medal className="w-4 h-4 text-yellow-500" /> Leaderboard
+                          <Medal className="w-4 h-4 text-yellow-500" /> Best Donators
+                      </button>
+                      {/* Points Leaderboard Button */}
+                      <button onClick={() => handleMenuClick('leaderboard-points')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
+                          <Crown className="w-4 h-4 text-purple-500" /> Points Leaderboard
                       </button>
                   </div>
               )}
@@ -142,18 +147,18 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
             onClick={() => onNavigate('home')} 
             className="flex items-center gap-3 cursor-pointer group"
           >
-             {/* Logo Block similar to screenshot */}
+             {/* Logo Block */}
              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg shadow-lg flex items-center justify-center group-hover:scale-105 transition-transform">
                  <span className="text-white font-black italic text-lg">M</span>
              </div>
-             {/* Text hidden on mobile to save space, visible on large screens */}
+             {/* Text hidden on mobile */}
              <span className="hidden md:block text-xl font-black text-white italic tracking-tighter uppercase group-hover:text-blue-400 transition-colors">
                 Moon Night
              </span>
           </div>
         </div>
 
-        {/* Center: Search Bar (Desktop) - Matches Screenshot */}
+        {/* Center: Search Bar (Desktop) */}
         <form onSubmit={handleSearchSubmit} className="hidden lg:flex absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl z-0">
           <div className="relative w-full group">
             <input

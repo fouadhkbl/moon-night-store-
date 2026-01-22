@@ -337,7 +337,11 @@ const App: React.FC = () => {
         )}
 
         {currentPage === 'leaderboard' && (
-            <LeaderboardPage onNavigate={handleNavigate} />
+            <LeaderboardPage onNavigate={handleNavigate} type="donations" />
+        )}
+
+        {currentPage === 'leaderboard-points' && (
+            <LeaderboardPage onNavigate={handleNavigate} type="points" />
         )}
         
         {currentPage === 'shop' && (
