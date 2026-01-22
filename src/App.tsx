@@ -447,10 +447,12 @@ const App: React.FC = () => {
 
   if (isSessionLoading) return <div className="min-h-screen bg-[#0b0e14] flex items-center justify-center text-white"><Loader2 className="w-12 h-12 animate-spin text-blue-500"/></div>;
 
+  const isAdminPage = currentPage === 'admin';
+
   return (
     <div 
         className="min-h-screen bg-[#0b0e14] text-white font-sans flex flex-col selection:bg-blue-600 selection:text-white"
-        style={backgroundUrl ? { 
+        style={backgroundUrl && !isAdminPage ? { 
             backgroundImage: `url(${backgroundUrl})`, 
             backgroundSize: 'cover', 
             backgroundPosition: 'center', 
@@ -458,17 +460,19 @@ const App: React.FC = () => {
             boxShadow: 'inset 0 0 0 2000px rgba(11, 14, 20, 0.9)' // Dark Overlay
         } : {}}
     >
-      <AnnouncementBar settings={announcementSettings} />
-      <Navbar 
-        session={session} 
-        onNavigate={handleNavigate} 
-        cartCount={cart.length} 
-        onSearch={handleSearch} 
-        language={language}
-        setLanguage={setLanguage}
-      />
+      {!isAdminPage && <AnnouncementBar settings={announcementSettings} />}
+      {!isAdminPage && (
+          <Navbar 
+            session={session} 
+            onNavigate={handleNavigate} 
+            cartCount={cart.length} 
+            onSearch={handleSearch} 
+            language={language}
+            setLanguage={setLanguage}
+          />
+      )}
       
-      <main className="flex-grow">
+      <main className={`flex-grow ${isAdminPage ? 'h-screen overflow-hidden' : ''}`}>
         {currentPage === 'home' && (
           <HomePage 
             onNavigate={handleNavigate} 
@@ -607,8 +611,8 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <Footer onNavigate={handleNavigate} session={session} addToast={addToast} />
-      <LiveSalesNotification />
+      {!isAdminPage && <Footer onNavigate={handleNavigate} session={session} addToast={addToast} />}
+      {!isAdminPage && <LiveSalesNotification />}
       
       {selectedProduct && (
         <ProductDetailsModal 
