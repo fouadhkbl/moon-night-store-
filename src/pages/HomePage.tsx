@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords } from 'lucide-react';
+import { ChevronRight, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar } from 'lucide-react';
 import { GameCategory } from '../types';
 
 export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void, onSearch: (q: string) => void, language: 'en' | 'fr' }) => {
@@ -18,7 +18,9 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
              [GameCategory.ITEMS]: "Items",
              [GameCategory.BOOSTING]: "Boosting",
              [GameCategory.GIFT_CARD]: "Cards"
-         }
+         },
+         compete: "Competitions",
+         competeDesc: "Join Tournaments"
      },
      fr: {
          premium: "Marché Gaming Premium",
@@ -33,7 +35,9 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
              [GameCategory.ITEMS]: "Objets",
              [GameCategory.BOOSTING]: "Boost",
              [GameCategory.GIFT_CARD]: "Cartes"
-         }
+         },
+         compete: "Compétitions",
+         competeDesc: "Rejoindre les Tournois"
      }
   };
 
@@ -81,10 +85,10 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
 
               <button 
                 onClick={() => onNavigate('tournaments')}
-                className="h-[64px] bg-[#1e232e] border-2 border-pink-500 hover:bg-pink-600 hover:border-pink-600 text-white px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-[0_0_20px_rgba(236,72,153,0.2)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] active:scale-95 group"
+                className="h-[64px] bg-[#1e232e] border-2 border-pink-500 hover:bg-pink-600 hover:border-pink-600 text-white px-8 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-[0_0_20px_rgba(236,72,153,0.2)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] active:scale-95 group"
               >
                 <Swords className="w-5 h-5 text-pink-500 group-hover:text-white transition-colors" /> 
-                <span>Competitions</span>
+                <span>{text.compete}</span>
               </button>
             </div>
           </div>
