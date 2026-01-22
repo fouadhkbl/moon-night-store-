@@ -324,8 +324,8 @@ const App: React.FC = () => {
         )}
         
         {currentPage === 'shop' && (
-          <div className="container mx-auto px-4 py-24 animate-fade-in">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-24 gap-8">
+          <div className="container mx-auto px-4 py-12 animate-fade-in">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-8">
                <div>
                   <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-none mb-3">{t.shopTitle}</h1>
                   <p className="text-gray-600 text-[12px] uppercase tracking-[0.4em] font-black">

@@ -8,30 +8,70 @@ export const ProductDetailsModal = ({ product, onClose, onAddToCart }: { product
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div className="bg-[#1e232e] w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border border-gray-800 flex flex-col md:flex-row relative animate-slide-up max-h-[90vh] overflow-y-auto md:overflow-hidden">
-        <button onClick={onClose} className="absolute top-4 right-4 z-10 p-3 bg-black/40 rounded-full text-white hover:bg-red-500 transition-colors">
-          <X className="w-6 h-6" />
+        
+        {/* Close Button */}
+        <button 
+            onClick={onClose} 
+            className="absolute top-4 right-4 z-20 p-2 bg-black/50 rounded-full text-white hover:bg-red-500 transition-colors backdrop-blur-md border border-white/10"
+        >
+          <X className="w-5 h-5" />
         </button>
 
-        <div className="w-full md:w-1/2 h-64 md:h-auto overflow-hidden">
-          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+        {/* Image Container - Desktop Only */}
+        <div className="hidden md:flex w-full md:w-1/2 bg-[#0b0e14] relative items-center justify-center min-h-full overflow-hidden">
+           {/* Background Effect for Letterboxing */}
+           <div className="absolute inset-0 overflow-hidden">
+               <img src={product.image_url} className="w-full h-full object-cover opacity-20 blur-xl scale-110" alt="" />
+           </div>
+           
+           {/* Main Image - Fully Visible (Contain) */}
+           <img 
+             src={product.image_url} 
+             alt={product.name} 
+             className="relative z-10 w-full h-auto max-h-full object-contain shadow-2xl" 
+           />
         </div>
 
-        <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col justify-between">
+        {/* Content Container */}
+        <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col justify-between bg-[#1e232e]">
           <div>
-            <div className="flex items-center gap-3 mb-6 flex-wrap">
-              <span className="px-3 py-1 rounded-lg bg-blue-600/20 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-600/30">
-                {product.category}
-              </span>
-              <span className="px-3 py-1 rounded-lg bg-gray-800 text-gray-400 text-[10px] font-black uppercase tracking-widest">
-                {product.platform}
-              </span>
-              {product.country && (
-                  <span className="px-3 py-1 rounded-lg bg-green-900/20 text-green-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 border border-green-500/20">
-                    <Globe className="w-3 h-3" /> {product.country}
-                  </span>
-              )}
+            
+            {/* Mobile Header: Mini Photo + Title */}
+            <div className="md:hidden flex gap-5 mb-6 pr-8">
+                <div className="w-24 h-24 rounded-2xl bg-[#0b0e14] border border-gray-800 flex-shrink-0 overflow-hidden shadow-lg">
+                    <img src={product.image_url} className="w-full h-full object-cover" alt={product.name} />
+                </div>
+                <div className="flex flex-col justify-center">
+                    <h2 className="text-xl font-black text-white italic leading-tight uppercase tracking-tighter mb-2 line-clamp-3">{product.name}</h2>
+                    <div className="flex flex-wrap gap-2">
+                        <span className="px-2 py-0.5 rounded bg-blue-600/20 text-blue-400 text-[9px] font-black uppercase tracking-widest border border-blue-600/30">
+                            {product.category}
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-400 text-[9px] font-black uppercase tracking-widest border border-gray-700">
+                            {product.platform}
+                        </span>
+                    </div>
+                </div>
             </div>
-            <h2 className="text-4xl font-black text-white italic mb-6 leading-tight uppercase tracking-tighter">{product.name}</h2>
+
+            {/* Desktop Header: Tags + Large Title */}
+            <div className="hidden md:block">
+                <div className="flex items-center gap-3 mb-6 flex-wrap">
+                <span className="px-3 py-1 rounded-lg bg-blue-600/20 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-600/30">
+                    {product.category}
+                </span>
+                <span className="px-3 py-1 rounded-lg bg-gray-800 text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                    {product.platform}
+                </span>
+                {product.country && (
+                    <span className="px-3 py-1 rounded-lg bg-green-900/20 text-green-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 border border-green-500/20">
+                        <Globe className="w-3 h-3" /> {product.country}
+                    </span>
+                )}
+                </div>
+                <h2 className="text-3xl md:text-4xl font-black text-white italic mb-6 leading-tight uppercase tracking-tighter">{product.name}</h2>
+            </div>
+
             <p className="text-gray-400 mb-10 leading-relaxed text-sm font-medium">
               {product.description || "Enhance your gaming journey with this premium digital asset. Safe delivery and satisfaction guaranteed."}
             </p>

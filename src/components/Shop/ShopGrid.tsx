@@ -89,10 +89,10 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
 
    return (
       <div className="animate-slide-up">
-          {/* Filters Bar */}
-          <div className="flex flex-wrap justify-end mb-6 gap-4">
+          {/* Filters Bar - Horizontal Scroll on Mobile */}
+          <div className="flex overflow-x-auto pb-2 mb-6 gap-4 md:justify-end no-scrollbar">
               {/* Platform Filter */}
-              <div className="relative group">
+              <div className="relative group flex-shrink-0">
                  <select 
                     value={selectedPlatform} 
                     onChange={(e) => setSelectedPlatform(e.target.value)}
@@ -106,7 +106,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
               </div>
 
               {/* Region Filter */}
-              <div className="relative group">
+              <div className="relative group flex-shrink-0">
                  <select 
                     value={selectedRegion} 
                     onChange={(e) => setSelectedRegion(e.target.value)}
@@ -118,7 +118,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
               </div>
           </div>
 
-          <div className="h-[75vh] overflow-y-auto custom-scrollbar pr-2 pb-20">
+          <div className="pb-20">
             {isLoading ? (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
                     {[1,2,3,4,5,6,7,8].map(n => (
