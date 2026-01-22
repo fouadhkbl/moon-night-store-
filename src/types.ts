@@ -130,6 +130,23 @@ export interface Donation {
   profile?: Profile;
 }
 
+export interface Tournament {
+  id: string;
+  title: string;
+  game_name: string;
+  description: string;
+  image_url: string;
+  start_date: string;
+  status: 'open' | 'live' | 'past';
+  entry_fee: string;
+  prize_pool: string;
+  max_participants: number;
+  current_participants: number;
+  format: string;
+  rules: string;
+  created_at: string;
+}
+
 export enum GameCategory {
   ACCOUNTS = 'Accounts',
   COINS = 'Coins',

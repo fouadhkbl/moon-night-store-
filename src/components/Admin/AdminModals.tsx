@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap, Crown, Eye, EyeOff } from 'lucide-react';
-import { Profile, Product, GameCategory, Coupon, PointProduct } from '../../types';
+import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap, Crown, Eye, EyeOff, Swords } from 'lucide-react';
+import { Profile, Product, GameCategory, Coupon, PointProduct, Tournament } from '../../types';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number, points: number) => void }) => {
   const [amount, setAmount] = useState<string>(user.wallet_balance.toString());
@@ -232,6 +232,120 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
       </div>
     </div>
   );
+};
+
+export const TournamentFormModal = ({ tournament, onClose, onSave }: { tournament: Partial<Tournament> | null, onClose: () => void, onSave: (p: any) => void }) => {
+    const [formData, setFormData] = useState<Partial<Tournament>>(tournament || {
+        title: '',
+        game_name: 'Among Us',
+        description: '',
+        image_url: '',
+        start_date: new Date().toISOString(),
+        status: 'open',
+        entry_fee: 'Free',
+        prize_pool: '50$ + Nitro',
+        max_participants: 100,
+        current_participants: 0,
+        format: 'Solo',
+        rules: ''
+    });
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        await onSave(formData);
+        setIsSaving(false);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-2xl rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col max-h-[90vh]">
+                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]">
+                    <div className="flex items-center gap-3">
+                         <div className="bg-purple-600/20 p-2 rounded-lg text-purple-400"><Swords className="w-5 h-5" /></div>
+                         <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
+                             {tournament?.id ? 'Edit Tournament' : 'Create Tournament'}
+                         </h2>
+                    </div>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition"><X /></button>
+                </div>
+                
+                <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Title</label>
+                            <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="Among Us Tournament" />
+                        </div>
+                         <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Game Name</label>
+                            <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.game_name} onChange={e => setFormData({...formData, game_name: e.target.value})} placeholder="Among Us" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Prize Pool</label>
+                            <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.prize_pool} onChange={e => setFormData({...formData, prize_pool: e.target.value})} placeholder="50$ + Nitro" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Entry Fee</label>
+                            <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.entry_fee} onChange={e => setFormData({...formData, entry_fee: e.target.value})} placeholder="Free" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Start Date</label>
+                            <input required type="date" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.start_date ? new Date(formData.start_date).toISOString().split('T')[0] : ''} onChange={e => setFormData({...formData, start_date: new Date(e.target.value).toISOString()})} />
+                        </div>
+                        <div>
+                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Status</label>
+                             <select className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as any})}>
+                                 <option value="open">Open</option>
+                                 <option value="live">Live</option>
+                                 <option value="past">Past</option>
+                             </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Max Players</label>
+                            <input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.max_participants} onChange={e => setFormData({...formData, max_participants: parseInt(e.target.value)})} />
+                        </div>
+                        <div>
+                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Current Participants</label>
+                             <input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.current_participants} onChange={e => setFormData({...formData, current_participants: parseInt(e.target.value)})} />
+                        </div>
+                    </div>
+
+                     <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Image URL</label>
+                        <input required type="url" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Short Description</label>
+                        <textarea className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none h-20" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}></textarea>
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Rules</label>
+                        <textarea className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none h-24" value={formData.rules} onChange={e => setFormData({...formData, rules: e.target.value})} placeholder="One rule per line"></textarea>
+                    </div>
+
+                </form>
+
+                <div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3">
+                    <button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-700 transition">Cancel</button>
+                    <button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-purple-600 text-white font-black py-3 rounded-xl hover:bg-purple-700 transition flex items-center justify-center gap-2">
+                        {isSaving ? <Loader2 className="animate-spin" /> : <Save className="w-4 h-4" />} Save Tournament
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export const PointProductFormModal = ({ product, onClose, onSave }: { product: Partial<PointProduct> | null, onClose: () => void, onSave: (p: any) => void }) => {

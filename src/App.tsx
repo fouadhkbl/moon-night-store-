@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-import { Product, CartItem, GameCategory } from './types';
+import { Product, CartItem, GameCategory, Tournament } from './types';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { ToastContainer } from './components/ToastContainer';
@@ -16,6 +16,8 @@ import { TopUpPage } from './pages/TopUpPage';
 import { PointsShopPage } from './pages/PointsShopPage';
 import { DonatePage } from './pages/DonatePage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
+import { TournamentsPage } from './pages/TournamentsPage';
+import { TournamentDetailsPage } from './pages/TournamentDetailsPage';
 import { Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -32,6 +34,7 @@ const App: React.FC = () => {
   const [toasts, setToasts] = useState<any[]>([]);
   const [targetOrderId, setTargetOrderId] = useState<string | null>(null);
   const [dashboardTab, setDashboardTab] = useState<'overview' | 'orders' | 'wallet' | 'points'>('overview');
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
 
   const t = {
     en: {
@@ -308,6 +311,20 @@ const App: React.FC = () => {
                 session={session}
                 onNavigate={handleNavigate}
                 addToast={addToast}
+            />
+        )}
+
+        {currentPage === 'tournaments' && (
+            <TournamentsPage 
+                onNavigate={handleNavigate}
+                onSelectTournament={setSelectedTournament}
+            />
+        )}
+
+        {currentPage === 'tournament-details' && (
+            <TournamentDetailsPage
+                tournament={selectedTournament}
+                onNavigate={handleNavigate}
             />
         )}
 

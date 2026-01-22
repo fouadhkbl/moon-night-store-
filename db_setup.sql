@@ -223,8 +223,25 @@ create table if not exists public.donations (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 15. TOURNAMENTS (NEW)
+create table if not exists public.tournaments (
+  id uuid default uuid_generate_v4() primary key,
+  title text not null,
+  game_name text not null,
+  description text,
+  image_url text not null,
+  start_date timestamp with time zone not null,
+  status text default 'open', -- open, live, past
+  entry_fee text default 'Free',
+  prize_pool text,
+  max_participants int default 100,
+  current_participants int default 0,
+  format text default 'Solo',
+  rules text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
 
--- 15. SECURITY POLICIES
+-- 16. SECURITY POLICIES
 alter table public.profiles enable row level security;
 alter table public.products enable row level security;
 alter table public.cart_items enable row level security;
@@ -238,6 +255,7 @@ alter table public.point_products enable row level security;
 alter table public.point_redemptions enable row level security;
 alter table public.redemption_messages enable row level security;
 alter table public.donations enable row level security;
+alter table public.tournaments enable row level security;
 
 -- PROFILES
 drop policy if exists "Profiles are viewable by everyone" on public.profiles;
@@ -407,7 +425,15 @@ create policy "Donations are viewable by everyone" on public.donations for selec
 drop policy if exists "Users can insert donations" on public.donations;
 create policy "Users can insert donations" on public.donations for insert with check (true);
 
--- 16. TRIGGERS
+-- TOURNAMENTS (NEW POLICIES)
+drop policy if exists "Tournaments are viewable by everyone" on public.tournaments;
+create policy "Tournaments are viewable by everyone" on public.tournaments for select using (true);
+
+drop policy if exists "Admin can manage tournaments" on public.tournaments;
+create policy "Admin can manage tournaments" on public.tournaments for all using (true);
+
+
+-- 17. TRIGGERS
 create or replace function public.handle_updated_at()
 returns trigger as $$
 begin
@@ -426,7 +452,7 @@ create trigger on_products_updated
   before update on public.products
   for each row execute procedure public.handle_updated_at();
 
--- 17. SYSTEM CONFIG (Secrets)
+-- 18. SYSTEM CONFIG (Secrets)
 create table if not exists public.system_secrets (
   key text primary key,
   value text not null,

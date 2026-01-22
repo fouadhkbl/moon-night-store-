@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent } from 'lucide-react';
-import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal } from './AdminModals';
+import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament } from '../../types';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords } from 'lucide-react';
+import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal } from './AdminModals';
 
 const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
     return (
@@ -356,7 +356,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 };
 
 export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' | 'shop' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations'>(role === 'shop' ? 'products' : 'stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations' | 'tournaments'>(role === 'shop' ? 'products' : 'stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [pointProducts, setPointProducts] = useState<PointProduct[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -365,6 +365,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [pointTransactions, setPointTransactions] = useState<PointTransaction[]>([]);
   const [pointRedemptions, setPointRedemptions] = useState<PointRedemption[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
   const [isLoading, setIsLoading] = useState(true);
@@ -374,11 +375,13 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isPointProductModalOpen, setIsPointProductModalOpen] = useState(false);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [isTournamentModalOpen, setIsTournamentModalOpen] = useState(false);
   const [isVisitsModalOpen, setIsVisitsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [editingPointProduct, setEditingPointProduct] = useState<Partial<PointProduct> | null>(null);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedRedemption, setSelectedRedemption] = useState<PointRedemption | null>(null);
   
@@ -394,6 +397,10 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
     // Fetch Point Products (Always visible)
     const { data: ppData } = await supabase.from('point_products').select('*').order('cost', { ascending: true });
     if (ppData) setPointProducts(ppData);
+
+    // Fetch Tournaments (Always visible)
+    const { data: tData } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
+    if (tData) setTournaments(tData);
 
     // Fetch Profiles - Only for FULL admin
     if (role === 'full') {
@@ -479,6 +486,19 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       fetchData();
   };
 
+  const handleSaveTournament = async (data: any) => { 
+      if(data.id) await supabase.from('tournaments').update(data).eq('id', data.id);
+      else await supabase.from('tournaments').insert(data);
+      setIsTournamentModalOpen(false);
+      fetchData();
+  };
+
+  const handleDeleteTournament = async (id: string) => {
+      if(!window.confirm('Delete Tournament?')) return;
+      await supabase.from('tournaments').delete().eq('id', id);
+      fetchData();
+  };
+
   const handleDeletePointProduct = async (id: string) => { 
       if(!window.confirm('Delete Reward?')) return;
       await supabase.from('point_products').delete().eq('id', id);
@@ -520,6 +540,11 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
 
   const filteredPointProducts = pointProducts.filter(p => 
       p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredTournaments = tournaments.filter(t => 
+      t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.game_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredUsers = profiles.filter(u => {
@@ -583,6 +608,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           </button>
           <button onClick={() => setActiveSection('pointsShop')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'pointsShop' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
             <Trophy className="w-4 h-4" /> Points Shop
+          </button>
+          <button onClick={() => setActiveSection('tournaments')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'tournaments' ? 'bg-pink-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
+            <Swords className="w-4 h-4" /> Competitions
           </button>
           
           {(role === 'full' || role === 'limited') && (
@@ -819,6 +847,50 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         </div>
       )}
 
+      {/* TOURNAMENTS SECTION */}
+      {activeSection === 'tournaments' && (
+          <div className="space-y-6 animate-slide-up">
+              <div className="flex flex-col sm:flex-row gap-4 justify-between">
+                 <div className="relative flex-1">
+                    <input type="text" placeholder="Search tournaments..." className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none shadow-xl" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                    <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
+                 </div>
+                 <button onClick={() => { setEditingTournament(null); setIsTournamentModalOpen(true); }} className="bg-pink-600 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xl uppercase text-xs tracking-widest"><PlusCircle className="w-5 h-5" /> Add Tournament</button>
+              </div>
+
+              {filteredTournaments.length === 0 ? (
+                  <div className="bg-[#1e232e] rounded-3xl border border-gray-800 p-12 text-center">
+                      <p className="text-gray-500 font-black uppercase tracking-widest">No tournaments found</p>
+                  </div>
+              ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                     {filteredTournaments.map(t => (
+                        <div key={t.id} className="bg-[#1e232e] rounded-[2rem] border border-gray-800 p-5 shadow-2xl flex flex-col group transition-all hover:border-pink-500/30">
+                           <div className="relative h-40 rounded-2xl overflow-hidden mb-4">
+                               <img src={t.image_url} className="w-full h-full object-cover" alt="" />
+                               <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg text-white text-[9px] font-black uppercase tracking-widest border border-white/10">
+                                   {t.status}
+                               </div>
+                           </div>
+                           <h3 className="text-white font-black italic uppercase tracking-tighter text-xl mb-1">{t.title}</h3>
+                           <p className="text-[10px] text-pink-400 font-black uppercase tracking-widest mb-4">{t.game_name}</p>
+                           
+                           <div className="flex justify-between text-xs font-bold text-gray-500 mb-6">
+                               <span>{new Date(t.start_date).toLocaleDateString()}</span>
+                               <span>{t.current_participants} / {t.max_participants} Players</span>
+                           </div>
+
+                           <div className="grid grid-cols-2 gap-3 mt-auto">
+                              <button onClick={() => { setEditingTournament(t); setIsTournamentModalOpen(true); }} className="flex items-center justify-center gap-2 bg-gray-800 text-white font-black py-3 rounded-2xl text-[10px] uppercase tracking-widest"><Edit2 className="w-3 h-3" /> Edit</button>
+                              <button onClick={() => handleDeleteTournament(t.id)} className="flex items-center justify-center gap-2 bg-red-900/10 text-red-500 font-black py-3 rounded-2xl text-[10px] uppercase tracking-widest"><Trash2 className="w-3 h-3" /> Delete</button>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+              )}
+          </div>
+      )}
+
       {/* POINTS SHOP SECTION */}
       {activeSection === 'pointsShop' && (
         <div className="space-y-6 animate-slide-up">
@@ -1000,6 +1072,14 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
           onClose={() => { setIsPointProductModalOpen(false); setEditingPointProduct(null); }} 
           onSave={handleSavePointProduct} 
         />
+      )}
+      
+      {isTournamentModalOpen && (activeSection === 'tournaments') && (
+          <TournamentFormModal
+              tournament={editingTournament}
+              onClose={() => { setIsTournamentModalOpen(false); setEditingTournament(null); }}
+              onSave={handleSaveTournament}
+          />
       )}
       
       {isCouponModalOpen && (activeSection === 'coupons') && role === 'full' && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home, Swords } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Profile } from '../types';
 
@@ -124,6 +124,9 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                       </button>
                       <button onClick={() => handleMenuClick('shop')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
                           <ShoppingBag className="w-4 h-4 text-cyan-500" /> Shop
+                      </button>
+                      <button onClick={() => handleMenuClick('tournaments')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
+                          <Swords className="w-4 h-4 text-green-500" /> Competitions
                       </button>
                       <button onClick={() => handleMenuClick('pointsShop')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
                           <Trophy className="w-4 h-4 text-purple-500" /> Points Shop
