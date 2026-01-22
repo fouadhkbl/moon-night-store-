@@ -19,14 +19,15 @@ import { DonatePage } from './pages/DonatePage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { TournamentsPage } from './pages/TournamentsPage';
 import { TournamentDetailsPage } from './pages/TournamentDetailsPage';
-import { Loader2, ShoppingBag, X, Zap, Clock, Users } from 'lucide-react';
+import { Loader2, ShoppingBag, X, Zap, Clock, Users, Megaphone } from 'lucide-react';
 
 // New Component: Flash Sale Banner with Rotation
-const AnnouncementBar = () => {
+const AnnouncementBar = ({ settings }: { settings: any }) => {
     const [timeLeft, setTimeLeft] = useState(3600 * 4); // 4 hours in seconds
     const [visible, setVisible] = useState(true);
-    const [mode, setMode] = useState<'sale' | 'referral'>('sale');
+    const [mode, setMode] = useState<'sale' | 'referral' | 'custom'>('sale');
 
+    // Timer logic
     useEffect(() => {
         const timer = setInterval(() => {
             setTimeLeft(prev => (prev > 0 ? prev - 1 : 3600 * 4));
@@ -34,13 +35,21 @@ const AnnouncementBar = () => {
         return () => clearInterval(timer);
     }, []);
 
-    // Rotate messages every 5 seconds
+    // Rotation logic
     useEffect(() => {
-        const rotation = setInterval(() => {
-            setMode(prev => prev === 'sale' ? 'referral' : 'sale');
-        }, 5000);
-        return () => clearInterval(rotation);
-    }, []);
+        if (settings.mode === 'rotation') {
+            const rotation = setInterval(() => {
+                setMode(prev => prev === 'sale' ? 'referral' : 'sale');
+            }, 5000);
+            return () => clearInterval(rotation);
+        } else if (settings.mode === 'custom') {
+            setMode('custom');
+        } else if (settings.mode === 'sale') {
+            setMode('sale');
+        } else if (settings.mode === 'referral') {
+            setMode('referral');
+        }
+    }, [settings.mode]);
 
     const formatTime = (seconds: number) => {
         const h = Math.floor(seconds / 3600);
@@ -49,13 +58,13 @@ const AnnouncementBar = () => {
         return `${h}h ${m}m ${s}s`;
     };
 
-    if (!visible) return null;
+    if (!visible || settings.mode === 'off') return null;
 
     return (
-        <div className={`text-white py-2 px-4 relative overflow-hidden shadow-2xl z-[60] transition-colors duration-1000 ${mode === 'sale' ? 'bg-gradient-to-r from-blue-900 via-purple-900 to-blue-900' : 'bg-gradient-to-r from-green-900 via-emerald-800 to-green-900'}`}>
+        <div className={`text-white py-2 px-4 relative overflow-hidden shadow-2xl z-[60] transition-colors duration-1000 ${mode === 'sale' ? 'bg-gradient-to-r from-blue-900 via-purple-900 to-blue-900' : mode === 'referral' ? 'bg-gradient-to-r from-green-900 via-emerald-800 to-green-900' : 'bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900'}`}>
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
             <div className="container mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6 text-[10px] md:text-xs font-black uppercase tracking-widest relative z-10 animate-fade-in" key={mode}>
-                {mode === 'sale' ? (
+                {mode === 'sale' && (
                     <>
                         <div className="flex items-center gap-2 animate-pulse text-yellow-400">
                             <Zap className="w-4 h-4 fill-yellow-400" />
@@ -63,15 +72,16 @@ const AnnouncementBar = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-gray-300">Use Code:</span>
-                            <span className="bg-white text-black px-2 py-0.5 rounded border border-gray-300 font-mono select-all cursor-pointer hover:bg-gray-200 transition">MOON20</span>
-                            <span className="text-gray-300">for 20% OFF</span>
+                            <span className="bg-white text-black px-2 py-0.5 rounded border border-gray-300 font-mono select-all cursor-pointer hover:bg-gray-200 transition">{settings.sale_code || 'MOON20'}</span>
+                            <span className="text-gray-300">for Discount</span>
                         </div>
                         <div className="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-white/10">
                             <Clock className="w-3 h-3 text-red-400" />
                             <span className="font-mono text-red-400 w-20">{formatTime(timeLeft)}</span>
                         </div>
                     </>
-                ) : (
+                )}
+                {mode === 'referral' && (
                     <>
                         <div className="flex items-center gap-2 animate-bounce-slow text-green-400">
                             <Users className="w-4 h-4" />
@@ -82,6 +92,12 @@ const AnnouncementBar = () => {
                             <span className="bg-green-500 text-black px-2 py-0.5 rounded font-bold">Instantly</span>
                         </div>
                     </>
+                )}
+                {mode === 'custom' && (
+                    <div className="flex items-center gap-2">
+                        <Megaphone className="w-4 h-4 text-blue-400" />
+                        <span className="text-white tracking-widest">{settings.text}</span>
+                    </div>
                 )}
             </div>
             <button 
@@ -158,6 +174,14 @@ const App: React.FC = () => {
   const [targetOrderId, setTargetOrderId] = useState<string | null>(null);
   const [dashboardTab, setDashboardTab] = useState<'overview' | 'orders' | 'wallet' | 'points'>('overview');
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  
+  // App Config State
+  const [announcementSettings, setAnnouncementSettings] = useState({
+      mode: 'rotation',
+      text: 'Welcome to Moon Night Store!',
+      sale_code: 'MOON20'
+  });
+  const [backgroundUrl, setBackgroundUrl] = useState('');
 
   const t = {
     en: {
@@ -182,6 +206,26 @@ const App: React.FC = () => {
      setTimeout(() => setToasts(curr => curr.filter(t => t.id !== id)), 4000);
   };
 
+  // --- FETCH APP SETTINGS ---
+  useEffect(() => {
+      const fetchSettings = async () => {
+          const { data } = await supabase.from('app_settings').select('*');
+          if (data) {
+              const newSettings: any = {};
+              let bg = '';
+              data.forEach((item: any) => {
+                  if (item.key === 'announcement_mode') newSettings.mode = item.value;
+                  if (item.key === 'announcement_text') newSettings.text = item.value;
+                  if (item.key === 'sale_code') newSettings.sale_code = item.value;
+                  if (item.key === 'site_background') bg = item.value;
+              });
+              setAnnouncementSettings(prev => ({ ...prev, ...newSettings }));
+              setBackgroundUrl(bg);
+          }
+      };
+      fetchSettings();
+  }, []);
+
   // --- VISITOR TRACKING ---
   useEffect(() => {
     const logVisitor = async () => {
@@ -204,44 +248,34 @@ const App: React.FC = () => {
 
   // --- AUTH & PROFILE SYNC ---
   useEffect(() => {
-    // Helper to sync provider info from Auth Metadata to Profile Table
     const syncUserProfile = async (currentSession: any) => {
         if (!currentSession?.user) return;
         
         const { user } = currentSession;
-        
-        // CRITICAL: Skip sync for Guest users to prevent DB errors
         if (user.id === 'guest-user-123') return;
 
         const provider = user.app_metadata?.provider || 'email';
         
         try {
-            // Check existing profile
             const { data: profile } = await supabase.from('profiles').select('auth_provider, username, avatar_url').eq('id', user.id).single();
-            
             const updates: any = {};
             let needsUpdate = false;
 
-            // 1. Sync Provider if missing or different
             if (!profile || profile.auth_provider !== provider) {
                 updates.auth_provider = provider;
                 needsUpdate = true;
             }
 
-            // 2. Sync Metadata (Avatar/Name) for Google/Discord users if profile is empty or default
             if (provider !== 'email') {
                 const meta = user.user_metadata;
-                const newAvatar = meta.avatar_url || meta.picture; // Google uses 'picture', Discord/GitHub use 'avatar_url'
+                const newAvatar = meta.avatar_url || meta.picture; 
                 const newName = meta.full_name || meta.name || meta.custom_claims?.global_name;
 
-                // Update if profile doesn't exist or has default values
                 if (profile) {
-                    // Update name if current is default
                     if ((!profile.username || profile.username === 'New User' || profile.username === 'Guest') && newName) {
                         updates.username = newName;
                         needsUpdate = true;
                     }
-                    // Update avatar if current is default/unsplash
                     if (newAvatar && (!profile.avatar_url || profile.avatar_url.includes('unsplash'))) {
                         updates.avatar_url = newAvatar;
                         needsUpdate = true;
@@ -250,7 +284,6 @@ const App: React.FC = () => {
             }
 
             if (needsUpdate) {
-                // Upsert handles both "New Profile" creation (if trigger missed) and "Update"
                 await supabase.from('profiles').upsert({
                     id: user.id,
                     email: user.email,
@@ -276,7 +309,6 @@ const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
           setSession(session);
-          // Sync on sign-in events to capture OAuth data immediately
           if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
               syncUserProfile(session);
           }
@@ -292,11 +324,9 @@ const App: React.FC = () => {
     const fetchCart = async () => {
       const isGuest = session?.user?.id === 'guest-user-123';
       if (!isGuest && session?.user) {
-        // Fetch cart items and related product info
         const { data } = await supabase.from('cart_items').select('*, product:products(*)').eq('user_id', session.user.id).order('created_at', { ascending: true });
         
         if (data) {
-             // Filter out items where the product might have been deleted (product is null)
              const validItems = data.filter(item => item.product !== null);
              setCart(validItems as CartItem[]);
         }
@@ -309,13 +339,10 @@ const App: React.FC = () => {
 
   const handleNavigate = (page: string) => { 
     window.scrollTo(0,0); 
-    
-    // Handle special dashboard routes
     if (page === 'dashboard-points') {
         setDashboardTab('points');
         setCurrentPage('dashboard');
     } else if (page === 'dashboard') {
-        // Only reset if we are not coming from a specific dashboard link, but usually standard nav should go to overview
         if (currentPage !== 'dashboard') setDashboardTab('overview');
         setCurrentPage('dashboard');
     } else {
@@ -409,8 +436,17 @@ const App: React.FC = () => {
   if (isSessionLoading) return <div className="min-h-screen bg-[#0b0e14] flex items-center justify-center text-white"><Loader2 className="w-12 h-12 animate-spin text-blue-500"/></div>;
 
   return (
-    <div className="min-h-screen bg-[#0b0e14] text-white font-sans flex flex-col selection:bg-blue-600 selection:text-white">
-      <AnnouncementBar />
+    <div 
+        className="min-h-screen bg-[#0b0e14] text-white font-sans flex flex-col selection:bg-blue-600 selection:text-white"
+        style={backgroundUrl ? { 
+            backgroundImage: `url(${backgroundUrl})`, 
+            backgroundSize: 'cover', 
+            backgroundPosition: 'center', 
+            backgroundAttachment: 'fixed',
+            boxShadow: 'inset 0 0 0 2000px rgba(11, 14, 20, 0.9)' // Dark Overlay
+        } : {}}
+    >
+      <AnnouncementBar settings={announcementSettings} />
       <Navbar 
         session={session} 
         onNavigate={handleNavigate} 

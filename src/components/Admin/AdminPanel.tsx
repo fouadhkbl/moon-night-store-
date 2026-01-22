@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save } from 'lucide-react';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save, Megaphone, Image, LogOut } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal } from './AdminModals';
 
 const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
@@ -60,10 +60,6 @@ const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () =
 };
 
 const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption: PointRedemption, currentUser: Profile, onClose: () => void }) => {
-    // ... (Same as previous content, omitted for brevity as it's large and unchanged)
-    // To respect output limits, assuming this component exists or I should paste it fully if I am replacing the whole file. 
-    // Since I am replacing the file, I must include ALL content.
-    
     const [messages, setMessages] = useState<RedemptionMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [status, setStatus] = useState(redemption.status);
@@ -189,7 +185,6 @@ const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption
 };
 
 const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
-    // ... (Same as previous content)
     const [messages, setMessages] = useState<OrderMessage[]>([]);
     const [items, setItems] = useState<OrderItem[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -368,7 +363,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [pointTransactions, setPointTransactions] = useState<PointTransaction[]>([]);
   const [pointRedemptions, setPointRedemptions] = useState<PointRedemption[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -376,7 +370,14 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [adminProfile, setAdminProfile] = useState<Profile | null>(null);
+  
+  // System Settings State
   const [referralReward, setReferralReward] = useState('10');
+  const [announcementMode, setAnnouncementMode] = useState('rotation');
+  const [announcementText, setAnnouncementText] = useState('');
+  const [saleCode, setSaleCode] = useState('');
+  const [siteBackground, setSiteBackground] = useState('');
   
   // Modal States
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -393,6 +394,17 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [selectedRedemption, setSelectedRedemption] = useState<PointRedemption | null>(null);
   
   const [providerFilter, setProviderFilter] = useState<'all' | 'email' | 'google' | 'discord'>('all');
+
+  useEffect(() => {
+        // Fetch admin profile for chat identification
+        const getAdminProfile = async () => {
+            if(session?.user) {
+                 const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+                 setAdminProfile(data);
+            }
+        }
+        getAdminProfile();
+  }, [session]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -438,8 +450,16 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
 
     // Fetch Settings
     if (role === 'full') {
-        const { data: settings } = await supabase.from('app_settings').select('*').eq('key', 'referral_reward').single();
-        if (settings) setReferralReward(settings.value);
+        const { data: settings } = await supabase.from('app_settings').select('*');
+        if (settings) {
+            settings.forEach(item => {
+                if (item.key === 'referral_reward') setReferralReward(item.value);
+                if (item.key === 'announcement_mode') setAnnouncementMode(item.value);
+                if (item.key === 'announcement_text') setAnnouncementText(item.value);
+                if (item.key === 'sale_code') setSaleCode(item.value);
+                if (item.key === 'site_background') setSiteBackground(item.value);
+            });
+        }
     }
 
     // Fetch Orders - For Full and Limited (Not Shop Only)
@@ -478,12 +498,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (!error) { addToast('Deleted', 'Item removed.', 'success'); fetchData(); }
   };
-
-  const handleDeleteAllProducts = async () => { 
-      if(!window.confirm('DANGER: DELETE ALL PRODUCTS?')) return;
-      await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Hack to delete all
-      fetchData();
-  }; 
 
   const handleSaveProduct = async (data: any) => { 
       if(data.id) await supabase.from('products').update(data).eq('id', data.id);
@@ -546,7 +560,18 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   };
 
   const handleSaveSettings = async () => {
-      await supabase.from('app_settings').upsert({ key: 'referral_reward', value: referralReward });
+      const updates = [
+          { key: 'referral_reward', value: referralReward },
+          { key: 'announcement_mode', value: announcementMode },
+          { key: 'announcement_text', value: announcementText },
+          { key: 'sale_code', value: saleCode },
+          { key: 'site_background', value: siteBackground }
+      ];
+
+      for (const item of updates) {
+          await supabase.from('app_settings').upsert(item, { onConflict: 'key' });
+      }
+      
       addToast('Saved', 'System settings updated.', 'success');
   };
 
@@ -556,648 +581,444 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
     p.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredPointProducts = pointProducts.filter(p => 
-      p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredTournaments = tournaments.filter(t => 
-      t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.game_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredUsers = profiles.filter(u => {
-    const matchesSearch = u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          u.username?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (providerFilter === 'all') return matchesSearch;
-    return matchesSearch && u.auth_provider === providerFilter;
-  });
-  
-  const filteredCoupons = coupons.filter(c => c.code.includes(searchQuery.toUpperCase()));
-
-  const filteredOrders = orders.filter(o => 
-      o.id.includes(searchQuery) || 
-      o.profile?.username?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredRedemptions = pointRedemptions.filter(pr => 
-      pr.profile?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      pr.point_product?.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredDonations = donations.filter(d => 
-      d.profile?.username?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const topReferrers = profiles
-    .filter(p => (p.referral_earnings || 0) > 0)
-    .sort((a,b) => (b.referral_earnings || 0) - (a.referral_earnings || 0))
-    .slice(0, 10);
-
-  const ProviderIcon = ({ provider }: { provider?: string }) => {
-    if (provider === 'google') return (
-      <svg className="w-3 h-3" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /></svg>
-    );
-    if (provider === 'discord') return (
-      <svg className="w-3 h-3 fill-[#5865F2]" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.086 2.157 2.419 0 1.334-.956 2.42-2.157 2.42zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.086 2.157 2.419 0 1.334-.946 2.42-2.157 2.42z"/></svg>
-    );
-    return <Mail className="w-3 h-3 text-gray-500" />;
-  };
-
   return (
-    <div className="container mx-auto px-4 py-8 animate-fade-in max-w-7xl pb-24">
-      {/* Header and Switcher */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-        <div>
-          <h1 className="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter">ADMIN <span className="text-blue-500">CONTROL</span></h1>
-          <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-1">
-             {role === 'full' ? 'Master Admin • Full Access' : role === 'shop' ? 'Shop Admin • Inventory Access' : 'Moderator Access • Restricted'}
-          </p>
-        </div>
-        
-        <div className="flex w-full md:w-auto bg-[#1e232e] p-1.5 rounded-2xl border border-gray-800 shadow-xl overflow-x-auto custom-scrollbar">
-          {role !== 'shop' && (
-            <button onClick={() => setActiveSection('stats')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'stats' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-                <BarChart3 className="w-4 h-4" /> Stats
-            </button>
-          )}
-          {role !== 'shop' && (
-            <button onClick={() => setActiveSection('orders')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'orders' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-                <ClipboardList className="w-4 h-4" /> Orders
-            </button>
-          )}
-          <button onClick={() => setActiveSection('products')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'products' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-            <Package className="w-4 h-4" /> Shop
-          </button>
-          <button onClick={() => setActiveSection('pointsShop')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'pointsShop' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-            <Trophy className="w-4 h-4" /> Points Shop
-          </button>
-          <button onClick={() => setActiveSection('tournaments')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'tournaments' ? 'bg-pink-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-            <Swords className="w-4 h-4" /> Competitions
-          </button>
-          
-          {(role === 'full' || role === 'limited') && (
-            <>
-                <button onClick={() => setActiveSection('redemptions')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'redemptions' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-                    <Gift className="w-4 h-4" /> Redemptions
-                </button>
-                <button onClick={() => setActiveSection('donations')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'donations' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-                    <Heart className="w-4 h-4" /> Donations
-                </button>
-            </>
-          )}
-
-          {role === 'full' && (
-              <>
-                <button onClick={() => setActiveSection('users')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'users' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-                    <Users className="w-4 h-4" /> Users
-                </button>
-                <button onClick={() => setActiveSection('coupons')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'coupons' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-                    <Ticket className="w-4 h-4" /> Coupons
-                </button>
-                <button onClick={() => setActiveSection('system')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest whitespace-nowrap ${activeSection === 'system' ? 'bg-gray-700 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>
-                    <Settings className="w-4 h-4" /> System
-                </button>
-              </>
-          )}
-        </div>
-      </div>
-
-      {/* SYSTEM SECTION */}
-      {activeSection === 'system' && role === 'full' && (
-          <div className="space-y-8 animate-slide-up">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* General Settings */}
-                  <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-xl">
-                      <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-6 flex items-center gap-3">
-                          <Settings className="w-5 h-5 text-gray-400" /> App Configuration
-                      </h3>
-                      <div className="space-y-6">
-                          <div>
-                              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Referral Reward Amount (DH)</label>
-                              <div className="flex gap-2">
-                                  <input 
-                                    type="number" 
-                                    className="bg-[#0b0e14] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none flex-1 font-bold" 
-                                    value={referralReward}
-                                    onChange={e => setReferralReward(e.target.value)}
-                                  />
-                                  <button onClick={handleSaveSettings} className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-lg flex items-center gap-2">
-                                      <Save className="w-4 h-4" /> Save
-                                  </button>
-                              </div>
-                              <p className="text-[10px] text-gray-600 mt-2 font-medium">Amount credited to a referrer's wallet when their invitee makes a first purchase.</p>
-                          </div>
-                      </div>
-                  </div>
-
-                  {/* Top Referrers */}
-                  <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-xl">
-                      <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-6 flex items-center gap-3">
-                          <Users className="w-5 h-5 text-green-400" /> Top Referrers
-                      </h3>
-                      <div className="space-y-4">
-                          {topReferrers.length === 0 ? <p className="text-gray-600 text-xs font-bold uppercase tracking-widest">No referral data yet.</p> : topReferrers.map((user, idx) => (
-                              <div key={user.id} className="flex items-center justify-between p-4 bg-[#0b0e14] rounded-2xl border border-gray-800">
-                                  <div className="flex items-center gap-3">
-                                      <span className="text-gray-600 font-black text-lg">#{idx + 1}</span>
-                                      <div>
-                                          <p className="text-white font-bold text-sm">{user.username}</p>
-                                          <p className="text-[10px] text-gray-500 font-mono">{user.email}</p>
-                                      </div>
-                                  </div>
-                                  <div className="text-right">
-                                      <p className="text-green-400 font-black italic">{user.referral_earnings?.toFixed(2)} DH</p>
-                                      <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest">Earned</p>
-                                  </div>
-                              </div>
-                          ))}
-                      </div>
-                  </div>
-              </div>
-          </div>
-      )}
-
-      {activeSection === 'stats' && role !== 'shop' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-slide-up">
-           <div 
-             className="bg-[#1e232e] p-6 rounded-3xl border border-gray-800 shadow-2xl hover:border-cyan-500/30 transition-all cursor-pointer active:scale-95"
-             onClick={() => setIsVisitsModalOpen(true)}
-           >
-              <Globe className="text-cyan-400 mb-6 w-8 h-8" />
-              <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Visits Today</p>
-              <h3 className="text-4xl font-black text-white italic tracking-tighter">{logs.length}</h3>
-              <p className="text-[10px] text-cyan-500 font-bold uppercase tracking-widest mt-2 flex items-center gap-1"><PlusCircle className="w-3 h-3" /> View Log</p>
-           </div>
-           <div className="bg-[#1e232e] p-6 rounded-3xl border border-gray-800 shadow-2xl hover:border-blue-500/30 transition-all">
-              <Users className="text-blue-500 mb-6 w-8 h-8" />
-              <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Registered Gamers</p>
-              <h3 className="text-4xl font-black text-white italic tracking-tighter">{stats.users}</h3>
-           </div>
-           <div className="bg-[#1e232e] p-6 rounded-3xl border border-gray-800 shadow-2xl hover:border-yellow-500/30 transition-all">
-              <Wallet className="text-yellow-400 mb-6 w-8 h-8" />
-              <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Real Cash Volume</p>
-              <h3 className="text-4xl font-black text-white italic tracking-tighter">{stats.revenue.toFixed(2)} <span className="text-sm">DH</span></h3>
-           </div>
-           <div className="bg-[#1e232e] p-6 rounded-3xl border border-gray-800 shadow-2xl hover:border-purple-500/30 transition-all">
-              <ShoppingCart className="text-purple-500 mb-6 w-8 h-8" />
-              <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Total Sales</p>
-              <h3 className="text-4xl font-black text-white italic tracking-tighter">{stats.orders}</h3>
-           </div>
-        </div>
-      )}
-
-      {/* ORDERS SECTION */}
-      {activeSection === 'orders' && role !== 'shop' && (
-          <div className="space-y-6 animate-slide-up">
-              <div className="relative">
-                <input 
-                  type="text" 
-                  placeholder="Search orders by ID or User..." 
-                  className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none transition-all shadow-xl"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                />
-                <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
-             </div>
-
-             <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
-                 {filteredOrders.length === 0 ? <p className="text-center py-12 text-gray-500 font-black uppercase tracking-widest">No orders found</p> : (
-                     <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-left">
-                            <thead className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
-                                <tr>
-                                    <th className="p-6">Order ID</th>
-                                    <th className="p-6">User</th>
-                                    <th className="p-6">Amount</th>
-                                    <th className="p-6">Date</th>
-                                    <th className="p-6">Status</th>
-                                    <th className="p-6">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-800">
-                                {filteredOrders.map(o => (
-                                    <tr key={o.id} className="hover:bg-[#151a23] transition-colors">
-                                        <td className="p-6 font-mono text-xs text-blue-400">{o.id.slice(0,8)}...</td>
-                                        <td className="p-6 text-white font-bold text-xs">{o.profile?.username || 'Unknown'}</td>
-                                        <td className="p-6 font-black text-yellow-400 italic text-sm">{o.total_amount.toFixed(2)} DH</td>
-                                        <td className="p-6 text-gray-500 text-xs font-mono">{new Date(o.created_at).toLocaleDateString()}</td>
-                                        <td className="p-6">
-                                            <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${
-                                                o.status === 'completed' ? 'bg-green-500/10 text-green-500' : 
-                                                o.status === 'canceled' ? 'bg-red-500/10 text-red-500' : 
-                                                'bg-yellow-500/10 text-yellow-500'
-                                            }`}>
-                                                {o.status}
-                                            </span>
-                                        </td>
-                                        <td className="p-6">
-                                            <button 
-                                              onClick={() => setSelectedOrder(o)}
-                                              className="bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-purple-500/30"
-                                            >
-                                                Manage / Chat
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                     </div>
-                 )}
-             </div>
-          </div>
-      )}
-
-      {/* DONATIONS SECTION */}
-      {activeSection === 'donations' && (role !== 'shop') && (
-          <div className="space-y-6 animate-slide-up">
-              <div className="relative">
-                <input 
-                  type="text" 
-                  placeholder="Search donations by user..." 
-                  className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none transition-all shadow-xl"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                />
-                <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
-             </div>
-
-             <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
-                 {filteredDonations.length === 0 ? <p className="text-center py-12 text-gray-500 font-black uppercase tracking-widest">No donations found</p> : (
-                     <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-left">
-                            <thead className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
-                                <tr>
-                                    <th className="p-6">Date</th>
-                                    <th className="p-6">Donor</th>
-                                    <th className="p-6">Amount</th>
-                                    <th className="p-6">Transaction ID</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-800">
-                                {filteredDonations.map(d => (
-                                    <tr key={d.id} className="hover:bg-[#151a23] transition-colors">
-                                        <td className="p-6 text-gray-500 text-xs font-mono">{new Date(d.created_at).toLocaleDateString()}</td>
-                                        <td className="p-6 text-white font-bold text-xs">{d.profile?.username || 'Guest'}</td>
-                                        <td className="p-6 font-black text-green-400 italic text-sm flex items-center gap-2">
-                                            <Heart className="w-3 h-3 fill-green-400" /> {d.amount.toFixed(2)} DH
-                                        </td>
-                                        <td className="p-6 text-gray-500 text-xs font-mono">{d.transaction_id || 'N/A'}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                     </div>
-                 )}
-             </div>
-          </div>
-      )}
-
-      {/* REDEMPTIONS SECTION */}
-      {activeSection === 'redemptions' && (role === 'full' || role === 'limited') && (
-          <div className="space-y-6 animate-slide-up">
-              <div className="relative">
-                <input 
-                  type="text" 
-                  placeholder="Search redemptions..." 
-                  className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none shadow-xl"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                />
-                <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
-             </div>
-             <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
-                 {filteredRedemptions.length === 0 ? <p className="text-center py-12 text-gray-500 font-black uppercase tracking-widest">No redemptions found</p> : (
-                     <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-left">
-                            <thead className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
-                                <tr><th className="p-6">Date</th><th className="p-6">User</th><th className="p-6">Reward</th><th className="p-6">Cost</th><th className="p-6">Status</th><th className="p-6">Action</th></tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-800">
-                                {filteredRedemptions.map(r => (
-                                    <tr key={r.id} className="hover:bg-[#151a23] transition-colors">
-                                        <td className="p-6 text-gray-500 text-xs font-mono">{new Date(r.created_at).toLocaleDateString()}</td>
-                                        <td className="p-6 text-white font-bold text-xs">{r.profile?.username}</td>
-                                        <td className="p-6 text-white font-bold text-xs">{r.point_product?.name}</td>
-                                        <td className="p-6 font-black text-purple-400 italic text-sm">{r.cost_at_redemption} PTS</td>
-                                        <td className="p-6"><span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${r.status === 'delivered' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'}`}>{r.status}</span></td>
-                                        <td className="p-6"><button onClick={() => setSelectedRedemption(r)} className="bg-purple-600/20 text-purple-400 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Chat</button></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                     </div>
-                 )}
-             </div>
-          </div>
-      )}
-
-      {/* PRODUCTS SECTION */}
-      {activeSection === 'products' && (
-        <div className="space-y-6 animate-slide-up">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between">
-             <div className="relative flex-1">
-                <input type="text" placeholder="Filter inventory..." className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none shadow-xl" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
-             </div>
-             <div className="flex gap-2">
-                 {role === 'full' && <button onClick={handleDeleteAllProducts} className="bg-red-900/10 text-red-500 border border-red-500/20 font-black px-6 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xl uppercase text-xs tracking-widest"><Trash2 className="w-5 h-5" /> Wipe</button>}
-                 <button onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }} className="bg-blue-600 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xl uppercase text-xs tracking-widest"><PlusCircle className="w-5 h-5" /> Add Product</button>
-             </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-             {filteredProducts.map(p => (
-                <div key={p.id} className={`bg-[#1e232e] rounded-3xl border p-5 shadow-2xl flex flex-col group transition-all relative ${p.is_hidden ? 'border-red-900/30 bg-red-900/5' : 'border-gray-800 hover:border-blue-500/30'}`}>
-                   {/* Product Card Content */}
-                   <div className="flex gap-4 mb-6 items-start">
-                      <img src={p.image_url} className="w-20 h-20 rounded-2xl object-cover border border-gray-700 shadow-lg" alt="" />
-                      <div className="min-w-0 flex-1">
-                         <h3 className="text-white font-black italic truncate mb-2 uppercase text-lg">{p.name}</h3>
-                         <div className="flex gap-2 flex-wrap mb-2"><span className="px-2 py-1 rounded-lg bg-blue-600/10 text-blue-400 text-[8px] font-black uppercase">{p.category}</span></div>
-                         <p className="text-xl font-black text-yellow-400 italic">{p.price.toFixed(2)} DH</p>
-                      </div>
-                   </div>
-                   <div className="grid grid-cols-2 gap-3 mt-auto">
-                      <button onClick={() => { setEditingProduct(p); setIsProductModalOpen(true); }} className="flex items-center justify-center gap-2 bg-gray-800 text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest"><Edit2 className="w-4 h-4" /> Edit</button>
-                      <button onClick={() => handleDeleteProduct(p.id)} className="flex items-center justify-center gap-2 bg-red-900/10 text-red-500 font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest"><Trash2 className="w-4 h-4" /> Delete</button>
-                   </div>
+    <div className="min-h-screen bg-[#0b0e14] text-white flex font-sans selection:bg-blue-500 selection:text-white">
+        {/* Sidebar */}
+        <aside className="w-72 bg-[#1e232e] border-r border-gray-800 flex flex-col fixed h-full z-50 shadow-2xl">
+            <div className="p-8 border-b border-gray-800 bg-[#151a23]">
+                <h1 className="text-2xl font-black text-white italic uppercase tracking-tighter">System<span className="text-blue-500">Core</span></h1>
+                <div className="mt-2 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Operator: <span className="text-white">{role.toUpperCase()}</span></p>
                 </div>
-             ))}
-          </div>
-        </div>
-      )}
+            </div>
+            
+            <nav className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                {role !== 'shop' && (
+                    <button onClick={() => setActiveSection('stats')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'stats' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                        <BarChart3 className="w-4 h-4" /> Overview
+                    </button>
+                )}
+                
+                <p className="px-4 pt-6 pb-2 text-[9px] font-black text-gray-600 uppercase tracking-[0.2em]">Management</p>
+                
+                <button onClick={() => setActiveSection('products')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'products' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                    <Package className="w-4 h-4" /> Products
+                </button>
+                
+                <button onClick={() => setActiveSection('pointsShop')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'pointsShop' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                    <Trophy className="w-4 h-4" /> Rewards Shop
+                </button>
 
-      {/* TOURNAMENTS SECTION */}
-      {activeSection === 'tournaments' && (
-          <div className="space-y-6 animate-slide-up">
-              <div className="flex flex-col sm:flex-row gap-4 justify-between">
-                 <div className="relative flex-1">
-                    <input type="text" placeholder="Search tournaments..." className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none shadow-xl" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                    <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
-                 </div>
-                 <button onClick={() => { setEditingTournament(null); setIsTournamentModalOpen(true); }} className="bg-pink-600 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xl uppercase text-xs tracking-widest"><PlusCircle className="w-5 h-5" /> Add Tournament</button>
-              </div>
+                <button onClick={() => setActiveSection('tournaments')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'tournaments' ? 'bg-pink-600 text-white shadow-lg shadow-pink-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                    <Swords className="w-4 h-4" /> Tournaments
+                </button>
 
-              {filteredTournaments.length === 0 ? (
-                  <div className="bg-[#1e232e] rounded-3xl border border-gray-800 p-12 text-center">
-                      <p className="text-gray-500 font-black uppercase tracking-widest">No tournaments found</p>
-                  </div>
-              ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                     {filteredTournaments.map(t => (
-                        <div key={t.id} className="bg-[#1e232e] rounded-[2rem] border border-gray-800 p-5 shadow-2xl flex flex-col group transition-all hover:border-pink-500/30">
-                           <div className="relative h-40 rounded-2xl overflow-hidden mb-4">
-                               <img src={t.image_url} className="w-full h-full object-cover" alt="" />
-                               <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg text-white text-[9px] font-black uppercase tracking-widest border border-white/10">
-                                   {t.status}
-                               </div>
-                           </div>
-                           <h3 className="text-white font-black italic uppercase tracking-tighter text-xl mb-1">{t.title}</h3>
-                           <p className="text-[10px] text-pink-400 font-black uppercase tracking-widest mb-4">{t.game_name}</p>
-                           
-                           <div className="flex justify-between text-xs font-bold text-gray-500 mb-6">
-                               <span>{new Date(t.start_date).toLocaleDateString()}</p>
-                               <span>{t.current_participants} / {t.max_participants} Players</span>
-                           </div>
-
-                           <div className="grid grid-cols-2 gap-3 mt-auto">
-                              <button onClick={() => { setEditingTournament(t); setIsTournamentModalOpen(true); }} className="flex items-center justify-center gap-2 bg-gray-800 text-white font-black py-3 rounded-2xl text-[10px] uppercase tracking-widest"><Edit2 className="w-3 h-3" /> Edit</button>
-                              <button onClick={() => handleDeleteTournament(t.id)} className="flex items-center justify-center gap-2 bg-red-900/10 text-red-500 font-black py-3 rounded-2xl text-[10px] uppercase tracking-widest"><Trash2 className="w-3 h-3" /> Delete</button>
-                           </div>
-                        </div>
-                     ))}
-                  </div>
-              )}
-          </div>
-      )}
-
-      {/* POINTS SHOP SECTION */}
-      {activeSection === 'pointsShop' && (
-        <div className="space-y-6 animate-slide-up">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between">
-             <div className="relative flex-1">
-                <input type="text" placeholder="Search rewards..." className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none shadow-xl" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
-             </div>
-             <div className="flex gap-2">
-                 <button onClick={() => { setEditingPointProduct(null); setIsPointProductModalOpen(true); }} className="bg-purple-600 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xl uppercase text-xs tracking-widest"><PlusCircle className="w-5 h-5" /> Add Reward</button>
-             </div>
-          </div>
-          
-          {filteredPointProducts.length === 0 ? (
-              <div className="bg-[#1e232e] rounded-3xl border border-gray-800 p-12 text-center">
-                  <p className="text-gray-500 font-black uppercase tracking-widest">No rewards found</p>
-              </div>
-          ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                 {filteredPointProducts.map(p => (
-                    <div key={p.id} className="bg-[#1e232e] rounded-3xl border border-gray-800 hover:border-purple-500/30 p-5 shadow-2xl flex flex-col transition-all">
-                       <div className="flex gap-4 mb-4 items-start">
-                          <img src={p.image_url} className="w-16 h-16 rounded-2xl object-cover border border-gray-700" alt="" />
-                          <div className="min-w-0 flex-1">
-                             <h3 className="text-white font-black italic truncate mb-1 uppercase text-sm">{p.name}</h3>
-                             <p className="text-lg font-black text-purple-400 italic">{p.cost} PTS</p>
-                          </div>
-                       </div>
-                       <div className="grid grid-cols-2 gap-3 mt-auto">
-                          <button onClick={() => { setEditingPointProduct(p); setIsPointProductModalOpen(true); }} className="flex items-center justify-center gap-2 bg-gray-800 text-white font-black py-3 rounded-2xl text-[10px] uppercase tracking-widest"><Edit2 className="w-3 h-3" /> Edit</button>
-                          <button onClick={() => handleDeletePointProduct(p.id)} className="flex items-center justify-center gap-2 bg-red-900/10 text-red-500 font-black py-3 rounded-2xl text-[10px] uppercase tracking-widest"><Trash2 className="w-3 h-3" /> Delete</button>
-                       </div>
-                    </div>
-                 ))}
-              </div>
-          )}
-        </div>
-      )}
-
-      {/* USERS SECTION */}
-      {activeSection === 'users' && role === 'full' && (
-          <div className="space-y-6 animate-slide-up">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                    <input 
-                      type="text" 
-                      placeholder="Search users..." 
-                      className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none shadow-xl"
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                    />
-                    <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
-                </div>
-                {/* Filter Toggles */}
-                <div className="flex bg-[#1e232e] p-1 rounded-2xl border border-gray-800">
-                    {['all', 'email', 'google', 'discord'].map(prov => (
-                        <button 
-                            key={prov}
-                            onClick={() => setProviderFilter(prov as any)}
-                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${providerFilter === prov ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-white'}`}
-                        >
-                            {prov}
+                {role !== 'shop' && (
+                    <>
+                        <button onClick={() => setActiveSection('orders')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'orders' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                            <ShoppingCart className="w-4 h-4" /> Orders
                         </button>
-                    ))}
-                </div>
-             </div>
+                        
+                        <button onClick={() => setActiveSection('redemptions')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'redemptions' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                            <Gift className="w-4 h-4" /> Redemptions
+                        </button>
 
-             <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl">
-                 {filteredUsers.length === 0 ? <p className="text-center py-12 text-gray-500 font-black uppercase tracking-widest">No users found</p> : (
-                     <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-left">
-                            <thead className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
-                                <tr>
-                                    <th className="p-6">User</th>
-                                    <th className="p-6">Contact</th>
-                                    <th className="p-6">Wallet</th>
-                                    <th className="p-6">Points</th>
-                                    <th className="p-6">Provider</th>
-                                    <th className="p-6 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-800">
-                                {filteredUsers.map(u => (
-                                    <tr key={u.id} className="hover:bg-[#151a23] transition-colors">
-                                        <td className="p-6">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden"><img src={u.avatar_url} className="w-full h-full object-cover" alt=""/></div>
-                                                <span className="text-white font-bold text-xs">{u.username}</span>
-                                            </div>
-                                        </td>
-                                        <td className="p-6 text-gray-500 text-xs font-mono">{u.email}</td>
-                                        <td className="p-6 font-black text-yellow-400 italic text-sm">{u.wallet_balance.toFixed(2)} DH</td>
-                                        <td className="p-6 font-black text-purple-400 italic text-sm">{u.discord_points} PTS</td>
-                                        <td className="p-6"><div className="w-8 h-8 bg-[#0b0e14] rounded-lg flex items-center justify-center border border-gray-700"><ProviderIcon provider={u.auth_provider} /></div></td>
-                                        <td className="p-6 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <button onClick={() => setEditingUser(u)} className="bg-blue-900/20 text-blue-400 p-2 rounded-lg hover:bg-blue-600 hover:text-white transition"><Edit2 className="w-4 h-4"/></button>
-                                                <button onClick={() => handleDeleteUser(u.id)} className="bg-red-900/20 text-red-500 p-2 rounded-lg hover:bg-red-600 hover:text-white transition"><Trash2 className="w-4 h-4"/></button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                     </div>
-                 )}
-             </div>
-          </div>
-      )}
+                        <button onClick={() => setActiveSection('donations')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'donations' ? 'bg-yellow-600 text-white shadow-lg shadow-yellow-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                            <Heart className="w-4 h-4" /> Donations
+                        </button>
+                    </>
+                )}
 
-      {/* COUPONS SECTION */}
-      {activeSection === 'coupons' && role === 'full' && (
-          <div className="space-y-6 animate-slide-up">
-              <div className="flex flex-col sm:flex-row gap-4 justify-between">
-                 <div className="relative flex-1">
-                    <input type="text" placeholder="Search coupons..." className="w-full bg-[#1e232e] border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none shadow-xl" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                    <Search className="absolute left-4 top-4.5 w-5 h-5 text-gray-500" />
-                 </div>
-                 <button onClick={() => { setEditingCoupon(null); setIsCouponModalOpen(true); }} className="bg-blue-600 text-white font-black px-8 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xl uppercase text-xs tracking-widest"><PlusCircle className="w-5 h-5" /> Create Coupon</button>
-              </div>
+                {role === 'full' && (
+                    <>
+                        <p className="px-4 pt-6 pb-2 text-[9px] font-black text-gray-600 uppercase tracking-[0.2em]">Super Admin</p>
+                        
+                        <button onClick={() => setActiveSection('users')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'users' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                            <Users className="w-4 h-4" /> Users
+                        </button>
+                        
+                        <button onClick={() => setActiveSection('coupons')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'coupons' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                            <Ticket className="w-4 h-4" /> Coupons
+                        </button>
 
-              {filteredCoupons.length === 0 ? (
-                  <div className="bg-[#1e232e] rounded-3xl border border-gray-800 p-12 text-center">
-                      <p className="text-gray-500 font-black uppercase tracking-widest">No coupons found</p>
-                  </div>
-              ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                     {filteredCoupons.map(c => (
-                        <div key={c.id} className={`bg-[#1e232e] rounded-3xl border p-6 shadow-xl flex flex-col relative overflow-hidden ${!c.is_active ? 'opacity-60 border-red-900/50' : 'border-gray-800 hover:border-blue-500/30'}`}>
-                           <div className="flex justify-between items-start mb-4">
-                               <div className="bg-[#0b0e14] border border-gray-700 border-dashed px-3 py-1 rounded-lg text-white font-mono font-bold tracking-widest text-sm">
-                                   {c.code}
-                               </div>
-                               <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded ${c.is_active ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'}`}>
-                                   {c.is_active ? 'Active' : 'Inactive'}
-                               </span>
-                           </div>
-                           
-                           <div className="flex items-center gap-2 mb-4">
-                               <div className="p-3 bg-blue-600/10 rounded-xl text-blue-500">
-                                   {c.discount_type === 'percent' ? <Percent className="w-6 h-6" /> : <Wallet className="w-6 h-6" />}
-                               </div>
-                               <div>
-                                   <p className="text-2xl font-black text-white italic tracking-tighter leading-none">
-                                       {c.discount_value} {c.discount_type === 'percent' ? '%' : 'DH'}
-                                   </p>
-                                   <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Discount</p>
-                               </div>
-                           </div>
+                        <button onClick={() => setActiveSection('system')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'system' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                            <Settings className="w-4 h-4" /> System
+                        </button>
+                    </>
+                )}
+            </nav>
+            
+            <div className="p-4 border-t border-gray-800 bg-[#151a23]">
+                <button onClick={() => window.location.href='/'} className="w-full bg-[#0b0e14] text-gray-400 hover:text-white hover:border-gray-500 border border-gray-800 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 transition-all">
+                    <LogOut className="w-4 h-4" /> Exit Console
+                </button>
+            </div>
+        </aside>
 
-                           <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6">
-                               <span>Used: <span className="text-white">{c.usage_count}</span></span>
-                               <span>Max: <span className="text-white">{c.max_uses || '∞'}</span></span>
-                           </div>
-
-                           <div className="grid grid-cols-2 gap-3 mt-auto">
-                              <button onClick={() => { setEditingCoupon(c); setIsCouponModalOpen(true); }} className="flex items-center justify-center gap-2 bg-gray-800 text-white font-black py-3 rounded-2xl text-[10px] uppercase tracking-widest"><Edit2 className="w-3 h-3" /> Edit</button>
-                              <button onClick={() => handleDeleteCoupon(c.id)} className="flex items-center justify-center gap-2 bg-red-900/10 text-red-500 font-black py-3 rounded-2xl text-[10px] uppercase tracking-widest"><Trash2 className="w-3 h-3" /> Delete</button>
-                           </div>
+        {/* Content Area */}
+        <main className="flex-1 ml-72 p-10 overflow-y-auto h-screen relative bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+            <div className="max-w-7xl mx-auto pb-20">
+                
+                {/* STATS SECTION */}
+                {activeSection === 'stats' && role !== 'shop' && (
+                    <div className="space-y-8 animate-slide-up">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-2xl relative overflow-hidden group">
+                                <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:scale-110 transition-transform"><Users className="w-24 h-24" /></div>
+                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-2 relative z-10">Total Users</p>
+                                <h3 className="text-5xl font-black text-white italic tracking-tighter relative z-10">{stats.users}</h3>
+                            </div>
+                            <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-2xl relative overflow-hidden group">
+                                <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:scale-110 transition-transform"><ShoppingCart className="w-24 h-24" /></div>
+                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-2 relative z-10">Total Orders</p>
+                                <h3 className="text-5xl font-black text-white italic tracking-tighter relative z-10">{stats.orders}</h3>
+                            </div>
+                            <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-2xl relative overflow-hidden group">
+                                <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:scale-110 transition-transform"><Wallet className="w-24 h-24" /></div>
+                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-2 relative z-10">Total Revenue</p>
+                                <h3 className="text-5xl font-black text-yellow-400 italic tracking-tighter relative z-10">{stats.revenue.toFixed(2)} DH</h3>
+                            </div>
                         </div>
-                     ))}
-                  </div>
-              )}
-          </div>
-      )}
+                        
+                        <div className="flex gap-4">
+                            <button onClick={() => setIsVisitsModalOpen(true)} className="bg-[#1e232e] border border-gray-800 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:border-blue-500 transition-all shadow-xl">
+                                <Globe className="w-5 h-5 text-blue-500" /> View Live Traffic Logs
+                            </button>
+                        </div>
+                    </div>
+                )}
 
-      {/* Modals */}
-      {isProductModalOpen && (activeSection === 'products') && (
-        <ProductFormModal 
-          product={editingProduct} 
-          onClose={() => { setIsProductModalOpen(false); setEditingProduct(null); }} 
-          onSave={handleSaveProduct} 
-        />
-      )}
-      
-      {isPointProductModalOpen && (activeSection === 'pointsShop') && (
-        <PointProductFormModal 
-          product={editingPointProduct} 
-          onClose={() => { setIsPointProductModalOpen(false); setEditingPointProduct(null); }} 
-          onSave={handleSavePointProduct} 
-        />
-      )}
-      
-      {isTournamentModalOpen && (activeSection === 'tournaments') && (
-          <TournamentFormModal
-              tournament={editingTournament}
-              onClose={() => { setIsTournamentModalOpen(false); setEditingTournament(null); }}
-              onSave={handleSaveTournament}
-          />
-      )}
-      
-      {isCouponModalOpen && (activeSection === 'coupons') && role === 'full' && (
-          <CouponFormModal 
-             coupon={editingCoupon}
-             onClose={() => { setIsCouponModalOpen(false); setEditingCoupon(null); }}
-             onSave={handleSaveCoupon}
-          />
-      )}
+                {/* PRODUCTS SECTION */}
+                {activeSection === 'products' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Inventory Management</h2>
+                            <div className="flex gap-4">
+                                <input type="text" placeholder="Search items..." className="bg-[#1e232e] border border-gray-800 text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest outline-none focus:border-blue-500 w-64" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                                <button onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 shadow-lg shadow-blue-900/20 hover:bg-blue-700 transition-all">
+                                    <PlusCircle className="w-4 h-4" /> Add Item
+                                </button>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4">
+                            {filteredProducts.map(p => (
+                                <div key={p.id} className="bg-[#1e232e] p-4 rounded-2xl border border-gray-800 flex items-center justify-between hover:border-blue-500/30 transition-all group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-16 rounded-xl overflow-hidden bg-black border border-gray-800">
+                                            <img src={p.image_url} className="w-full h-full object-cover" alt="" />
+                                        </div>
+                                        <div>
+                                            <p className="text-white font-black uppercase tracking-tighter text-lg leading-none mb-1">{p.name}</p>
+                                            <div className="flex gap-2">
+                                                <span className="text-[10px] bg-[#0b0e14] px-2 py-0.5 rounded text-gray-500 font-bold uppercase tracking-widest">{p.category}</span>
+                                                <span className="text-[10px] text-yellow-500 font-black uppercase tracking-widest">{p.price.toFixed(2)} DH</span>
+                                                {p.stock === 0 && <span className="text-[10px] text-red-500 font-black uppercase tracking-widest">Out of Stock</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => { setEditingProduct(p); setIsProductModalOpen(true); }} className="p-3 bg-[#0b0e14] rounded-xl text-white hover:bg-blue-600 transition-all"><Edit2 className="w-4 h-4"/></button>
+                                        <button onClick={() => handleDeleteProduct(p.id)} className="p-3 bg-[#0b0e14] rounded-xl text-red-500 hover:bg-red-900/20 transition-all"><Trash2 className="w-4 h-4"/></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
-      {isVisitsModalOpen && (
-          <VisitHistoryModal logs={logs} onClose={() => setIsVisitsModalOpen(false)} />
-      )}
+                {/* TOURNAMENTS SECTION */}
+                {activeSection === 'tournaments' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Tournaments</h2>
+                            <button onClick={() => { setEditingTournament(null); setIsTournamentModalOpen(true); }} className="bg-pink-600 text-white px-6 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 shadow-lg shadow-pink-900/20 hover:bg-pink-700 transition-all">
+                                <PlusCircle className="w-4 h-4" /> Create Tournament
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {tournaments.map(t => (
+                                <div key={t.id} className="bg-[#1e232e] p-6 rounded-[2rem] border border-gray-800 relative overflow-hidden group">
+                                    <div className="flex justify-between items-start mb-4 relative z-10">
+                                        <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">{t.title}</h3>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => { setEditingTournament(t); setIsTournamentModalOpen(true); }} className="p-2 bg-[#0b0e14] rounded-lg text-gray-400 hover:text-white"><Edit2 className="w-4 h-4"/></button>
+                                            <button onClick={() => handleDeleteTournament(t.id)} className="p-2 bg-[#0b0e14] rounded-lg text-red-500 hover:text-red-400"><Trash2 className="w-4 h-4"/></button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 relative z-10">
+                                        <p className="text-xs text-gray-400 font-bold flex items-center gap-2"><Trophy className="w-4 h-4 text-yellow-500"/> {t.prize_pool}</p>
+                                        <p className="text-xs text-gray-400 font-bold flex items-center gap-2"><Clock className="w-4 h-4 text-blue-500"/> {t.status.toUpperCase()}</p>
+                                        <p className="text-xs text-gray-400 font-bold flex items-center gap-2"><Users className="w-4 h-4 text-purple-500"/> {t.current_participants} / {t.max_participants}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
-      {editingUser && role === 'full' && (
-        <BalanceEditorModal 
-          user={editingUser} 
-          onClose={() => setEditingUser(null)} 
-          onSave={handleUpdateBalance} 
-        />
-      )}
+                {/* USERS SECTION (Full Admin) */}
+                {activeSection === 'users' && role === 'full' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">User Database</h2>
+                            <input type="text" placeholder="Search user..." className="bg-[#1e232e] border border-gray-800 text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest outline-none focus:border-indigo-500 w-64" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                        </div>
+                        <div className="bg-[#1e232e] rounded-[2rem] border border-gray-800 overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="bg-[#151a23] text-gray-500 text-[9px] font-black uppercase tracking-[0.2em]">
+                                    <tr>
+                                        <th className="p-6">User</th>
+                                        <th className="p-6">Wallet</th>
+                                        <th className="p-6">Points</th>
+                                        <th className="p-6 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-800">
+                                    {filteredUsers.map(user => (
+                                        <tr key={user.id} className="hover:bg-[#0b0e14] transition-colors">
+                                            <td className="p-6">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden">
+                                                        {user.avatar_url && <img src={user.avatar_url} className="w-full h-full object-cover" />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-xs">{user.username}</p>
+                                                        <p className="text-[10px] text-gray-500">{user.email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="p-6 font-mono text-yellow-400 font-bold text-xs">{user.wallet_balance.toFixed(2)} DH</td>
+                                            <td className="p-6 font-mono text-purple-400 font-bold text-xs">{user.discord_points} PTS</td>
+                                            <td className="p-6 text-right">
+                                                <button onClick={() => setEditingUser(user)} className="text-blue-500 hover:text-white font-bold text-[10px] uppercase tracking-widest mr-4">Edit Balance</button>
+                                                <button onClick={() => handleDeleteUser(user.id)} className="text-red-500 hover:text-red-400 font-bold text-[10px] uppercase tracking-widest">Delete</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
 
-      {selectedOrder && (
-          <AdminOrderModal
-            order={selectedOrder}
-            currentUser={role === 'full' && profiles.find(p => p.id === session.user.id) ? profiles.find(p => p.id === session.user.id)! : { id: 'admin-mod', username: 'Moderator', email: 'mod@system', wallet_balance: 0, vip_level: 0, vip_points: 0, discord_points: 0, total_donated: 0, avatar_url: '' }} 
-            onClose={() => { setSelectedOrder(null); fetchData(); }}
-          />
-      )}
+                {/* ORDERS SECTION */}
+                {activeSection === 'orders' && role !== 'shop' && (
+                    <div className="animate-slide-up">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Order History</h2>
+                        <div className="space-y-4">
+                            {filteredOrders.map(order => (
+                                <div key={order.id} onClick={() => setSelectedOrder(order)} className="bg-[#1e232e] p-6 rounded-[2rem] border border-gray-800 hover:border-blue-500/30 transition-all cursor-pointer group flex items-center justify-between">
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <span className={`w-2 h-2 rounded-full ${order.status === 'completed' ? 'bg-green-500' : order.status === 'canceled' ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'}`}></span>
+                                            <h4 className="text-white font-black uppercase tracking-tighter text-lg">Order #{order.id.slice(0,6)}</h4>
+                                        </div>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-2">
+                                            <span>{order.profile?.username}</span> • <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-white font-black text-xl italic tracking-tighter">{order.total_amount.toFixed(2)} DH</p>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-blue-500 group-hover:underline">View Details</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
-      {selectedRedemption && (
-          <AdminRedemptionModal
-            redemption={selectedRedemption}
-            currentUser={role === 'full' && profiles.find(p => p.id === session.user.id) ? profiles.find(p => p.id === session.user.id)! : { id: 'admin-mod', username: 'Moderator', email: 'mod@system', wallet_balance: 0, vip_level: 0, vip_points: 0, discord_points: 0, total_donated: 0, avatar_url: '' }}
-            onClose={() => { setSelectedRedemption(null); fetchData(); }}
-          />
-      )}
+                {/* REDEMPTIONS SECTION */}
+                {activeSection === 'redemptions' && role !== 'shop' && (
+                    <div className="animate-slide-up">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Redemption Requests</h2>
+                        <div className="space-y-4">
+                            {filteredRedemptions.map(r => (
+                                <div key={r.id} onClick={() => setSelectedRedemption(r)} className="bg-[#1e232e] p-6 rounded-[2rem] border border-gray-800 hover:border-purple-500/30 transition-all cursor-pointer group flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <img src={r.point_product?.image_url} className="w-12 h-12 rounded-lg object-cover bg-black" />
+                                        <div>
+                                            <h4 className="text-white font-black uppercase tracking-tighter text-sm">{r.point_product?.name}</h4>
+                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                                                {r.profile?.username} • {r.cost_at_redemption} PTS
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className={`px-3 py-1 rounded text-[9px] font-black uppercase tracking-widest ${r.status === 'delivered' ? 'bg-green-500/20 text-green-500' : 'bg-yellow-500/20 text-yellow-500'}`}>{r.status}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* COUPONS SECTION */}
+                {activeSection === 'coupons' && role === 'full' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Coupons</h2>
+                            <button onClick={() => { setEditingCoupon(null); setIsCouponModalOpen(true); }} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 shadow-lg shadow-indigo-900/20 hover:bg-indigo-700 transition-all">
+                                <PlusCircle className="w-4 h-4" /> Create Coupon
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {filteredCoupons.map(c => (
+                                <div key={c.id} className="bg-[#1e232e] p-6 rounded-[2rem] border border-gray-800 relative group">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <h3 className="text-2xl font-mono font-black text-white tracking-widest">{c.code}</h3>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => { setEditingCoupon(c); setIsCouponModalOpen(true); }} className="p-2 bg-[#0b0e14] rounded-lg text-gray-400 hover:text-white"><Edit2 className="w-4 h-4"/></button>
+                                            <button onClick={() => handleDeleteCoupon(c.id)} className="p-2 bg-[#0b0e14] rounded-lg text-red-500 hover:text-red-400"><Trash2 className="w-4 h-4"/></button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest flex justify-between">
+                                            <span>Value:</span> <span className="text-white">{c.discount_value} {c.discount_type === 'percent' ? '%' : 'DH'}</span>
+                                        </p>
+                                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest flex justify-between">
+                                            <span>Uses:</span> <span className="text-white">{c.usage_count} / {c.max_uses || '∞'}</span>
+                                        </p>
+                                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest flex justify-between">
+                                            <span>Status:</span> <span className={c.is_active ? 'text-green-500' : 'text-red-500'}>{c.is_active ? 'Active' : 'Inactive'}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* POINTS SHOP MANAGEMENT SECTION */}
+                {activeSection === 'pointsShop' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Reward Items</h2>
+                            <button onClick={() => { setEditingPointProduct(null); setIsPointProductModalOpen(true); }} className="bg-purple-600 text-white px-6 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 shadow-lg shadow-purple-900/20 hover:bg-purple-700 transition-all">
+                                <PlusCircle className="w-4 h-4" /> Add Reward
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredPointProducts.map(p => (
+                                <div key={p.id} className="bg-[#1e232e] p-4 rounded-[2rem] border border-gray-800 relative group flex flex-col">
+                                    <div className="h-40 bg-black rounded-xl mb-4 overflow-hidden">
+                                        <img src={p.image_url} className="w-full h-full object-cover" />
+                                    </div>
+                                    <h3 className="text-white font-black uppercase tracking-tighter text-lg leading-none mb-1">{p.name}</h3>
+                                    <p className="text-purple-400 font-black italic text-sm mb-4">{p.cost} PTS</p>
+                                    <div className="mt-auto flex gap-2">
+                                        <button onClick={() => { setEditingPointProduct(p); setIsPointProductModalOpen(true); }} className="flex-1 py-3 bg-[#0b0e14] rounded-xl text-xs font-black uppercase tracking-widest text-white hover:bg-blue-600 transition-all">Edit</button>
+                                        <button onClick={() => handleDeletePointProduct(p.id)} className="px-4 py-3 bg-[#0b0e14] rounded-xl text-red-500 hover:bg-red-900/20 transition-all"><Trash2 className="w-4 h-4"/></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* DONATIONS SECTION */}
+                {activeSection === 'donations' && role !== 'shop' && (
+                    <div className="animate-slide-up">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Recent Donations</h2>
+                        <div className="space-y-4">
+                            {filteredDonations.map(d => (
+                                <div key={d.id} className="bg-[#1e232e] p-6 rounded-[2rem] border border-gray-800 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-3 bg-yellow-900/20 rounded-xl text-yellow-500"><Heart className="w-5 h-5 fill-current" /></div>
+                                        <div>
+                                            <h4 className="text-white font-black uppercase tracking-tighter text-lg">{d.amount.toFixed(2)} DH</h4>
+                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{d.profile?.username || 'Guest'} • {new Date(d.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-[10px] text-gray-600 font-mono">{d.transaction_id}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* SYSTEM SETTINGS SECTION */}
+                {activeSection === 'system' && role === 'full' && (
+                    <div className="animate-slide-up max-w-2xl">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Global Config</h2>
+                        <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 space-y-6">
+                            
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Referral Reward (DH)</label>
+                                <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={referralReward} onChange={e => setReferralReward(e.target.value)} />
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Announcement Mode</label>
+                                <select className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500 appearance-none" value={announcementMode} onChange={e => setAnnouncementMode(e.target.value)}>
+                                    <option value="rotation">Auto Rotation (Sale/Referral)</option>
+                                    <option value="sale">Flash Sale Only</option>
+                                    <option value="referral">Referral Only</option>
+                                    <option value="custom">Custom Message</option>
+                                    <option value="off">Disabled</option>
+                                </select>
+                            </div>
+
+                            {announcementMode === 'custom' && (
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Custom Text</label>
+                                    <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={announcementText} onChange={e => setAnnouncementText(e.target.value)} />
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Flash Sale Code</label>
+                                <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500 uppercase" value={saleCode} onChange={e => setSaleCode(e.target.value)} />
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Site Background URL (Optional)</label>
+                                <div className="flex gap-2">
+                                    <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={siteBackground} onChange={e => setSiteBackground(e.target.value)} placeholder="https://..." />
+                                    {siteBackground && <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-800 flex-shrink-0"><img src={siteBackground} className="w-full h-full object-cover" /></div>}
+                                </div>
+                            </div>
+
+                            <button onClick={handleSaveSettings} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl uppercase tracking-widest text-xs shadow-lg shadow-indigo-900/20 transition-all flex items-center justify-center gap-2">
+                                <Save className="w-4 h-4" /> Save Configuration
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+            </div>
+        </main>
+
+        {/* Modals */}
+        {isProductModalOpen && <ProductFormModal product={editingProduct} onClose={() => setIsProductModalOpen(false)} onSave={handleSaveProduct} />}
+        {isPointProductModalOpen && <PointProductFormModal product={editingPointProduct} onClose={() => setIsPointProductModalOpen(false)} onSave={handleSavePointProduct} />}
+        {isCouponModalOpen && <CouponFormModal coupon={editingCoupon} onClose={() => setIsCouponModalOpen(false)} onSave={handleSaveCoupon} />}
+        {isTournamentModalOpen && <TournamentFormModal tournament={editingTournament} onClose={() => setIsTournamentModalOpen(false)} onSave={handleSaveTournament} />}
+        {isVisitsModalOpen && <VisitHistoryModal logs={logs} onClose={() => setIsVisitsModalOpen(false)} />}
+        
+        {editingUser && (
+            <BalanceEditorModal 
+                user={editingUser} 
+                onClose={() => setEditingUser(null)} 
+                onSave={handleUpdateBalance} 
+            />
+        )}
+        
+        {selectedOrder && adminProfile && (
+            <AdminOrderModal 
+                order={selectedOrder} 
+                currentUser={adminProfile}
+                onClose={() => setSelectedOrder(null)} 
+            />
+        )}
+        
+        {selectedRedemption && adminProfile && (
+            <AdminRedemptionModal
+                redemption={selectedRedemption}
+                currentUser={adminProfile}
+                onClose={() => setSelectedRedemption(null)}
+            />
+        )}
     </div>
   );
 };

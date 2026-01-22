@@ -186,6 +186,10 @@ create table if not exists public.app_settings (
 
 -- Insert Default Settings
 insert into public.app_settings (key, value) values ('referral_reward', '10') on conflict do nothing;
+insert into public.app_settings (key, value) values ('announcement_mode', 'rotation') on conflict do nothing;
+insert into public.app_settings (key, value) values ('announcement_text', 'Welcome to Moon Night Store!') on conflict do nothing;
+insert into public.app_settings (key, value) values ('sale_code', 'MOON20') on conflict do nothing;
+insert into public.app_settings (key, value) values ('site_background', '') on conflict do nothing;
 
 -- ENABLE ROW LEVEL SECURITY
 alter table public.profiles enable row level security;
@@ -215,11 +219,13 @@ create policy "Users insert own" on public.profiles for insert with check (auth.
 drop policy if exists "Users update own" on public.profiles;
 create policy "Users update own" on public.profiles for update using (auth.uid() = id);
 
--- App Settings (Read Public, Write Admin/All for simplicity in this context)
+-- App Settings
+drop policy if exists "Public read settings" on public.app_settings;
 create policy "Public read settings" on public.app_settings for select using (true);
+drop policy if exists "Admin manage settings" on public.app_settings;
 create policy "Admin manage settings" on public.app_settings for all using (true);
 
--- Products (Read Public, Write Admin/All for now to enable Admin Panel usage)
+-- Products
 drop policy if exists "Public products" on public.products;
 create policy "Public products" on public.products for select using (true);
 drop policy if exists "Admin insert products" on public.products;
@@ -231,11 +237,11 @@ create policy "Admin delete products" on public.products for delete using (true)
 
 -- Orders
 drop policy if exists "User view orders" on public.orders;
-create policy "User view orders" on public.orders for select using (auth.uid() = user_id or user_id is null); -- allow fetching for admin logic/stats generally or specific RLS
+create policy "User view orders" on public.orders for select using (auth.uid() = user_id or user_id is null);
 drop policy if exists "User insert orders" on public.orders;
 create policy "User insert orders" on public.orders for insert with check (auth.uid() = user_id);
 drop policy if exists "User update orders" on public.orders;
-create policy "User update orders" on public.orders for update using (true); -- Allow admin updates
+create policy "User update orders" on public.orders for update using (true);
 
 -- Order Items
 drop policy if exists "View order items" on public.order_items;
@@ -253,17 +259,25 @@ create policy "Insert reviews" on public.reviews for insert with check (auth.uid
 drop policy if exists "User cart" on public.cart_items;
 create policy "User cart" on public.cart_items for all using (auth.uid() = user_id);
 
--- Messages & Others (Simplified for development)
+-- Messages & Others
+drop policy if exists "Public read all" on public.order_messages;
 create policy "Public read all" on public.order_messages for select using (true);
+drop policy if exists "Public insert all" on public.order_messages;
 create policy "Public insert all" on public.order_messages for insert with check (true);
 
+drop policy if exists "Public read all" on public.point_products;
 create policy "Public read all" on public.point_products for select using (true);
+drop policy if exists "Admin manage all" on public.point_products;
 create policy "Admin manage all" on public.point_products for all using (true);
 
+drop policy if exists "Public read all" on public.tournaments;
 create policy "Public read all" on public.tournaments for select using (true);
+drop policy if exists "Admin manage all" on public.tournaments;
 create policy "Admin manage all" on public.tournaments for all using (true);
 
+drop policy if exists "Public read all" on public.donations;
 create policy "Public read all" on public.donations for select using (true);
+drop policy if exists "Insert donations" on public.donations;
 create policy "Insert donations" on public.donations for insert with check (true);
 
 -- AUTO PROFILE CREATION TRIGGER
