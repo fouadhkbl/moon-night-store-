@@ -61,111 +61,114 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
 
   return (
     <div className="animate-fade-in">
-      {/* Increased min-height to 1050px and z-index to 30 to ensure full visibility and proper layering over the next section */}
-      <section className="relative min-h-[1050px] flex items-center z-30">
+      {/* Hero Section - Updated to match screenshot */}
+      <section className="relative min-h-[90vh] flex items-center z-30 bg-[#0b0e14]">
         <div className="absolute inset-0 z-0 overflow-hidden">
+          {/* Using a darker arcade/neon image to match the vibe */}
           <img 
-            src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1920&q=80" 
-            className="w-full h-full object-cover opacity-50"
-            alt="Hero Background"
+            src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1920&q=80" 
+            className="w-full h-full object-cover opacity-40"
+            alt="Arcade Background"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0b0e14] via-[#0b0e14]/90 to-transparent"></div>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0b0e14]"></div>
+          {/* Strong dark blue gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0b0e14] via-[#0b0e14]/80 to-blue-900/20"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0b0e14]/50 to-[#0b0e14]"></div>
         </div>
-        {/* Increased bottom padding to pb-72 to push the boundary well below the buttons */}
-        <div className="container mx-auto px-4 relative z-20 pt-32 pb-72">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-blue-600/10 border border-blue-600/40 text-blue-400 text-[11px] font-black uppercase tracking-[0.4em] mb-10 shadow-2xl">
-              <Star className="w-4 h-4 fill-blue-400" /> {text.premium}
+        
+        <div className="container mx-auto px-4 relative z-20 pt-20 pb-40">
+          <div className="max-w-4xl">
+            {/* Premium Badge */}
+            <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-[#151a23] border border-blue-900/50 text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-8 shadow-2xl">
+              <Star className="w-3 h-3 fill-blue-400" /> {text.premium}
             </div>
-            <h1 className="text-6xl md:text-8xl lg:text-[9rem] font-black italic tracking-tighter text-white leading-[0.85] mb-10 uppercase">
-              MOON <span className="text-blue-500">NIGHT</span><br />
-              <span className="text-cyan-400">STORE</span>
+            
+            {/* Main Title - Stacked Typography matching screenshot */}
+            <h1 className="text-7xl md:text-9xl font-black italic tracking-tighter leading-[0.85] mb-8 uppercase drop-shadow-2xl">
+              <span className="text-gray-600">MOON</span><br />
+              <span className="text-blue-900">NIGHT</span><br />
+              <span className="text-cyan-500">STORE</span>
             </h1>
-            <p className="text-base md:text-xl text-gray-400 mb-12 leading-relaxed font-bold uppercase tracking-[0.2em] max-w-xl opacity-80">
+            
+            <p className="text-sm md:text-base text-gray-400 mb-12 leading-relaxed font-bold uppercase tracking-[0.25em] max-w-xl opacity-80 border-l-2 border-blue-600 pl-6">
               {text.desc}
             </p>
             
-            <div className="flex flex-col gap-6 max-w-fit relative z-30">
-              <div className="flex flex-wrap gap-4 items-center">
-                <button 
-                  onClick={() => onNavigate('shop')}
-                  className="h-[64px] bg-transparent border-2 border-red-600 hover:border-red-500 hover:bg-red-500 hover:text-white text-red-500 px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-lg shadow-red-600/10 hover:shadow-red-600/30"
-                >
-                  {text.browse} <ChevronRight className="w-5 h-5" />
-                </button>
-                
-                <button 
-                  onClick={() => onNavigate('pointsShop')}
-                  className="h-[64px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-10 rounded-2xl font-black text-lg transition-all flex items-center gap-3 uppercase tracking-tighter shadow-2xl shadow-purple-600/30"
-                >
-                  <Trophy className="w-5 h-5" /> Points Shop
-                </button>
-              </div>
+            <div className="flex flex-wrap gap-4 items-center">
+              <button 
+                onClick={() => onNavigate('shop')}
+                className="h-[60px] bg-blue-600 hover:bg-blue-700 text-white px-10 rounded-xl font-black text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-2xl shadow-blue-600/20 group"
+              >
+                {text.browse} <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+              
+              <button 
+                onClick={() => onNavigate('pointsShop')}
+                className="h-[60px] bg-[#1e232e] border border-gray-800 hover:border-purple-500 text-white px-10 rounded-xl font-black text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl"
+              >
+                <Trophy className="w-4 h-4 text-purple-500" /> Points Shop
+              </button>
 
-              <div className="flex justify-center w-full">
-                <button 
-                    onClick={() => onNavigate('tournaments')}
-                    className="h-[52px] bg-[#1e232e] border border-pink-500 hover:bg-pink-600 hover:border-pink-600 text-white px-10 rounded-xl font-black text-sm transition-all flex items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(236,72,153,0.2)] hover:shadow-[0_0_25px_rgba(236,72,153,0.4)] active:scale-95 group relative z-40"
-                >
-                    <Swords className="w-4 h-4 text-pink-500 group-hover:text-white transition-colors" /> 
-                    <span>{text.compete}</span>
-                </button>
-              </div>
+              <button 
+                onClick={() => onNavigate('tournaments')}
+                className="h-[60px] bg-[#1e232e] border border-gray-800 hover:border-pink-500 text-white px-10 rounded-xl font-black text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl"
+              >
+                <Swords className="w-4 h-4 text-pink-500" /> {text.compete}
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-32 bg-[#0b0e14] relative z-10">
+      <section className="py-24 bg-[#0b0e14] relative z-10">
         <div className="container mx-auto px-4">
-          <div className="mb-24 text-center md:text-left">
-            <p className="text-blue-500 font-black uppercase text-[12px] tracking-[0.4em] mb-4">{text.depts}</p>
-            <h2 className="text-6xl md:text-8xl font-black text-white italic uppercase tracking-tighter leading-none">{text.products}</h2>
+          <div className="mb-16 text-center md:text-left flex flex-col md:flex-row justify-between items-end gap-6">
+            <div>
+                <p className="text-blue-600 font-black uppercase text-[10px] tracking-[0.4em] mb-2">{text.depts}</p>
+                <h2 className="text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter leading-none">{text.products}</h2>
+            </div>
+            
+            {/* Scroll Controls */}
+            <div className="flex gap-2 hidden md:flex">
+                <button 
+                    onClick={() => scroll('left')}
+                    className="bg-[#1e232e] border border-gray-800 hover:border-blue-500 text-white p-4 rounded-xl transition-all shadow-lg active:scale-95"
+                >
+                    <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button 
+                    onClick={() => scroll('right')}
+                    className="bg-[#1e232e] border border-gray-800 hover:border-blue-500 text-white p-4 rounded-xl transition-all shadow-lg active:scale-95"
+                >
+                    <ChevronRight className="w-5 h-5" />
+                </button>
+            </div>
           </div>
           
           <div className="relative group">
-              {/* Navigation Arrows for PC */}
-              <button 
-                  onClick={() => scroll('left')}
-                  className="absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 z-40 bg-[#1e232e] border border-gray-800 text-white p-4 rounded-full shadow-2xl hover:bg-blue-600 hover:border-blue-600 transition-all hidden md:flex items-center justify-center group-hover:scale-110 active:scale-95"
-                  aria-label="Scroll Left"
-              >
-                  <ChevronLeft className="w-6 h-6" />
-              </button>
-              
-              <button 
-                  onClick={() => scroll('right')}
-                  className="absolute -right-4 md:-right-6 top-1/2 -translate-y-1/2 z-40 bg-[#1e232e] border border-gray-800 text-white p-4 rounded-full shadow-2xl hover:bg-blue-600 hover:border-blue-600 transition-all hidden md:flex items-center justify-center group-hover:scale-110 active:scale-95"
-                  aria-label="Scroll Right"
-              >
-                  <ChevronRight className="w-6 h-6" />
-              </button>
-
               {/* Flex Container for Scrolling */}
               <div 
                   ref={scrollContainerRef} 
-                  className="flex overflow-x-auto gap-6 pb-12 custom-scrollbar snap-x snap-mandatory scroll-smooth"
+                  className="flex overflow-x-auto gap-6 pb-12 custom-scrollbar snap-x snap-mandatory scroll-smooth no-scrollbar"
               >
                 {[
-                  { id: GameCategory.ACCOUNTS, icon: Users, label: text.cats[GameCategory.ACCOUNTS], color: 'from-pink-400/20' },
-                  { id: GameCategory.COINS, icon: Coins, label: text.cats[GameCategory.COINS], color: 'from-yellow-400/20' },
-                  { id: GameCategory.KEYS, icon: Key, label: text.cats[GameCategory.KEYS], color: 'from-cyan-400/20' },
-                  { id: GameCategory.ITEMS, icon: Sword, label: text.cats[GameCategory.ITEMS], color: 'from-red-400/20' },
-                  { id: GameCategory.BOOSTING, icon: ArrowUpCircle, label: text.cats[GameCategory.BOOSTING], color: 'from-green-400/20' },
-                  { id: GameCategory.GIFT_CARD, icon: Gift, label: text.cats[GameCategory.GIFT_CARD], color: 'from-purple-400/20' },
-                  { id: GameCategory.SUBSCRIPTION, icon: Calendar, label: text.cats[GameCategory.SUBSCRIPTION], color: 'from-blue-400/20' },
+                  { id: GameCategory.ACCOUNTS, icon: Users, label: text.cats[GameCategory.ACCOUNTS], color: 'from-pink-500/20', accent: 'text-pink-500' },
+                  { id: GameCategory.COINS, icon: Coins, label: text.cats[GameCategory.COINS], color: 'from-yellow-500/20', accent: 'text-yellow-500' },
+                  { id: GameCategory.KEYS, icon: Key, label: text.cats[GameCategory.KEYS], color: 'from-cyan-500/20', accent: 'text-cyan-500' },
+                  { id: GameCategory.ITEMS, icon: Sword, label: text.cats[GameCategory.ITEMS], color: 'from-red-500/20', accent: 'text-red-500' },
+                  { id: GameCategory.BOOSTING, icon: ArrowUpCircle, label: text.cats[GameCategory.BOOSTING], color: 'from-green-500/20', accent: 'text-green-500' },
+                  { id: GameCategory.GIFT_CARD, icon: Gift, label: text.cats[GameCategory.GIFT_CARD], color: 'from-purple-500/20', accent: 'text-purple-500' },
+                  { id: GameCategory.SUBSCRIPTION, icon: Calendar, label: text.cats[GameCategory.SUBSCRIPTION], color: 'from-blue-500/20', accent: 'text-blue-500' },
                 ].map((cat) => (
                   <button 
                     key={cat.id}
                     onClick={() => { onSelectCategory(cat.id); onNavigate('shop'); }}
-                    className="min-w-[200px] md:min-w-[240px] snap-center group relative bg-[#1e232e] border border-gray-800 p-10 rounded-[2.5rem] flex flex-col items-center gap-6 hover:border-blue-500 transition-all duration-500 overflow-hidden shadow-2xl hover:-translate-y-4"
+                    className="min-w-[220px] snap-center group relative bg-[#1e232e] border border-gray-800 p-8 rounded-[2rem] flex flex-col items-center gap-6 hover:border-blue-500/50 transition-all duration-500 overflow-hidden shadow-2xl hover:-translate-y-2"
                   >
                     <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-                    <div className="relative z-10 text-gray-500 group-hover:text-blue-400 transition-all duration-500 group-hover:scale-125">
-                      <cat.icon size={48} strokeWidth={1.5} />
+                    <div className={`relative z-10 ${cat.accent} transition-all duration-500 group-hover:scale-110 p-4 bg-[#0b0e14] rounded-2xl border border-gray-800`}>
+                      <cat.icon size={32} strokeWidth={2} />
                     </div>
-                    <span className="relative z-10 font-black text-gray-400 group-hover:text-white uppercase tracking-[0.3em] text-[10px]">{cat.label}</span>
+                    <span className="relative z-10 font-black text-gray-400 group-hover:text-white uppercase tracking-[0.2em] text-[10px]">{cat.label}</span>
                   </button>
                 ))}
               </div>
