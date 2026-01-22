@@ -259,6 +259,7 @@ const App: React.FC = () => {
           product={selectedProduct} 
           onClose={() => setSelectedProduct(null)} 
           onAddToCart={handleAddToCart}
+          onSwitchProduct={(p) => setSelectedProduct(p)}
         />
       )}
       

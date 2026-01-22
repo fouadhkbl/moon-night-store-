@@ -1,3 +1,4 @@
+
 export interface Product {
   id: string;
   name: string;
@@ -7,10 +8,10 @@ export interface Product {
   image_url: string;
   stock: number;
   platform: string;
-  country?: string; // New field for region/country
+  country?: string; 
   is_trending: boolean;
-  is_vip?: boolean; // New field for VIP status
-  is_hidden?: boolean; // New field for visibility
+  is_vip?: boolean; 
+  is_hidden?: boolean; 
   created_at: string;
 }
 
@@ -24,8 +25,18 @@ export interface Profile {
   vip_level: number;
   vip_points: number;
   discord_points: number; 
-  total_donated: number; // Added total_donated
+  total_donated: number; 
   auth_provider?: string;
+}
+
+export interface Review {
+  id: string;
+  product_id: string;
+  user_id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  profile?: Profile;
 }
 
 export interface CartItem {
@@ -44,7 +55,7 @@ export interface Order {
   transaction_id?: string;
   created_at: string;
   items?: OrderItem[];
-  profile?: Profile; // For admin view
+  profile?: Profile; 
 }
 
 export interface OrderItem {
@@ -96,7 +107,7 @@ export interface PointTransaction {
   money_equivalent: number;
   status: 'pending' | 'completed' | 'rejected';
   created_at: string;
-  profile?: Profile; // Added for Admin Join
+  profile?: Profile; 
 }
 
 export interface PointProduct {
@@ -118,7 +129,7 @@ export interface PointRedemption {
   status: string;
   created_at: string;
   point_product?: PointProduct;
-  profile?: Profile; // For Admin
+  profile?: Profile;
 }
 
 export interface Donation {

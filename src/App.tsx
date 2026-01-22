@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import { Product, CartItem, GameCategory, Tournament } from './types';
@@ -18,7 +19,56 @@ import { DonatePage } from './pages/DonatePage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { TournamentsPage } from './pages/TournamentsPage';
 import { TournamentDetailsPage } from './pages/TournamentDetailsPage';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShoppingBag, X } from 'lucide-react';
+
+// New Component: Live Sales Notification
+const LiveSalesNotification = () => {
+    const [visible, setVisible] = useState(false);
+    const [message, setMessage] = useState('');
+    
+    const locations = ['Casablanca', 'Rabat', 'Marrakech', 'Tangier', 'Agadir', 'Fes'];
+    const items = ['Valorant Points', 'Steam Key', 'Netflix Account', 'Discord Nitro', 'GTA V Account', 'PUBG UC'];
+
+    useEffect(() => {
+        const showNotification = () => {
+            const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+            const randomItem = items[Math.floor(Math.random() * items.length)];
+            setMessage(`Someone in ${randomLocation} purchased ${randomItem}`);
+            setVisible(true);
+
+            setTimeout(() => {
+                setVisible(false);
+            }, 5000); 
+        };
+
+        // First notification after 5 sec
+        const initialTimer = setTimeout(showNotification, 5000);
+
+        // Then every 45 sec
+        const interval = setInterval(showNotification, 45000);
+
+        return () => {
+            clearTimeout(initialTimer);
+            clearInterval(interval);
+        };
+    }, []);
+
+    if (!visible) return null;
+
+    return (
+        <div className="fixed bottom-4 left-4 z-[90] bg-[#1e232e]/90 backdrop-blur-md border border-blue-500/30 p-4 rounded-2xl shadow-2xl animate-slide-up max-w-xs flex items-center gap-4">
+            <button onClick={() => setVisible(false)} className="absolute -top-2 -right-2 bg-black text-gray-400 rounded-full p-1 border border-gray-700 hover:text-white"><X className="w-3 h-3" /></button>
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg animate-pulse">
+                <ShoppingBag className="w-5 h-5" />
+            </div>
+            <div>
+                <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-0.5">Live Activity</p>
+                <p className="text-xs font-bold text-white leading-tight">{message}</p>
+                <p className="text-[9px] text-gray-500 mt-1">Just now</p>
+            </div>
+        </div>
+    );
+};
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -353,7 +403,6 @@ const App: React.FC = () => {
                       {searchQuery ? `${t.searching}: "${searchQuery}"` : (selectedCategory ? `${t.dept}: ${selectedCategory}` : t.allGlobal)}
                   </p>
                </div>
-               {/* Updated scrollbar class to custom-scrollbar to enable scrolling on PC */}
                <div className="flex items-center gap-4 overflow-x-auto overflow-y-hidden pb-4 custom-scrollbar max-w-full">
                   <button 
                     onClick={() => { setSelectedCategory(null); setSearchQuery(''); }}
@@ -437,12 +486,14 @@ const App: React.FC = () => {
       </main>
 
       <Footer onNavigate={handleNavigate} session={session} addToast={addToast} />
+      <LiveSalesNotification />
       
       {selectedProduct && (
         <ProductDetailsModal 
           product={selectedProduct} 
           onClose={() => setSelectedProduct(null)} 
           onAddToCart={handleAddToCart}
+          onSwitchProduct={(p) => setSelectedProduct(p)}
         />
       )}
       

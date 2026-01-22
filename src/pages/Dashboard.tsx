@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, Order, OrderItem, OrderMessage, PointRedemption, RedemptionMessage } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar } from 'lucide-react';
+import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar, LayoutDashboard, ClipboardList } from 'lucide-react';
 
 // --- SHARED CHAT MODAL LOGIC (Order & Redemption) ---
 // Note: Created separate components for simplicity in state management types
@@ -435,17 +435,17 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
     <div className="container mx-auto px-4 py-8 animate-fade-in pb-20">
        <div className="relative rounded-[2rem] overflow-hidden mb-12 shadow-2xl bg-[#1e232e]">
           <div className="h-48 bg-gradient-to-r from-blue-900 via-purple-900 to-[#1e232e]"></div>
-          <div className="px-8 pb-10 flex flex-col md:flex-row items-end -mt-16 gap-8">
-              <div className="w-40 h-40 rounded-3xl border-8 border-[#0b0e14] bg-[#1e232e] overflow-hidden shadow-2xl flex-shrink-0">
+          <div className="px-4 md:px-8 pb-10 flex flex-col md:flex-row items-center md:items-end -mt-16 gap-6 md:gap-8 text-center md:text-left">
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl border-8 border-[#0b0e14] bg-[#1e232e] overflow-hidden shadow-2xl flex-shrink-0">
                  <img src={profile?.avatar_url} className="w-full h-full object-cover" alt="Profile Avatar" />
               </div>
               <div className="flex-1 pb-2">
-                 <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-1 leading-none">{profile?.username}</h1>
+                 <h1 className="text-3xl md:text-4xl font-black text-white italic tracking-tighter uppercase mb-1 leading-none">{profile?.username}</h1>
                  <p className="text-gray-500 font-bold text-sm tracking-wide">{profile?.email}</p>
                  {!isGuest && <span className="bg-blue-600/10 text-blue-400 text-[9px] font-black px-3 py-1 rounded-lg uppercase mt-3 inline-block border border-blue-600/30 tracking-widest shadow-lg">Verified System Player</span>}
               </div>
-               <div className="flex flex-col items-end gap-3 pb-2 w-full md:w-auto">
-                 <div className="bg-[#0b0e14]/80 backdrop-blur-xl px-8 py-4 rounded-[2rem] border border-blue-500/30 flex items-center gap-4 shadow-2xl w-full md:w-auto">
+               <div className="flex flex-col items-center md:items-end gap-3 pb-2 w-full md:w-auto">
+                 <div className="bg-[#0b0e14]/80 backdrop-blur-xl px-8 py-4 rounded-[2rem] border border-blue-500/30 flex items-center gap-4 shadow-2xl w-full md:w-auto justify-between md:justify-end">
                     <div className="text-right">
                         <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest leading-none mb-1">Solde Balance</p>
                         <p className="text-3xl font-black text-yellow-400 italic tracking-tighter leading-none">{profile?.wallet_balance?.toFixed(2) || '0.00'} DH</p>
@@ -464,12 +464,20 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
           </div>
        </div>
 
-       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="bg-[#1e232e] rounded-[2rem] overflow-hidden border border-gray-800 shadow-2xl h-fit sticky top-24">
-             <button onClick={() => setActiveTab('overview')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'overview' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Dashboard</button>
-             <button onClick={() => setActiveTab('orders')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'orders' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Orders</button>
-             <button onClick={() => setActiveTab('wallet')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'wallet' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Wallet</button>
-             <button onClick={() => setActiveTab('points')} className={`w-full text-left p-6 flex items-center gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all ${activeTab === 'points' ? 'bg-purple-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>Discord Points</button>
+       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 relative">
+          <div className="bg-[#1e232e] rounded-2xl lg:rounded-[2rem] overflow-hidden border border-gray-800 shadow-2xl h-fit relative lg:sticky lg:top-24 z-30 flex flex-row lg:flex-col overflow-x-auto lg:overflow-visible scrollbar-hide mb-8 lg:mb-0">
+             <button onClick={() => setActiveTab('overview')} className={`flex-none lg:w-full text-left p-4 lg:p-6 flex items-center gap-3 lg:gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all whitespace-nowrap ${activeTab === 'overview' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>
+                 <LayoutDashboard className="w-4 h-4" /> Dashboard
+             </button>
+             <button onClick={() => setActiveTab('orders')} className={`flex-none lg:w-full text-left p-4 lg:p-6 flex items-center gap-3 lg:gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all whitespace-nowrap ${activeTab === 'orders' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>
+                 <ClipboardList className="w-4 h-4" /> Orders
+             </button>
+             <button onClick={() => setActiveTab('wallet')} className={`flex-none lg:w-full text-left p-4 lg:p-6 flex items-center gap-3 lg:gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all whitespace-nowrap ${activeTab === 'wallet' ? 'bg-blue-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>
+                 <Wallet className="w-4 h-4" /> Wallet
+             </button>
+             <button onClick={() => setActiveTab('points')} className={`flex-none lg:w-full text-left p-4 lg:p-6 flex items-center gap-3 lg:gap-4 uppercase text-[10px] font-black tracking-[0.2em] transition-all whitespace-nowrap ${activeTab === 'points' ? 'bg-purple-600 text-white shadow-xl' : 'text-gray-500 hover:text-white hover:bg-[#151a23]'}`}>
+                 <Coins className="w-4 h-4" /> Discord Points
+             </button>
           </div>
           <div className="lg:col-span-3">
              {activeTab === 'overview' && (
