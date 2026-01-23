@@ -20,8 +20,8 @@ import { LeaderboardPage } from './pages/LeaderboardPage';
 import { TournamentsPage } from './pages/TournamentsPage';
 import { TournamentDetailsPage } from './pages/TournamentDetailsPage';
 import { LootBoxPage } from './pages/LootBoxPage';
-import { ElitePage } from './pages/ElitePage'; // Import New Page
-import { Loader2, ShoppingBag, X, Zap, Clock, Users, Megaphone } from 'lucide-react';
+import { ElitePage } from './pages/ElitePage';
+import { Loader2, ShoppingBag, X, Megaphone } from 'lucide-react';
 
 // New Component: Dynamic Announcement Bar
 const AnnouncementBar = () => {

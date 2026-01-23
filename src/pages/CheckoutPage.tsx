@@ -72,7 +72,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
     ? 0 
     : 3 + (totalAfterDiscounts * 0.005);
 
-  const finalTotal = totalAfterDiscounts + processingFee;
+  const finalTotal = parseFloat((totalAfterDiscounts + processingFee).toFixed(2));
 
   // Fetch Wallet & VIP Status
   useEffect(() => {
@@ -174,22 +174,25 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       const { data: profileData, error: profileFetchError } = await supabase.from('profiles').select('wallet_balance, discord_points, referred_by').eq('id', session.user.id).single();
       if (profileFetchError) throw new Error("Failed to fetch user profile.");
       
-      const currentBalance = parseFloat(profileData.wallet_balance || '0');
-      const currentPoints = parseInt(profileData.discord_points || '0');
+      const currentBalance = parseFloat(String(profileData.wallet_balance || 0));
+      const currentPoints = parseInt(String(profileData.discord_points || 0));
+      const payAmount = parseFloat(finalTotal.toFixed(2));
 
       // Only check balance if paying via Wallet
-      if (method === 'Wallet' && currentBalance < finalTotal) {
+      if (method === 'Wallet' && currentBalance < payAmount) {
           throw new Error("Insufficient wallet funds.");
       }
 
-      const points = Math.floor(finalTotal * 10);
+      const points = Math.floor(payAmount * 10);
       setEarnedPoints(points);
 
       const profileUpdates: any = { discord_points: currentPoints + points };
       
       // Deduct balance ONLY if paying via Wallet
       if (method === 'Wallet') {
-          profileUpdates.wallet_balance = currentBalance - finalTotal;
+          // Use precision math to avoid floating point errors
+          const newBalance = parseFloat((currentBalance - payAmount).toFixed(2));
+          profileUpdates.wallet_balance = newBalance;
       }
 
       const { error: balanceError } = await supabase.from('profiles').update(profileUpdates).eq('id', session.user.id);
@@ -200,7 +203,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
 
       const { data: order, error: orderError } = await supabase.from('orders').insert({
           user_id: session.user.id,
-          total_amount: finalTotal,
+          total_amount: payAmount,
           status: method === 'Wallet' || method.includes('PayPal') ? 'completed' : 'pending',
           payment_method: method,
           transaction_id: paymentDetailsId || null
@@ -219,7 +222,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       if (itemsError) throw itemsError;
 
       if (points > 0) {
-          await supabase.from('point_transactions').insert({ user_id: session.user.id, points_amount: points, money_equivalent: finalTotal, status: 'completed' });
+          await supabase.from('point_transactions').insert({ user_id: session.user.id, points_amount: points, money_equivalent: payAmount, status: 'completed' });
       }
 
       // Affiliate Logic
@@ -227,7 +230,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
           const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'affiliate_order_reward_percentage').single();
           const commissionPercentage = setting ? parseFloat(setting.value) : 5.00;
           if (commissionPercentage > 0) {
-              const commissionAmount = (finalTotal * commissionPercentage) / 100;
+              const commissionAmount = parseFloat(((payAmount * commissionPercentage) / 100).toFixed(2));
               const { data: referrer } = await supabase.from('profiles').select('wallet_balance, referral_earnings').eq('id', profileData.referred_by).single();
               if (referrer) {
                   await supabase.from('profiles').update({
