@@ -795,7 +795,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                          <button onClick={() => handleDelete('tournaments', t.id, t.title)} className="p-2 bg-black/50 rounded-lg hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
                                      </div>
                                      <h3 className="text-xl font-black text-white italic uppercase">{t.title}</h3>
-                                     <p className="text-gray-500 text-xs mb-4">{new Date(t.start_date).toLocaleDateString()} • {t.status}</p>
+                                     <p className="text-gray-500 text-xs mb-4">
+                                         {new Date(t.start_date).toLocaleDateString()} • {t.status}
+                                     </p>
                                      <div className="flex gap-4 text-xs font-bold text-gray-400">
                                          <span>Players: {t.current_participants}/{t.max_participants}</span>
                                          <span>Prize: {t.prize_pool}</span>
