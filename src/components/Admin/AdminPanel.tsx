@@ -264,7 +264,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
             <div className="bg-[#1e232e] w-full max-w-5xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
                 <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto custom-scrollbar">
-                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-4">Order #{order.id.slice(0,6)}</h3>
+                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-4">Order #{order.id.slice(0, 6)}</h3>
                     
                     <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Customer</p>
@@ -782,7 +782,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                          <button onClick={() => handleDelete('tournaments', t.id, t.title)} className="p-2 bg-black/50 rounded-lg hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
                                      </div>
                                      <h3 className="text-xl font-black text-white italic uppercase">{t.title}</h3>
-                                     <p className="text-gray-500 text-xs mb-4">{new Date(t.start_date).toLocaleDateString() • {t.status}}</p>
+                                     <p className="text-gray-500 text-xs mb-4">{new Date(t.start_date).toLocaleDateString()} • {t.status}</p>
                                      <div className="flex gap-4 text-xs font-bold text-gray-400">
                                          <span>Players: {t.current_participants}/{t.max_participants}</span>
                                          <span>Prize: {t.prize_pool}</span>
