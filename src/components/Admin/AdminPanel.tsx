@@ -446,7 +446,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         } else if (activeSection === 'stats') {
             const { data: logData } = await supabase.from('access_logs').select('*').order('created_at', { ascending: false }).limit(100);
             if (logData) setLogs(logData);
-            // Also fetch recent orders for stats
             const { data: orderData } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10);
             if(orderData) setOrders(orderData);
         }
