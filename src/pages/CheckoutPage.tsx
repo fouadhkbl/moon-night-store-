@@ -220,7 +220,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       const { data: order, error: orderError } = await supabase.from('orders').insert({
           user_id: session.user.id,
           total_amount: payAmount,
-          status: method === 'Wallet' || method.includes('PayPal') ? 'completed' : 'pending',
+          status: 'pending', // Default status is now pending for admin review
           payment_method: method,
           transaction_id: paymentDetailsId || null
         }).select().single();
