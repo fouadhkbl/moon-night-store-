@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament, Announcement, LootBox, LootBoxOpen, SpinWheelItem } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save, Megaphone, Image, LogOut, Crown, Zap, History, RotateCw, PieChart, AlertCircle } from 'lucide-react';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save, Megaphone, Image, LogOut, Crown, Zap, History, RotateCw, PieChart, AlertCircle, Loader2 } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal, AnnouncementFormModal, ReferralEditorModal, LootBoxFormModal, SpinWheelItemFormModal } from './AdminModals';
 
 const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
@@ -370,6 +370,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [lootBoxes, setLootBoxes] = useState<LootBox[]>([]);
   const [wheelItems, setWheelItems] = useState<SpinWheelItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Modals States
   const [visitHistoryOpen, setVisitHistoryOpen] = useState(false);
@@ -407,45 +408,51 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   }, [session]);
 
   const fetchData = useCallback(async () => {
-      if (activeSection === 'products') {
-          const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-          if(data) setProducts(data);
-      } else if (activeSection === 'users') {
-          const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-          if(data) setProfiles(data);
-      } else if (activeSection === 'orders') {
-          const { data } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
-          if(data) setOrders(data);
-      } else if (activeSection === 'coupons') {
-          const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
-          if(data) setCoupons(data);
-      } else if (activeSection === 'pointsShop') {
-          const { data } = await supabase.from('point_products').select('*').order('created_at', { ascending: false });
-          if(data) setPointProducts(data);
-      } else if (activeSection === 'redemptions') {
-          const { data } = await supabase.from('point_redemptions').select('*, profile:profiles(*), point_product:point_products(*)').order('created_at', { ascending: false });
-          if(data) setPointRedemptions(data);
-      } else if (activeSection === 'donations') {
-          const { data } = await supabase.from('donations').select('*, profile:profiles(*)').order('created_at', { ascending: false });
-          if(data) setDonations(data);
-      } else if (activeSection === 'tournaments') {
-          const { data } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
-          if(data) setTournaments(data);
-      } else if (activeSection === 'announcements') {
-          const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
-          if(data) setAnnouncements(data);
-      } else if (activeSection === 'lootBoxes') {
-          const { data } = await supabase.from('loot_boxes').select('*').order('price', { ascending: true });
-          if(data) setLootBoxes(data);
-      } else if (activeSection === 'wheel') {
-          const { data } = await supabase.from('spin_wheel_items').select('*').order('created_at', { ascending: false });
-          if(data) setWheelItems(data);
-      } else if (activeSection === 'stats') {
-          const { data: logData } = await supabase.from('access_logs').select('*').order('created_at', { ascending: false }).limit(100);
-          if (logData) setLogs(logData);
-          // Also fetch recent orders for stats
-          const { data: orderData } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10);
-          if(orderData) setOrders(orderData);
+      setIsLoading(true);
+      try {
+        if (activeSection === 'products') {
+            const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+            if(data) setProducts(data);
+        } else if (activeSection === 'users') {
+            const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+            if(data) setProfiles(data);
+        } else if (activeSection === 'orders') {
+            const { data } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
+            if(data) setOrders(data);
+        } else if (activeSection === 'coupons') {
+            const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+            if(data) setCoupons(data);
+        } else if (activeSection === 'pointsShop') {
+            const { data } = await supabase.from('point_products').select('*').order('created_at', { ascending: false });
+            if(data) setPointProducts(data);
+        } else if (activeSection === 'redemptions') {
+            const { data } = await supabase.from('point_redemptions').select('*, profile:profiles(*), point_product:point_products(*)').order('created_at', { ascending: false });
+            if(data) setPointRedemptions(data);
+        } else if (activeSection === 'donations') {
+            const { data } = await supabase.from('donations').select('*, profile:profiles(*)').order('created_at', { ascending: false });
+            if(data) setDonations(data);
+        } else if (activeSection === 'tournaments') {
+            const { data } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
+            if(data) setTournaments(data);
+        } else if (activeSection === 'announcements') {
+            const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+            if(data) setAnnouncements(data);
+        } else if (activeSection === 'lootBoxes') {
+            const { data } = await supabase.from('loot_boxes').select('*').order('price', { ascending: true });
+            if(data) setLootBoxes(data);
+        } else if (activeSection === 'wheel') {
+            const { data } = await supabase.from('spin_wheel_items').select('*').order('created_at', { ascending: false });
+            if(data) setWheelItems(data);
+        } else if (activeSection === 'stats') {
+            const { data: logData } = await supabase.from('access_logs').select('*').order('created_at', { ascending: false }).limit(100);
+            if (logData) setLogs(logData);
+            const { data: orderData } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10);
+            if(orderData) setOrders(orderData);
+        }
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsLoading(false);
       }
   }, [activeSection]);
 
@@ -585,6 +592,12 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
              {/* Dynamic Content */}
              <div className="flex-1 overflow-y-auto p-6 bg-[#0b0e14]">
                  
+                 {isLoading ? (
+                     <div className="flex items-center justify-center h-full">
+                         <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
+                     </div>
+                 ) : (
+                 <>
                  {/* STATS */}
                  {activeSection === 'stats' && (
                      <div className="space-y-6">
@@ -866,6 +879,8 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                              </div>
                          ))}
                      </div>
+                 )}
+                 </>
                  )}
 
              </div>
