@@ -152,13 +152,6 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
                     <Crown className="w-4 h-4 text-yellow-200" /> Join Elite
                   </button>
               )}
-
-              <button 
-                onClick={() => onNavigate('tournaments')}
-                className="h-[50px] md:h-[60px] bg-[#1e232e] border border-gray-800 hover:border-pink-500 text-white px-8 md:px-10 rounded-xl font-black text-xs md:text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl hover:text-pink-500"
-              >
-                <Swords className="w-4 h-4" /> {text.compete}
-              </button>
             </div>
           </div>
         </div>
@@ -221,7 +214,19 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
                         className={`bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden cursor-pointer group transition-all shadow-xl hover:-translate-y-2 ${index === 0 ? 'hover:border-blue-500 shadow-blue-500/10' : 'hover:border-red-500/50'}`}
                       >
                           <div className="relative h-80 bg-black">
-                              <img src={product.image_url} alt={product.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
+                              <img 
+                                src={product.image_url} 
+                                alt={product.name} 
+                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" 
+                                onError={(e) => { 
+                                    const target = e.target as HTMLImageElement;
+                                    if (product.image_url_2 && target.src !== product.image_url_2) {
+                                        target.src = product.image_url_2;
+                                    } else {
+                                        target.src = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80';
+                                    }
+                                }}
+                              />
                               <div className="absolute top-3 right-3 bg-red-600 text-white text-[9px] font-black px-2 py-1 rounded uppercase tracking-widest shadow-lg">Hot</div>
                           </div>
                           <div className="p-5">

@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product } from '../../types';
-import { ShoppingCart, Plus, Globe, Smartphone, Monitor, Gamepad2, Layers, Crown, Star, Eye } from 'lucide-react';
+import { ShoppingCart, Plus, Globe, Smartphone, Monitor, Gamepad2, Layers, Crown, Star, Eye, ArrowUpDown, Flame } from 'lucide-react';
 
 export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { category: string | null, searchQuery: string, onProductClick: (p: Product) => void, language: 'en' | 'fr' }) => {
    const [products, setProducts] = useState<Product[]>([]);
    const [isLoading, setIsLoading] = useState(true);
    const [selectedRegion, setSelectedRegion] = useState<string>('All');
    const [selectedPlatform, setSelectedPlatform] = useState<string>('All');
+   const [sortOption, setSortOption] = useState<string>('featured');
    const [userVipLevel, setUserVipLevel] = useState(0);
 
    const t = {
@@ -18,7 +19,13 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
            noSupply: "No Supply Found",
            restock: "Restocking system scheduled.",
            noMatch: "No items match",
-           cross: "All Devices"
+           cross: "All Devices",
+           sort: {
+               featured: "Featured",
+               priceLow: "Price: Low to High",
+               priceHigh: "Price: High to Low",
+               newest: "Newest Arrivals"
+           }
        },
        fr: {
            allPlat: "Tous les Appareils",
@@ -26,7 +33,13 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
            noSupply: "Aucun Stock Trouvé",
            restock: "Système de réapprovisionnement programmé.",
            noMatch: "Aucun article ne correspond à",
-           cross: "Tous Appareils"
+           cross: "Tous Appareils",
+           sort: {
+               featured: "En Vedette",
+               priceLow: "Prix: Croissant",
+               priceHigh: "Prix: Décroissant",
+               newest: "Nouveautés"
+           }
        }
    }[language];
 
@@ -52,17 +65,27 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
 
      query.then(({ data }) => { 
        if (data) {
-           const sortedData = [...data].sort((a, b) => {
-               const aVip = a.is_vip ? 1 : 0;
-               const bVip = b.is_vip ? 1 : 0;
-               if (aVip !== bVip) return bVip - aVip;
-               return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-           });
+           let sortedData = [...data];
+           
+           if (sortOption === 'price-asc') {
+               sortedData.sort((a, b) => a.price - b.price);
+           } else if (sortOption === 'price-desc') {
+               sortedData.sort((a, b) => b.price - a.price);
+           } else if (sortOption === 'newest') {
+               sortedData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+           } else {
+               // Featured: VIP first, then Trending, then Newest
+               sortedData.sort((a, b) => {
+                   if (a.is_vip !== b.is_vip) return (b.is_vip ? 1 : 0) - (a.is_vip ? 1 : 0);
+                   if (a.is_trending !== b.is_trending) return (b.is_trending ? 1 : 0) - (a.is_trending ? 1 : 0);
+                   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+               });
+           }
            setProducts(sortedData);
        } 
        setIsLoading(false);
      }); 
-   }, [category, searchQuery, selectedRegion, selectedPlatform]);
+   }, [category, searchQuery, selectedRegion, selectedPlatform, sortOption]);
 
    const handleProductClick = (p: Product) => {
        onProductClick(p);
@@ -81,32 +104,60 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
    // Mock generators
    const getRating = (id: string) => (4 + (id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%10)/10).toFixed(1);
    const getViewers = (id: string) => (id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%15)+3;
+   
+   const isNew = (dateString: string) => {
+       const date = new Date(dateString);
+       const now = new Date();
+       const diffTime = Math.abs(now.getTime() - date.getTime());
+       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+       return diffDays <= 3;
+   };
 
    return (
       <div className="animate-slide-up">
-          <div className="flex overflow-x-auto overflow-y-hidden pb-2 mb-6 gap-4 md:justify-end no-scrollbar">
-              <div className="relative group flex-shrink-0">
-                 <select 
-                    value={selectedPlatform} 
-                    onChange={(e) => setSelectedPlatform(e.target.value)}
-                    className="bg-[#1e232e] border border-gray-800 text-gray-300 text-[10px] font-black uppercase tracking-widest py-3 pl-4 pr-10 rounded-xl focus:outline-none focus:border-blue-500 appearance-none cursor-pointer hover:text-white transition-colors"
-                 >
-                     {platforms.map(p => <option key={p} value={p}>{p === 'All' ? t.allPlat : p}</option>)}
-                 </select>
-                 <div className="absolute right-3 top-3 text-gray-500 pointer-events-none group-hover:text-blue-500 transition-colors">
-                     {getPlatformIcon(selectedPlatform === 'All' ? 'All Platforms' : selectedPlatform)}
-                 </div>
+          <div className="flex flex-wrap gap-4 mb-6 justify-between items-center">
+              <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase tracking-widest">
+                  <span>{products.length} Items Found</span>
               </div>
 
-              <div className="relative group flex-shrink-0">
-                 <select 
-                    value={selectedRegion} 
-                    onChange={(e) => setSelectedRegion(e.target.value)}
-                    className="bg-[#1e232e] border border-gray-800 text-gray-300 text-[10px] font-black uppercase tracking-widest py-3 pl-4 pr-10 rounded-xl focus:outline-none focus:border-blue-500 appearance-none cursor-pointer hover:text-white transition-colors"
-                 >
-                     {regions.map(r => <option key={r} value={r}>{r === 'All' ? t.allReg : r}</option>)}
-                 </select>
-                 <Globe className="absolute right-3 top-3 w-4 h-4 text-gray-500 pointer-events-none group-hover:text-blue-500 transition-colors" />
+              <div className="flex overflow-x-auto gap-4 md:justify-end no-scrollbar flex-1">
+                  <div className="relative group flex-shrink-0">
+                     <select 
+                        value={sortOption} 
+                        onChange={(e) => setSortOption(e.target.value)}
+                        className="bg-[#1e232e] border border-gray-800 text-gray-300 text-[10px] font-black uppercase tracking-widest py-3 pl-4 pr-10 rounded-xl focus:outline-none focus:border-blue-500 appearance-none cursor-pointer hover:text-white transition-colors"
+                     >
+                         <option value="featured">{t.sort.featured}</option>
+                         <option value="price-asc">{t.sort.priceLow}</option>
+                         <option value="price-desc">{t.sort.priceHigh}</option>
+                         <option value="newest">{t.sort.newest}</option>
+                     </select>
+                     <ArrowUpDown className="absolute right-3 top-3 w-4 h-4 text-gray-500 pointer-events-none group-hover:text-blue-500 transition-colors" />
+                  </div>
+
+                  <div className="relative group flex-shrink-0">
+                     <select 
+                        value={selectedPlatform} 
+                        onChange={(e) => setSelectedPlatform(e.target.value)}
+                        className="bg-[#1e232e] border border-gray-800 text-gray-300 text-[10px] font-black uppercase tracking-widest py-3 pl-4 pr-10 rounded-xl focus:outline-none focus:border-blue-500 appearance-none cursor-pointer hover:text-white transition-colors"
+                     >
+                         {platforms.map(p => <option key={p} value={p}>{p === 'All' ? t.allPlat : p}</option>)}
+                     </select>
+                     <div className="absolute right-3 top-3 text-gray-500 pointer-events-none group-hover:text-blue-500 transition-colors">
+                         {getPlatformIcon(selectedPlatform === 'All' ? 'All Platforms' : selectedPlatform)}
+                     </div>
+                  </div>
+
+                  <div className="relative group flex-shrink-0">
+                     <select 
+                        value={selectedRegion} 
+                        onChange={(e) => setSelectedRegion(e.target.value)}
+                        className="bg-[#1e232e] border border-gray-800 text-gray-300 text-[10px] font-black uppercase tracking-widest py-3 pl-4 pr-10 rounded-xl focus:outline-none focus:border-blue-500 appearance-none cursor-pointer hover:text-white transition-colors"
+                     >
+                         {regions.map(r => <option key={r} value={r}>{r === 'All' ? t.allReg : r}</option>)}
+                     </select>
+                     <Globe className="absolute right-3 top-3 w-4 h-4 text-gray-500 pointer-events-none group-hover:text-blue-500 transition-colors" />
+                  </div>
               </div>
           </div>
 
@@ -140,13 +191,22 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                                 src={p.image_url} 
                                 className="w-full h-full object-cover group-hover:scale-110 transition duration-1000 brightness-75 group-hover:brightness-100" 
                                 alt={p.name} 
+                                onError={(e) => { 
+                                    const target = e.target as HTMLImageElement;
+                                    if (p.image_url_2 && target.src !== p.image_url_2) {
+                                        target.src = p.image_url_2;
+                                    } else {
+                                        target.src = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80';
+                                    }
+                                }}
                             />
                             
-                            {/* Live Viewers (FOMO) */}
-                            <div className="absolute top-3 right-3 z-10">
-                                <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-full border border-white/10 flex items-center gap-1.5 animate-pulse">
+                            {/* Badges Container */}
+                            <div className="absolute top-3 right-3 flex flex-col gap-2 z-10 items-end">
+                                {/* Live Viewers */}
+                                <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-full border border-white/10 flex items-center gap-1.5">
                                     <Eye className="w-3 h-3 text-red-400" />
-                                    <span className="text-[9px] font-black text-white tracking-wide">{getViewers(p.id)} viewing</span>
+                                    <span className="text-[9px] font-black text-white tracking-wide">{getViewers(p.id)}</span>
                                 </div>
                             </div>
 
@@ -157,14 +217,19 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                             </div>
                             
                             <div className="absolute bottom-12 right-3 flex flex-col gap-2 z-10 items-end">
+                                {isNew(p.created_at) && !p.is_trending && !p.is_vip && (
+                                    <div className="bg-green-500 px-2.5 py-1 rounded-lg text-[8px] font-black text-black border border-green-400 uppercase tracking-widest shadow-2xl flex items-center gap-1">
+                                        NEW
+                                    </div>
+                                )}
                                 {p.is_vip && (
                                     <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 px-2.5 py-1 rounded-lg text-[8px] font-black text-black border border-yellow-300 uppercase tracking-widest shadow-2xl flex items-center gap-1 animate-pulse">
                                         <Crown className="w-2 h-2" /> VIP
                                     </div>
                                 )}
                                 {p.is_trending && (
-                                    <div className="bg-blue-600 px-2.5 py-1 rounded-lg text-[8px] font-black text-white border border-blue-400 uppercase tracking-widest shadow-2xl">
-                                    HOT
+                                    <div className="bg-blue-600 px-2.5 py-1 rounded-lg text-[8px] font-black text-white border border-blue-400 uppercase tracking-widest shadow-2xl flex items-center gap-1">
+                                        <Flame className="w-2 h-2 fill-white" /> HOT
                                     </div>
                                 )}
                             </div>

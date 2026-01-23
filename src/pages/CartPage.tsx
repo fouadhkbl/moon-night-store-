@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { CartItem } from '../types';
 import { ShoppingCart, ArrowLeft, Minus, Plus, Trash2, ArrowRight, AlertTriangle } from 'lucide-react';
@@ -48,7 +49,19 @@ export const CartPage = ({ cart, onUpdateQty, onRemove, onNavigate, addToast }: 
             <div key={item.id} className="bg-[#1e232e] rounded-3xl border border-gray-800 p-5 md:p-6 flex gap-4 md:gap-6 items-center shadow-2xl">
               <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden flex-shrink-0 shadow-lg bg-gray-900 flex items-center justify-center">
                 {item.product?.image_url ? (
-                   <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover" />
+                   <img 
+                    src={item.product.image_url} 
+                    alt={item.product.name} 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => { 
+                        const target = e.target as HTMLImageElement;
+                        if (item.product?.image_url_2 && target.src !== item.product.image_url_2) {
+                            target.src = item.product.image_url_2;
+                        } else {
+                            target.src = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80';
+                        }
+                    }}
+                   />
                 ) : (
                    <AlertTriangle className="w-8 h-8 text-yellow-500" />
                 )}

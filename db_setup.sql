@@ -63,6 +63,7 @@ create table if not exists public.products (
   price decimal(10,2) not null,
   category text not null,
   image_url text,
+  image_url_2 text, -- Added backup image URL
   stock int default 0,
   platform text default 'PC',
   country text default 'Global',
@@ -71,6 +72,14 @@ create table if not exists public.products (
   is_hidden boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- MIGRATION for Products
+do $$ 
+begin 
+  if not exists (select 1 from information_schema.columns where table_name = 'products' and column_name = 'image_url_2') then
+    alter table public.products add column image_url_2 text;
+  end if;
+end $$;
 
 -- 3. ORDERS
 create table if not exists public.orders (

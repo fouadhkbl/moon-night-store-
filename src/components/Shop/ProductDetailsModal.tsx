@@ -123,7 +123,19 @@ export const ProductDetailsModal = ({ product, onClose, onAddToCart, onSwitchPro
             <div className="flex flex-col md:flex-row border-b border-gray-800">
                {/* Left: Image */}
                <div className="w-full md:w-5/12 bg-[#0b0e14] relative min-h-[300px] flex items-center justify-center p-8 group">
-                   <img src={product.image_url} className="w-full max-h-[300px] object-contain transition-transform duration-500 group-hover:scale-105" alt="" />
+                   <img 
+                    src={product.image_url} 
+                    className="w-full max-h-[300px] object-contain transition-transform duration-500 group-hover:scale-105" 
+                    alt="" 
+                    onError={(e) => { 
+                        const target = e.target as HTMLImageElement;
+                        if (product.image_url_2 && target.src !== product.image_url_2) {
+                            target.src = product.image_url_2;
+                        } else {
+                            target.src = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80';
+                        }
+                    }}
+                   />
                    <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 flex items-center gap-1">
                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                        <span className="text-xs font-bold text-white">{averageRating}</span>

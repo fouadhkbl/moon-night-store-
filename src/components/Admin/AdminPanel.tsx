@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament, Announcement, LootBox, LootBoxOpen, SpinWheelItem } from '../../types';
@@ -58,6 +59,7 @@ const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () =
     );
 };
 
+// ... [Keep AdminRedemptionModal and AdminOrderModal exactly as they are] ...
 const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption: PointRedemption, currentUser: Profile, onClose: () => void }) => {
     const [messages, setMessages] = useState<RedemptionMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -369,6 +371,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [lootBoxes, setLootBoxes] = useState<LootBox[]>([]);
   const [wheelItems, setWheelItems] = useState<SpinWheelItem[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   
   // Modals States
@@ -445,8 +448,17 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         } else if (activeSection === 'stats') {
             const { data: logData } = await supabase.from('access_logs').select('*').order('created_at', { ascending: false }).limit(100);
             if (logData) setLogs(logData);
+            
+            // Fetch recent orders for display
             const { data: orderData } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10);
             if(orderData) setOrders(orderData);
+
+            // Fetch Total Revenue (All completed orders)
+            const { data: revenueData } = await supabase.from('orders').select('total_amount').eq('status', 'completed');
+            if (revenueData) {
+                const total = revenueData.reduce((sum, o) => sum + o.total_amount, 0);
+                setTotalRevenue(total);
+            }
         }
       } catch (e) {
           console.error(e);
@@ -457,7 +469,8 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Generic Handlers
+  // Generic Handlers (Delete, Save Product, Save User, etc.) ...
+  // [Retain all handler functions: handleDelete, handleSaveProduct, handleSaveUserBalance, handleSaveReferral, etc.]
   const handleDelete = async (table: string, id: string, name: string) => {
       if(!window.confirm(`Delete ${name}?`)) return;
       await supabase.from(table).delete().eq('id', id);
@@ -620,8 +633,8 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                  <div className="flex justify-between items-start mb-4">
                                      <div className="p-3 bg-purple-600/20 rounded-xl text-purple-400"><Wallet className="w-6 h-6"/></div>
                                  </div>
-                                 <h3 className="text-3xl font-black text-white italic">---</h3>
-                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Revenue</p>
+                                 <h3 className="text-3xl font-black text-white italic">{totalRevenue.toFixed(2)} DH</h3>
+                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Lifetime Revenue</p>
                              </div>
                          </div>
                      </div>

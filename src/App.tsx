@@ -173,6 +173,90 @@ const App: React.FC = () => {
      setTimeout(() => setToasts(curr => curr.filter(t => t.id !== id)), 4000);
   };
 
+  // --- SEO MANAGEMENT ---
+  useEffect(() => {
+    let title = "Moon Night | #1 Gaming Marketplace";
+    let desc = "Buy and sell gaming accounts, coins, keys, and items securely. The best marketplace for gamers.";
+
+    switch(currentPage) {
+        case 'home':
+            title = "Moon Night | Home - Elite Gaming Store";
+            desc = "Welcome to Moon Night. The premier destination for gaming accounts, boosting, and top-ups.";
+            break;
+        case 'shop':
+            title = `${selectedCategory ? selectedCategory : (searchQuery ? `Search: ${searchQuery}` : 'Shop')} | Moon Night Marketplace`;
+            desc = "Browse our extensive catalog of gaming products. Accounts, Keys, Gold, and more with instant delivery.";
+            break;
+        case 'cart':
+            title = "My Shopping Cart | Moon Night";
+            desc = "Review your items and proceed to secure checkout.";
+            break;
+        case 'checkout':
+            title = "Secure Checkout | Moon Night";
+            desc = "Complete your purchase securely using PayPal or Wallet balance.";
+            break;
+        case 'dashboard':
+            title = "Gamer Dashboard | Moon Night";
+            desc = "Manage your orders, wallet balance, and rewards.";
+            break;
+        case 'topup':
+            title = "Add Funds | Moon Night Wallet";
+            desc = "Top up your Moon Night wallet instantly via PayPal.";
+            break;
+        case 'pointsShop':
+            title = "Rewards Shop | Moon Night";
+            desc = "Redeem your Discord Points for exclusive rewards and items.";
+            break;
+        case 'tournaments':
+            title = "Gaming Tournaments | Moon Night";
+            desc = "Join competitive tournaments, prove your skills, and win cash prizes.";
+            break;
+        case 'loot':
+            title = "Moon Packs | Mystery Loot Boxes";
+            desc = "Open Moon Packs for a chance to win massive rewards and jackpots.";
+            break;
+        case 'elite':
+            title = "Moon Elite | VIP Membership";
+            desc = "Upgrade to Elite status for exclusive discounts, badges, and priority support.";
+            break;
+        case 'spin':
+            title = "Spin & Win | Moon Night";
+            desc = "Spin the wheel daily for free rewards and bonuses.";
+            break;
+        case 'donate':
+            title = "Support Us | Moon Night";
+            desc = "Support the Moon Night project and get recognized on our leaderboard.";
+            break;
+        case 'leaderboard':
+            title = "Top Donators | Moon Night";
+            break;
+        case 'leaderboard-points':
+            title = "Top Players | Moon Night";
+            break;
+        default:
+            title = "Moon Night | Gaming Marketplace";
+    }
+
+    document.title = title;
+    
+    // Update Meta Description
+    let metaDesc = document.querySelector("meta[name='description']");
+    if (!metaDesc) {
+        metaDesc = document.createElement('meta');
+        metaDesc.setAttribute('name', 'description');
+        document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', desc);
+
+    // Update Open Graph tags if possible (optional, good for sharing links if SPA routing is handled by server or pre-renderer)
+    let ogTitle = document.querySelector("meta[property='og:title']");
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    
+    let ogDesc = document.querySelector("meta[property='og:description']");
+    if (ogDesc) ogDesc.setAttribute('content', desc);
+
+  }, [currentPage, selectedCategory, searchQuery]);
+
   // --- FETCH APP SETTINGS ---
   useEffect(() => {
       const fetchSettings = async () => {
@@ -428,6 +512,7 @@ const App: React.FC = () => {
             onSearch={handleSearch} 
             language={language}
             setLanguage={setLanguage}
+            onProductSelect={(p) => setSelectedProduct(p)}
           />
       )}
       

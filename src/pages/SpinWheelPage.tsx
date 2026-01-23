@@ -80,14 +80,37 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                 }
             }
             
-            // 3. Calculate Physics
+            // 3. Calculate Correct Rotation to land on item
             const segmentAngle = 360 / items.length;
-            // Logic: 360*5 (spins) + (360 - index*angle) - half_segment (to center)
-            const targetRotation = rotation + 1800 + (360 - (winIndex * segmentAngle)) - (rotation % 360); 
-            // Note: Simplified logic to ensure forward rotation
-            const spinAmount = 360 * 5 + (360 - winIndex * segmentAngle) - (segmentAngle / 2);
+            
+            // The visual center of the winning segment (relative to the wheel's 0 deg start)
+            const winningSegmentCenter = (winIndex * segmentAngle) + (segmentAngle / 2);
+            
+            // To bring that center to the top (0 deg/12 o'clock), we need to rotate 
+            // the wheel clockwise by (360 - center).
+            const targetBaseAngle = 360 - winningSegmentCenter;
 
-            setRotation(prev => prev + spinAmount);
+            // We want to spin at least 5 full times (1800 deg)
+            const minSpins = 360 * 5;
+            
+            // Current absolute rotation
+            const currentRotation = rotation;
+            
+            // Calculate remainder of current rotation to align math
+            const currentRemainder = currentRotation % 360;
+            
+            // Calculate the delta needed to reach the target angle from current position
+            let adjustment = targetBaseAngle - currentRemainder;
+            
+            // Ensure we spin forward (positive) and complete the visual circle
+            while (adjustment <= 0) {
+                adjustment += 360;
+            }
+            
+            // Final absolute rotation value
+            const newRotation = currentRotation + minSpins + adjustment;
+
+            setRotation(newRotation);
 
             // 4. Update Database IMMEDIATELY (to prevent tab-closing exploits)
             let newPoints = freshProfile.discord_points;
@@ -126,7 +149,7 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                 } else {
                     addToast('So Close!', 'Better luck next time.', 'info');
                 }
-            }, 4500); // 4.5s animation match
+            }, 4500); // 4.5s animation match (matches CSS duration)
 
         } catch (e: any) {
             console.error(e);
