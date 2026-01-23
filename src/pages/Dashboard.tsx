@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, Order, OrderItem, OrderMessage, PointRedemption, RedemptionMessage } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar, LayoutDashboard, ClipboardList, Copy, Users, Link } from 'lucide-react';
+import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar, LayoutDashboard, ClipboardList, Copy, Users, Link, Crown } from 'lucide-react';
 
 // --- SHARED CHAT MODAL LOGIC (Order & Redemption) ---
 // Note: Created separate components for simplicity in state management types
@@ -350,6 +350,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
   const [referralCount, setReferralCount] = useState(0);
   
   const isGuest = session?.user?.id === 'guest-user-123';
+  const isVip = profile?.vip_level && profile.vip_level > 0;
 
   // React to prop changes for tab switching from other pages
   useEffect(() => {
@@ -450,16 +451,36 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
 
   return (
     <div className="container mx-auto px-4 py-8 animate-fade-in pb-20">
-       <div className="relative rounded-[2rem] overflow-hidden mb-12 shadow-2xl bg-[#1e232e]">
-          <div className="h-48 bg-gradient-to-r from-blue-900 via-purple-900 to-[#1e232e]"></div>
-          <div className="px-4 md:px-8 pb-10 flex flex-col md:flex-row items-center md:items-end -mt-16 gap-6 md:gap-8 text-center md:text-left">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl border-8 border-[#0b0e14] bg-[#1e232e] overflow-hidden shadow-2xl flex-shrink-0">
+       <div className={`relative rounded-[2rem] overflow-hidden mb-12 shadow-2xl bg-[#1e232e] transition-all ${isVip ? 'border-2 border-yellow-500/20' : ''}`}>
+          <div className={`h-48 w-full relative transition-all duration-500 ${
+              isVip 
+              ? 'bg-gradient-to-r from-yellow-600 via-amber-500 to-[#1e232e]' 
+              : 'bg-gradient-to-r from-blue-900 via-purple-900 to-[#1e232e]'
+          }`}>
+              {isVip && (
+                  <>
+                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay"></div>
+                    <div className="absolute top-4 right-10 opacity-20 rotate-12 pointer-events-none">
+                        <Crown className="w-32 h-32 text-yellow-100" />
+                    </div>
+                  </>
+              )}
+          </div>
+          <div className="px-4 md:px-8 pb-10 flex flex-col md:flex-row items-center md:items-end -mt-16 gap-6 md:gap-8 text-center md:text-left relative z-10">
+              <div className={`w-32 h-32 md:w-40 md:h-40 rounded-3xl border-8 border-[#0b0e14] bg-[#1e232e] overflow-hidden shadow-2xl flex-shrink-0 transition-all ${isVip ? 'ring-4 ring-yellow-500 shadow-yellow-500/20' : ''}`}>
                  <img src={profile?.avatar_url} className="w-full h-full object-cover" alt="Profile Avatar" />
               </div>
               <div className="flex-1 pb-2">
-                 <h1 className="text-3xl md:text-4xl font-black text-white italic tracking-tighter uppercase mb-1 leading-none">{profile?.username}</h1>
+                 <h1 className={`text-3xl md:text-4xl font-black italic tracking-tighter uppercase mb-1 leading-none ${isVip ? 'text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-500 drop-shadow-sm' : 'text-white'}`}>
+                    {profile?.username}
+                    {isVip && <Crown className="w-6 h-6 inline-block ml-2 text-yellow-400 mb-2 drop-shadow-md" />}
+                 </h1>
                  <p className="text-gray-500 font-bold text-sm tracking-wide">{profile?.email}</p>
-                 {!isGuest && <span className="bg-blue-600/10 text-blue-400 text-[9px] font-black px-3 py-1 rounded-lg uppercase mt-3 inline-block border border-blue-600/30 tracking-widest shadow-lg">Verified System Player</span>}
+                 {!isGuest && (
+                     isVip 
+                     ? <span className="bg-yellow-500/10 text-yellow-400 text-[9px] font-black px-3 py-1 rounded-lg uppercase mt-3 inline-block border border-yellow-500/30 tracking-widest shadow-lg shadow-yellow-500/10">Elite Member</span>
+                     : <span className="bg-blue-600/10 text-blue-400 text-[9px] font-black px-3 py-1 rounded-lg uppercase mt-3 inline-block border border-blue-600/30 tracking-widest shadow-lg">Verified System Player</span>
+                 )}
               </div>
                <div className="flex flex-col items-center md:items-end gap-3 pb-2 w-full md:w-auto">
                  <div className="bg-[#0b0e14]/80 backdrop-blur-xl px-8 py-4 rounded-[2rem] border border-blue-500/30 flex items-center gap-4 shadow-2xl w-full md:w-auto justify-between md:justify-end">

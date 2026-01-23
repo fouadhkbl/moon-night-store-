@@ -179,8 +179,9 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       const payAmount = parseFloat(finalTotal.toFixed(2));
 
       // Only check balance if paying via Wallet
+      // Note: Use a small epsilon for float comparison safety or rely on strict check
       if (method === 'Wallet' && currentBalance < payAmount) {
-          throw new Error("Insufficient wallet funds.");
+          throw new Error(`Insufficient wallet funds. Balance: ${currentBalance.toFixed(2)} DH`);
       }
 
       const points = Math.floor(payAmount * 10);
@@ -197,9 +198,13 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
 
       const { error: balanceError } = await supabase.from('profiles').update(profileUpdates).eq('id', session.user.id);
       if (balanceError) throw balanceError;
+      
       if (method === 'Wallet') setWalletBalance(profileUpdates.wallet_balance);
 
-      if (appliedCoupon) await supabase.from('coupons').update({ usage_count: appliedCoupon.usage_count + 1 }).eq('id', appliedCoupon.id);
+      if (appliedCoupon) {
+          // Fire and forget coupon update
+          supabase.from('coupons').update({ usage_count: appliedCoupon.usage_count + 1 }).eq('id', appliedCoupon.id).then();
+      }
 
       const { data: order, error: orderError } = await supabase.from('orders').insert({
           user_id: session.user.id,
@@ -222,22 +227,30 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       if (itemsError) throw itemsError;
 
       if (points > 0) {
-          await supabase.from('point_transactions').insert({ user_id: session.user.id, points_amount: points, money_equivalent: payAmount, status: 'completed' });
+          // Fire and forget points log
+          supabase.from('point_transactions').insert({ user_id: session.user.id, points_amount: points, money_equivalent: payAmount, status: 'completed' }).then();
       }
 
-      // Affiliate Logic
+      // Affiliate Logic - Wrapped in try/catch to prevent blocking checkout
       if (profileData.referred_by) {
-          const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'affiliate_order_reward_percentage').single();
-          const commissionPercentage = setting ? parseFloat(setting.value) : 5.00;
-          if (commissionPercentage > 0) {
-              const commissionAmount = parseFloat(((payAmount * commissionPercentage) / 100).toFixed(2));
-              const { data: referrer } = await supabase.from('profiles').select('wallet_balance, referral_earnings').eq('id', profileData.referred_by).single();
-              if (referrer) {
-                  await supabase.from('profiles').update({
-                      wallet_balance: (referrer.wallet_balance || 0) + commissionAmount,
-                      referral_earnings: (referrer.referral_earnings || 0) + commissionAmount
-                  }).eq('id', profileData.referred_by);
+          try {
+              const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'affiliate_order_reward_percentage').single();
+              const commissionPercentage = setting ? parseFloat(setting.value) : 5.00;
+              if (commissionPercentage > 0) {
+                  const commissionAmount = parseFloat(((payAmount * commissionPercentage) / 100).toFixed(2));
+                  // Use maybeSingle() to handle deleted referrers gracefully
+                  const { data: referrer } = await supabase.from('profiles').select('wallet_balance, referral_earnings').eq('id', profileData.referred_by).maybeSingle();
+                  
+                  if (referrer) {
+                      await supabase.from('profiles').update({
+                          wallet_balance: (referrer.wallet_balance || 0) + commissionAmount,
+                          referral_earnings: (referrer.referral_earnings || 0) + commissionAmount
+                      }).eq('id', profileData.referred_by);
+                  }
               }
+          } catch (affError) {
+              console.error("Affiliate reward failed:", affError);
+              // Do not throw here, checkout should succeed
           }
       }
 
@@ -245,6 +258,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       setShowSuccess(true);
       onClearCart();
     } catch (err: any) {
+      console.error("Checkout Error:", err);
       addToast('Checkout Failed', err.message || 'Error processing payment.', 'error');
     } finally {
       setIsProcessing(false);

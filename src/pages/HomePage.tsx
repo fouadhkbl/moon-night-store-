@@ -1,11 +1,26 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar, Crown } from 'lucide-react';
 import { GameCategory } from '../types';
+import { supabase } from '../supabaseClient';
 
 export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void, onSearch: (q: string) => void, language: 'en' | 'fr' }) => {
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isVip, setIsVip] = useState(false);
+
+  useEffect(() => {
+      const checkVipStatus = async () => {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+              const { data } = await supabase.from('profiles').select('vip_level').eq('id', user.id).single();
+              if (data && data.vip_level > 0) {
+                  setIsVip(true);
+              }
+          }
+      };
+      checkVipStatus();
+  }, []);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
@@ -103,12 +118,14 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
                 {text.browse} <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
               
-              <button 
-                onClick={() => onNavigate('elite')}
-                className="h-[50px] md:h-[60px] bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-yellow-500 hover:to-yellow-700 text-white px-8 md:px-10 rounded-xl font-black text-xs md:text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl shadow-yellow-600/20 active:scale-95 border border-yellow-500/30"
-              >
-                <Crown className="w-4 h-4 text-yellow-200" /> Join Elite
-              </button>
+              {!isVip && (
+                  <button 
+                    onClick={() => onNavigate('elite')}
+                    className="h-[50px] md:h-[60px] bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-yellow-500 hover:to-yellow-700 text-white px-8 md:px-10 rounded-xl font-black text-xs md:text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl shadow-yellow-600/20 active:scale-95 border border-yellow-500/30"
+                  >
+                    <Crown className="w-4 h-4 text-yellow-200" /> Join Elite
+                  </button>
+              )}
 
               <button 
                 onClick={() => onNavigate('tournaments')}
