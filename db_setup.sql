@@ -21,6 +21,30 @@ create table if not exists public.profiles (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- MIGRATION: Ensure columns exist if table was created previously without them
+do $$ 
+begin 
+  if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'referred_by') then
+    alter table public.profiles add column referred_by uuid references public.profiles(id) on delete set null;
+  end if;
+
+  if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'referral_code') then
+    alter table public.profiles add column referral_code text unique;
+  end if;
+
+  if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'referral_earnings') then
+    alter table public.profiles add column referral_earnings decimal(10,2) default 0.00;
+  end if;
+  
+  if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'discord_points') then
+    alter table public.profiles add column discord_points int default 0;
+  end if;
+
+  if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'vip_level') then
+    alter table public.profiles add column vip_level int default 0;
+  end if;
+end $$;
+
 -- 2. PRODUCTS
 create table if not exists public.products (
   id uuid default uuid_generate_v4() primary key,

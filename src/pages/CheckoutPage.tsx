@@ -179,7 +179,10 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
           .eq('id', session.user.id)
           .maybeSingle();
       
-      if (profileFetchError) throw new Error("Connection error while fetching profile.");
+      if (profileFetchError) {
+          console.error("Profile Fetch Error Details:", profileFetchError);
+          throw new Error(`Connection error: ${profileFetchError.message}`);
+      }
       if (!profileData) throw new Error("Profile not found. Please log out and log in again.");
       
       const currentBalance = parseFloat(String(profileData.wallet_balance || 0));
