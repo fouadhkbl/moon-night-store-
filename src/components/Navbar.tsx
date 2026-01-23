@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home, Swords, LogOut, Crown, Package, Zap, Sparkles } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home, Swords, LogOut, Crown, Package, Zap, Sparkles, UserPlus, LogIn } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Profile } from '../types';
 
@@ -20,9 +20,6 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const isGuest = session?.user?.id === 'guest-user-123';
   
-  const menuRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
   useEffect(() => {
     if (session?.user) {
       if (isGuest) {
@@ -67,25 +64,6 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
     }
   }, [session?.user?.id, isGuest]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        isMenuOpen &&
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setIsMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isMenuOpen]);
-
   const handleSearchSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (searchTerm.trim()) {
@@ -102,54 +80,18 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
   const placeholder = language === 'en' ? "Search Game..." : "Rechercher...";
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#0b0e14] border-b border-gray-800 h-20 flex items-center shadow-2xl">
+    <>
+    <nav className="sticky top-0 z-50 bg-[#0b0e14]/80 backdrop-blur-xl border-b border-gray-800 h-20 flex items-center shadow-2xl">
       <div className="container mx-auto px-4 flex justify-between items-center relative h-full">
         {/* Left: Menu & Logo */}
         <div className="flex items-center gap-4 md:gap-6 relative z-10">
           <div className="relative">
               <button 
-                ref={buttonRef}
-                onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                className="text-gray-400 hover:text-white p-2 transition-colors"
+                onClick={() => setIsMenuOpen(true)} 
+                className="text-gray-400 hover:text-white p-2 transition-colors bg-[#151a23] rounded-xl border border-gray-800 hover:border-gray-600"
               >
-                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                <Menu className="w-5 h-5" />
               </button>
-              
-              {isMenuOpen && (
-                  <div ref={menuRef} className="absolute top-14 left-0 w-64 bg-[#1e232e] border border-gray-800 rounded-2xl shadow-2xl p-2 z-[60] animate-slide-up">
-                      <button onClick={() => handleMenuClick('home')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
-                          <Home className="w-4 h-4 text-blue-500" /> Home
-                      </button>
-                      <button onClick={() => handleMenuClick('shop')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
-                          <ShoppingBag className="w-4 h-4 text-cyan-500" /> Shop
-                      </button>
-                      <button onClick={() => handleMenuClick('spin')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white bg-gradient-to-r from-purple-600/20 to-pink-600/20 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all flex items-center gap-3 border border-purple-500/30">
-                          <Sparkles className="w-4 h-4 text-purple-400" /> Spin & Win
-                      </button>
-                      <button onClick={() => handleMenuClick('loot')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white bg-gradient-to-r from-yellow-600/20 to-yellow-900/20 hover:from-yellow-600 hover:to-yellow-700 rounded-xl transition-all flex items-center gap-3 border border-yellow-500/30">
-                          <Package className="w-4 h-4 text-yellow-400" /> Moon Packs
-                      </button>
-                      <button onClick={() => handleMenuClick('elite')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white bg-gradient-to-r from-yellow-700/20 to-yellow-900/20 hover:from-yellow-700 hover:to-yellow-800 rounded-xl transition-all flex items-center gap-3 border border-yellow-500/30">
-                          <Crown className="w-4 h-4 text-yellow-400" /> Moon Elite
-                      </button>
-                      <button onClick={() => handleMenuClick('tournaments')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
-                          <Swords className="w-4 h-4 text-green-500" /> Competitions
-                      </button>
-                      <button onClick={() => handleMenuClick('pointsShop')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
-                          <Trophy className="w-4 h-4 text-purple-500" /> Points Shop
-                      </button>
-                      <div className="h-px bg-gray-800 my-1"></div>
-                      <button onClick={() => handleMenuClick('donate')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
-                          <Heart className="w-4 h-4 text-red-500" /> Donate
-                      </button>
-                      <button onClick={() => handleMenuClick('leaderboard')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
-                          <Medal className="w-4 h-4 text-yellow-500" /> Best Donators
-                      </button>
-                      <button onClick={() => handleMenuClick('leaderboard-points')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
-                          <Crown className="w-4 h-4 text-purple-500" /> Points Leaderboard
-                      </button>
-                  </div>
-              )}
           </div>
 
           <div 
@@ -157,13 +99,16 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
             className="flex items-center gap-3 cursor-pointer group"
           >
              {/* Logo Block */}
-             <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg shadow-lg flex items-center justify-center group-hover:scale-105 transition-transform">
+             <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl shadow-lg flex items-center justify-center group-hover:scale-105 transition-transform border border-white/10">
                  <span className="text-white font-black italic text-lg">M</span>
              </div>
              {/* Text visible on mobile but smaller */}
-             <span className="hidden sm:block text-lg md:text-xl font-black text-white italic tracking-tighter uppercase group-hover:text-blue-400 transition-colors">
-                Moon Night
-             </span>
+             <div className="hidden sm:flex flex-col">
+                 <span className="text-lg font-black text-white italic tracking-tighter uppercase leading-none group-hover:text-blue-400 transition-colors">
+                    Moon Night
+                 </span>
+                 <span className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.3em]">Store</span>
+             </div>
           </div>
         </div>
 
@@ -173,12 +118,12 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
             <input
               type="text"
               placeholder={placeholder}
-              className="w-full bg-[#151a23] text-gray-200 rounded-lg py-3 pl-5 pr-14 focus:outline-none border border-gray-800 focus:border-blue-600 transition-all font-medium placeholder:text-gray-600 shadow-inner"
+              className="w-full bg-[#151a23] text-gray-200 rounded-xl py-3 pl-5 pr-14 focus:outline-none border border-gray-800 focus:border-blue-600 transition-all font-medium placeholder:text-gray-600 shadow-inner text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <button type="submit" className="absolute right-0 top-0 bottom-0 px-5 bg-blue-600 hover:bg-blue-700 rounded-r-lg text-white transition-all flex items-center justify-center">
-              <Search className="w-5 h-5" />
+            <button type="submit" className="absolute right-1 top-1 bottom-1 px-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-white transition-all flex items-center justify-center shadow-lg">
+              <Search className="w-4 h-4" />
             </button>
           </div>
         </form>
@@ -189,31 +134,22 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
           {/* PACKS BUTTON (DESKTOP) */}
           <button 
             onClick={() => onNavigate('loot')}
-            className="hidden md:flex bg-[#1e232e] border border-gray-700 hover:border-blue-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest items-center gap-2 transition-all"
+            className="hidden md:flex bg-[#1e232e] border border-gray-700 hover:border-yellow-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest items-center gap-2 transition-all group"
           >
-             <Package className="w-4 h-4 text-blue-400" /> Packs
+             <Package className="w-4 h-4 text-yellow-500 group-hover:animate-bounce" /> Packs
           </button>
 
           {/* Mobile Search Toggle */}
           <button 
             onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-            className="lg:hidden p-2 text-gray-400 hover:text-white"
+            className="lg:hidden p-2 text-gray-400 hover:text-white bg-[#151a23] rounded-xl border border-gray-800"
           >
             <Search className="w-5 h-5" />
           </button>
 
-          {/* Language Switcher */}
-          <button 
-            onClick={() => setLanguage(language === 'en' ? 'fr' : 'en')}
-            className="p-2 text-gray-400 hover:text-white transition flex items-center gap-2 bg-[#151a23] rounded-lg border border-gray-800 hover:border-gray-600"
-          >
-            <Languages className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase hidden md:block">{language.toUpperCase()}</span>
-          </button>
-
           <button 
             onClick={() => onNavigate('cart')}
-            className="relative p-2.5 text-gray-300 hover:text-white bg-[#151a23] rounded-lg border border-gray-800 hover:border-blue-500 transition group"
+            className="relative p-2.5 text-gray-300 hover:text-white bg-[#151a23] rounded-xl border border-gray-800 hover:border-blue-500 transition group"
           >
             <ShoppingCart className="w-5 h-5 group-hover:scale-110 transition-transform" />
             {cartCount > 0 && (
@@ -239,7 +175,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                 <span className={`text-xs font-bold max-w-[80px] truncate hidden md:block ${profile?.vip_level && profile.vip_level > 0 ? 'text-yellow-400' : ''}`}>{profile?.username || 'Guest'}</span>
             </button>
             
-            <div className="absolute right-0 mt-2 w-64 bg-[#1e232e] border border-gray-800 rounded-xl shadow-2xl py-2 hidden group-hover:block animate-fade-in overflow-hidden">
+            <div className="absolute right-0 mt-3 w-64 bg-[#1e232e] border border-gray-800 rounded-2xl shadow-2xl py-2 hidden group-hover:block animate-fade-in overflow-hidden origin-top-right">
                 <div className="px-5 py-4 border-b border-gray-800 bg-[#151a23]">
                     <p className={`text-sm font-bold truncate ${profile?.vip_level && profile.vip_level > 0 ? 'text-yellow-400' : 'text-white'}`}>
                         {profile?.username || 'Guest Gamer'} 
@@ -249,9 +185,15 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                 </div>
                 
                 {!isGuest && (
-                    <div className="px-5 py-3 border-b border-gray-800 bg-blue-900/10">
-                        <p className="text-[10px] text-blue-300 uppercase font-black tracking-widest mb-1">Wallet Balance</p>
-                        <p className="text-lg font-mono text-white font-bold tracking-tight">{profile?.wallet_balance?.toFixed(2) || '0.00'} DH</p>
+                    <div className="px-5 py-3 border-b border-gray-800 bg-blue-900/10 flex justify-between items-center">
+                        <div>
+                            <p className="text-[9px] text-blue-300 uppercase font-black tracking-widest mb-0.5">Wallet</p>
+                            <p className="text-sm font-mono text-white font-bold">{profile?.wallet_balance?.toFixed(2) || '0.00'} DH</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[9px] text-purple-300 uppercase font-black tracking-widest mb-0.5">Points</p>
+                            <p className="text-sm font-mono text-white font-bold">{profile?.discord_points || 0}</p>
+                        </div>
                     </div>
                 )}
 
@@ -289,6 +231,90 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
           </div>
       )}
     </nav>
+
+    {/* FULL SCREEN MENU OVERLAY */}
+    {isMenuOpen && (
+        <div className="fixed inset-0 z-[100] bg-[#0b0e14]/95 backdrop-blur-2xl animate-fade-in flex flex-col">
+            {/* Menu Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-800/50">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black italic shadow-lg shadow-blue-600/20">M</div>
+                    <span className="text-xl font-black text-white italic uppercase tracking-tighter">Moon Night</span>
+                </div>
+                <button 
+                    onClick={() => setIsMenuOpen(false)}
+                    className="w-10 h-10 bg-[#1e232e] rounded-full flex items-center justify-center text-gray-400 hover:text-white border border-gray-700"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+            </div>
+
+            {/* Menu Links Grid */}
+            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-4 gap-4 content-start">
+                <button onClick={() => handleMenuClick('home')} className="bg-[#1e232e] p-6 rounded-3xl flex flex-col items-center justify-center gap-4 hover:bg-[#252b36] transition-all border border-gray-800 group">
+                    <div className="w-12 h-12 bg-blue-900/20 rounded-2xl flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform"><Home className="w-6 h-6" /></div>
+                    <span className="text-white font-bold uppercase tracking-widest text-xs">Home</span>
+                </button>
+                <button onClick={() => handleMenuClick('shop')} className="bg-[#1e232e] p-6 rounded-3xl flex flex-col items-center justify-center gap-4 hover:bg-[#252b36] transition-all border border-gray-800 group">
+                    <div className="w-12 h-12 bg-cyan-900/20 rounded-2xl flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform"><ShoppingBag className="w-6 h-6" /></div>
+                    <span className="text-white font-bold uppercase tracking-widest text-xs">Shop</span>
+                </button>
+                <button onClick={() => handleMenuClick('spin')} className="bg-[#1e232e] p-6 rounded-3xl flex flex-col items-center justify-center gap-4 hover:bg-[#252b36] transition-all border border-gray-800 group">
+                    <div className="w-12 h-12 bg-purple-900/20 rounded-2xl flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform"><Sparkles className="w-6 h-6" /></div>
+                    <span className="text-white font-bold uppercase tracking-widest text-xs">Spin & Win</span>
+                </button>
+                <button onClick={() => handleMenuClick('loot')} className="bg-[#1e232e] p-6 rounded-3xl flex flex-col items-center justify-center gap-4 hover:bg-[#252b36] transition-all border border-gray-800 group">
+                    <div className="w-12 h-12 bg-yellow-900/20 rounded-2xl flex items-center justify-center text-yellow-400 group-hover:scale-110 transition-transform"><Package className="w-6 h-6" /></div>
+                    <span className="text-white font-bold uppercase tracking-widest text-xs">Moon Packs</span>
+                </button>
+                <button onClick={() => handleMenuClick('tournaments')} className="bg-[#1e232e] p-6 rounded-3xl flex flex-col items-center justify-center gap-4 hover:bg-[#252b36] transition-all border border-gray-800 group">
+                    <div className="w-12 h-12 bg-green-900/20 rounded-2xl flex items-center justify-center text-green-400 group-hover:scale-110 transition-transform"><Swords className="w-6 h-6" /></div>
+                    <span className="text-white font-bold uppercase tracking-widest text-xs">Tournaments</span>
+                </button>
+                <button onClick={() => handleMenuClick('elite')} className="bg-[#1e232e] p-6 rounded-3xl flex flex-col items-center justify-center gap-4 hover:bg-[#252b36] transition-all border border-yellow-500/20 group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-black group-hover:scale-110 transition-transform shadow-lg shadow-yellow-500/20"><Crown className="w-6 h-6" /></div>
+                    <span className="text-yellow-400 font-bold uppercase tracking-widest text-xs">Elite Club</span>
+                </button>
+                <button onClick={() => handleMenuClick('pointsShop')} className="bg-[#1e232e] p-6 rounded-3xl flex flex-col items-center justify-center gap-4 hover:bg-[#252b36] transition-all border border-gray-800 group">
+                    <div className="w-12 h-12 bg-indigo-900/20 rounded-2xl flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform"><Trophy className="w-6 h-6" /></div>
+                    <span className="text-white font-bold uppercase tracking-widest text-xs">Rewards</span>
+                </button>
+                <button onClick={() => handleMenuClick('donate')} className="bg-[#1e232e] p-6 rounded-3xl flex flex-col items-center justify-center gap-4 hover:bg-[#252b36] transition-all border border-gray-800 group">
+                    <div className="w-12 h-12 bg-red-900/20 rounded-2xl flex items-center justify-center text-red-400 group-hover:scale-110 transition-transform"><Heart className="w-6 h-6" /></div>
+                    <span className="text-white font-bold uppercase tracking-widest text-xs">Donate</span>
+                </button>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-6 border-t border-gray-800/50 bg-[#151a23] flex flex-col gap-4">
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => setLanguage(language === 'en' ? 'fr' : 'en')}
+                        className="flex-1 bg-[#0b0e14] border border-gray-700 rounded-xl p-4 flex items-center justify-center gap-2 text-gray-400 hover:text-white transition"
+                    >
+                        <Languages className="w-4 h-4" /> {language === 'en' ? 'English' : 'Français'}
+                    </button>
+                    {profile ? (
+                        <button 
+                            onClick={() => handleMenuClick('dashboard')}
+                            className="flex-1 bg-blue-600 rounded-xl p-4 flex items-center justify-center gap-2 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-blue-600/20"
+                        >
+                            <LayoutDashboard className="w-4 h-4" /> Dashboard
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={() => handleMenuClick('dashboard')}
+                            className="flex-1 bg-blue-600 rounded-xl p-4 flex items-center justify-center gap-2 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-blue-600/20"
+                        >
+                            <LogIn className="w-4 h-4" /> Login
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    )}
+    </>
   );
 };
 
