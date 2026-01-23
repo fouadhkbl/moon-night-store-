@@ -260,6 +260,7 @@ const App: React.FC = () => {
           onClose={() => setSelectedProduct(null)} 
           onAddToCart={handleAddToCart}
           onSwitchProduct={(p) => setSelectedProduct(p)}
+          addToast={addToast}
         />
       )}
       

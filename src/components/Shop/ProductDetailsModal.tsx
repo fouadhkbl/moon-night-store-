@@ -1,14 +1,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Zap, Minus, Plus, ShoppingCart, Globe, Star, MessageSquare, Send, User, ThumbsUp, Lock, ArrowRight, Package } from 'lucide-react';
+import { X, Zap, Minus, Plus, ShoppingCart, Globe, Star, MessageSquare, Send, User, ThumbsUp, Lock, ArrowRight, Package, Share2 } from 'lucide-react';
 import { Product, Review, Profile } from '../../types';
 import { supabase } from '../../supabaseClient';
 
-export const ProductDetailsModal = ({ product, onClose, onAddToCart, onSwitchProduct }: { 
+export const ProductDetailsModal = ({ product, onClose, onAddToCart, onSwitchProduct, addToast }: { 
     product: Product, 
     onClose: () => void, 
     onAddToCart: (p: Product, qty: number) => void,
-    onSwitchProduct: (p: Product) => void 
+    onSwitchProduct: (p: Product) => void,
+    addToast: any
 }) => {
   const [quantity, setQuantity] = useState(1);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -112,6 +113,13 @@ export const ProductDetailsModal = ({ product, onClose, onAddToCart, onSwitchPro
       setSubmitting(false);
   };
 
+  const handleShare = () => {
+      const url = `${window.location.origin}/#product=${product.id}`;
+      navigator.clipboard.writeText(url).then(() => {
+          addToast('Link Copied', 'Product link copied to clipboard!', 'success');
+      });
+  };
+
   const averageRating = reviews.length > 0 
     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) 
     : 'New';
@@ -120,6 +128,14 @@ export const ProductDetailsModal = ({ product, onClose, onAddToCart, onSwitchPro
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div className="bg-[#1e232e] w-full max-w-5xl rounded-[2rem] overflow-hidden shadow-2xl border border-gray-800 relative animate-slide-up max-h-[90vh] flex flex-col">
         
+        {/* Share Button */}
+        <button 
+            onClick={handleShare} 
+            className="absolute top-4 right-16 z-30 p-2 bg-black/50 rounded-full text-white hover:bg-blue-500 transition-colors backdrop-blur-md border border-white/10"
+        >
+          <Share2 className="w-5 h-5" />
+        </button>
+
         {/* Close Button */}
         <button 
             onClick={onClose} 

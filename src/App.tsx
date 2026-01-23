@@ -176,17 +176,12 @@ const App: React.FC = () => {
   // --- HANDLE DEEP LINKS (Updated for Hash and Query Params) ---
   useEffect(() => {
       const handleDeepLink = async () => {
+          // 1. Tournaments
           let tournamentId: string | null = null;
-
-          // 1. Check Hash (#tournament=ID) - Priority for 404 avoidance
           if (window.location.hash && window.location.hash.includes('tournament=')) {
               const parts = window.location.hash.split('tournament=');
-              if (parts.length > 1) {
-                  tournamentId = parts[1];
-              }
+              if (parts.length > 1) tournamentId = parts[1];
           }
-
-          // 2. Fallback to Query Params (?tournament_id=ID)
           if (!tournamentId) {
               const params = new URLSearchParams(window.location.search);
               tournamentId = params.get('tournament_id');
@@ -197,7 +192,26 @@ const App: React.FC = () => {
               if (data) {
                   setSelectedTournament(data);
                   setCurrentPage('tournament-details');
-                  // Clean the URL to remove the hash/query param after navigation
+                  window.history.replaceState(null, '', window.location.pathname);
+                  return; 
+              }
+          }
+
+          // 2. Products
+          let productId: string | null = null;
+          if (window.location.hash && window.location.hash.includes('product=')) {
+              const parts = window.location.hash.split('product=');
+              if (parts.length > 1) productId = parts[1];
+          }
+          if (!productId) {
+              const params = new URLSearchParams(window.location.search);
+              productId = params.get('product_id');
+          }
+
+          if (productId) {
+              const { data } = await supabase.from('products').select('*').eq('id', productId).single();
+              if (data) {
+                  setSelectedProduct(data);
                   window.history.replaceState(null, '', window.location.pathname);
               }
           }
@@ -725,6 +739,7 @@ const App: React.FC = () => {
           onClose={() => setSelectedProduct(null)} 
           onAddToCart={handleAddToCart}
           onSwitchProduct={(p) => setSelectedProduct(p)}
+          addToast={addToast}
         />
       )}
       
