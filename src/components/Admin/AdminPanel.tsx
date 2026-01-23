@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament, Announcement, LootBox, LootBoxOpen, SpinWheelItem } from '../../types';
@@ -796,7 +795,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                      </div>
                                      <h3 className="text-xl font-black text-white italic uppercase">{t.title}</h3>
                                      <p className="text-gray-500 text-xs mb-4">
-                                         {new Date(t.start_date).toLocaleDateString()} • {t.status}
+                                         {new Date(t.start_date).toLocaleDateString()} {'•'} {t.status}
                                      </p>
                                      <div className="flex gap-4 text-xs font-bold text-gray-400">
                                          <span>Players: {t.current_participants}/{t.max_participants}</span>
