@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament, Announcement, LootBox, LootBoxOpen } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save, Megaphone, Image, LogOut, Crown, Zap, History } from 'lucide-react';
-import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal, AnnouncementFormModal, ReferralEditorModal, LootBoxFormModal } from './AdminModals';
+import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament, Announcement, LootBox, LootBoxOpen, SpinWheelItem } from '../../types';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save, Megaphone, Image, LogOut, Crown, Zap, History, RotateCw, PieChart } from 'lucide-react';
+import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal, AnnouncementFormModal, ReferralEditorModal, LootBoxFormModal, SpinWheelItemFormModal } from './AdminModals';
 
 const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
     return (
@@ -357,7 +357,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 };
 
 export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' | 'shop' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations' | 'tournaments' | 'system' | 'affiliates' | 'lootBoxes'>(role === 'shop' ? 'products' : 'stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations' | 'tournaments' | 'system' | 'affiliates' | 'lootBoxes' | 'wheel'>(role === 'shop' ? 'products' : 'stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [pointProducts, setPointProducts] = useState<PointProduct[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -369,6 +369,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [lootBoxes, setLootBoxes] = useState<LootBox[]>([]);
+  const [spinWheelItems, setSpinWheelItems] = useState<SpinWheelItem[]>([]);
   const [recentLootOpens, setRecentLootOpens] = useState<LootBoxOpen[]>([]);
   const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
   const [isLoading, setIsLoading] = useState(true);
@@ -390,6 +391,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [isTournamentModalOpen, setIsTournamentModalOpen] = useState(false);
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
   const [isLootBoxModalOpen, setIsLootBoxModalOpen] = useState(false);
+  const [isSpinWheelModalOpen, setIsSpinWheelModalOpen] = useState(false);
   const [isVisitsModalOpen, setIsVisitsModalOpen] = useState(false);
   
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
@@ -399,6 +401,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [editingLootBox, setEditingLootBox] = useState<Partial<LootBox> | null>(null);
+  const [editingSpinWheelItem, setEditingSpinWheelItem] = useState<Partial<SpinWheelItem> | null>(null);
   const [editingReferral, setEditingReferral] = useState<Profile | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedRedemption, setSelectedRedemption] = useState<PointRedemption | null>(null);
@@ -429,6 +432,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
 
     const { data: lbData } = await supabase.from('loot_boxes').select('*').order('price', { ascending: true });
     if (lbData) setLootBoxes(lbData);
+
+    const { data: swData } = await supabase.from('spin_wheel_items').select('*').order('probability', { ascending: false });
+    if (swData) setSpinWheelItems(swData);
 
     if (role === 'full' || role === 'limited') {
         const { data: lbOpens } = await supabase.from('loot_box_opens').select('*').order('created_at', { ascending: false }).limit(20);
@@ -601,6 +607,19 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       fetchData();
   };
 
+  const handleSaveSpinWheelItem = async (data: any) => {
+      if(data.id) await supabase.from('spin_wheel_items').update(data).eq('id', data.id);
+      else await supabase.from('spin_wheel_items').insert(data);
+      setIsSpinWheelModalOpen(false);
+      fetchData();
+  };
+
+  const handleDeleteSpinWheelItem = async (id: string) => {
+      if(!window.confirm('Delete Wheel Item?')) return;
+      await supabase.from('spin_wheel_items').delete().eq('id', id);
+      fetchData();
+  };
+
   const handleSaveSettings = async () => {
       const updates = [
           { key: 'affiliate_invite_reward', value: inviteReward },
@@ -631,6 +650,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const filteredDonations = donations.filter(d => (d.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const affiliateProfiles = profiles.filter(p => (p.referral_earnings || 0) > 0 || profiles.some(sub => sub.referred_by === p.id));
 
+  // Wheel Prob Calculation
+  const totalProbability = spinWheelItems.reduce((acc, item) => item.is_active ? acc + Number(item.probability) : acc, 0);
+
   return (
     <div className="min-h-screen bg-[#0b0e14] text-white flex font-sans selection:bg-blue-500 selection:text-white">
         <aside className="w-72 bg-[#1e232e] border-r border-gray-800 flex flex-col fixed h-full z-50 shadow-2xl">
@@ -657,6 +679,10 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                 
                 <button onClick={() => setActiveSection('lootBoxes')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'lootBoxes' ? 'bg-yellow-600 text-white shadow-lg shadow-yellow-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
                     <Zap className="w-4 h-4" /> Moon Packs
+                </button>
+
+                <button onClick={() => setActiveSection('wheel')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'wheel' ? 'bg-pink-600 text-white shadow-lg shadow-pink-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                    <RotateCw className="w-4 h-4" /> Spin & Win
                 </button>
 
                 <button onClick={() => setActiveSection('pointsShop')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'pointsShop' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
@@ -784,6 +810,69 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'wheel' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Wheel Configuration</h2>
+                            <button onClick={() => { setEditingSpinWheelItem(null); setIsSpinWheelModalOpen(true); }} className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
+                                <PlusCircle className="w-4 h-4" /> Add Segment
+                            </button>
+                        </div>
+
+                        {/* Probability Warning */}
+                        <div className={`mb-8 p-4 rounded-xl border flex items-center justify-between ${Math.abs(totalProbability - 100) < 0.1 ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
+                            <div className="flex items-center gap-3">
+                                <PieChart className="w-6 h-6" />
+                                <div>
+                                    <p className="font-black uppercase tracking-widest text-xs">Total Probability</p>
+                                    <p className="text-xl font-black">{totalProbability.toFixed(1)}%</p>
+                                </div>
+                            </div>
+                            {Math.abs(totalProbability - 100) >= 0.1 && (
+                                <p className="text-xs font-bold uppercase tracking-widest">Warning: Should equal 100%</p>
+                            )}
+                        </div>
+
+                        <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="bg-[#151a23] text-gray-500 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
+                                    <tr>
+                                        <th className="p-4">Color</th>
+                                        <th className="p-4">Text</th>
+                                        <th className="p-4">Reward</th>
+                                        <th className="p-4">Probability</th>
+                                        <th className="p-4">Status</th>
+                                        <th className="p-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-800">
+                                    {spinWheelItems.map(item => (
+                                        <tr key={item.id} className="hover:bg-[#0b0e14]/50 transition-colors">
+                                            <td className="p-4">
+                                                <div className="w-8 h-8 rounded-lg border border-gray-700" style={{ backgroundColor: item.color }}></div>
+                                            </td>
+                                            <td className="p-4 font-bold text-sm text-white">{item.text}</td>
+                                            <td className="p-4 text-xs font-mono text-gray-400">
+                                                {item.type === 'none' ? 'None' : `${item.value} ${item.type === 'money' ? 'DH' : 'PTS'}`}
+                                            </td>
+                                            <td className="p-4 text-sm font-black text-white">{item.probability}%</td>
+                                            <td className="p-4">
+                                                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded ${item.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                    {item.is_active ? 'Active' : 'Disabled'}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right flex justify-end gap-2">
+                                                <button onClick={() => { setEditingSpinWheelItem(item); setIsSpinWheelModalOpen(true); }} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition"><Edit2 className="w-4 h-4" /></button>
+                                                <button onClick={() => handleDeleteSpinWheelItem(item.id)} className="p-2 bg-red-900/20 rounded-lg hover:bg-red-600 text-red-500 hover:text-white transition"><Trash2 className="w-4 h-4" /></button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 )}
@@ -1170,6 +1259,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         {isTournamentModalOpen && <TournamentFormModal tournament={editingTournament} onClose={() => setIsTournamentModalOpen(false)} onSave={handleSaveTournament} />}
         {isAnnouncementModalOpen && <AnnouncementFormModal announcement={editingAnnouncement} onClose={() => setIsAnnouncementModalOpen(false)} onSave={handleSaveAnnouncement} />}
         {isLootBoxModalOpen && <LootBoxFormModal lootBox={editingLootBox} onClose={() => setIsLootBoxModalOpen(false)} onSave={handleSaveLootBox} />}
+        {isSpinWheelModalOpen && <SpinWheelItemFormModal item={editingSpinWheelItem} onClose={() => setIsSpinWheelModalOpen(false)} onSave={handleSaveSpinWheelItem} />}
         {isVisitsModalOpen && <VisitHistoryModal logs={logs} onClose={() => setIsVisitsModalOpen(false)} />}
         
         {editingUser && (

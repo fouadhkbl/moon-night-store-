@@ -72,6 +72,17 @@ export interface LootBoxOpen {
   profile?: Profile;
 }
 
+export interface SpinWheelItem {
+  id: string;
+  type: 'money' | 'points' | 'none';
+  value: number;
+  text: string;
+  color: string;
+  probability: number;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface Review {
   id: string;
   product_id: string;

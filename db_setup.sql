@@ -249,6 +249,18 @@ create table if not exists public.loot_box_opens (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 20. SPIN WHEEL ITEMS
+create table if not exists public.spin_wheel_items (
+  id uuid default uuid_generate_v4() primary key,
+  type text not null, -- 'money', 'points', 'none'
+  value decimal(10,2) not null,
+  text text not null,
+  color text not null,
+  probability decimal(5,2) not null, -- percentage 0-100
+  is_active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- Insert Default Settings
 insert into public.app_settings (key, value) values ('affiliate_invite_reward', '5') on conflict do nothing;
 insert into public.app_settings (key, value) values ('affiliate_order_reward_percentage', '5') on conflict do nothing;
@@ -256,6 +268,18 @@ insert into public.app_settings (key, value) values ('sale_code', 'MOON20') on c
 insert into public.app_settings (key, value) values ('site_background', '') on conflict do nothing;
 insert into public.app_settings (key, value) values ('vip_membership_price', '199.00') on conflict do nothing;
 insert into public.app_settings (key, value) values ('vip_discount_percent', '5.00') on conflict do nothing;
+
+-- SEED SPIN WHEEL
+insert into public.spin_wheel_items (type, value, text, color, probability) values 
+('money', 1, '1 DH', '#10b981', 10),
+('points', 50, '50 PTS', '#8b5cf6', 20),
+('money', 0.5, '0.5 DH', '#3b82f6', 20),
+('points', 100, '100 PTS', '#8b5cf6', 15),
+('money', 2, '2 DH', '#eab308', 3),
+('points', 500, '500 PTS', '#8b5cf6', 1.5),
+('money', 5, '5 DH', '#ef4444', 0.5),
+('none', 0, 'Retry', '#6b7280', 30)
+on conflict do nothing;
 
 -- ENABLE ROW LEVEL SECURITY
 alter table public.profiles enable row level security;
@@ -277,6 +301,7 @@ alter table public.app_settings enable row level security;
 alter table public.announcements enable row level security;
 alter table public.loot_boxes enable row level security;
 alter table public.loot_box_opens enable row level security;
+alter table public.spin_wheel_items enable row level security;
 
 -- SECURITY POLICIES (Idempotent)
 
@@ -315,6 +340,12 @@ drop policy if exists "Admin view all loot history" on public.loot_box_opens;
 create policy "Admin view all loot history" on public.loot_box_opens for select using (true);
 drop policy if exists "User insert loot history" on public.loot_box_opens;
 create policy "User insert loot history" on public.loot_box_opens for insert with check (auth.uid() = user_id);
+
+-- Spin Wheel Items
+drop policy if exists "Public read spin items" on public.spin_wheel_items;
+create policy "Public read spin items" on public.spin_wheel_items for select using (true);
+drop policy if exists "Admin manage spin items" on public.spin_wheel_items;
+create policy "Admin manage spin items" on public.spin_wheel_items for all using (true);
 
 -- Products
 drop policy if exists "Public products" on public.products;

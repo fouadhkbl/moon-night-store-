@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Profile } from '../types';
+import { Profile, SpinWheelItem } from '../types';
 import { ArrowLeft, Coins, Trophy, Loader2, RefreshCw, Wallet, AlertCircle } from 'lucide-react';
 
 export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any, onNavigate: (p: string) => void, addToast: any }) => {
@@ -9,19 +9,11 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
     const [spinning, setSpinning] = useState(false);
     const [result, setResult] = useState<{ type: string, value: number, text: string } | null>(null);
     const [rotation, setRotation] = useState(0);
+    const [items, setItems] = useState<SpinWheelItem[]>([]);
+    const [loadingItems, setLoadingItems] = useState(true);
     
     // Wheel Config
     const SPIN_COST = 200; 
-    const SEGMENTS = [
-        { type: 'money', value: 1, text: '1 DH', color: '#10b981' }, // Green
-        { type: 'points', value: 50, text: '50 PTS', color: '#8b5cf6' }, // Purple
-        { type: 'money', value: 0.5, text: '0.5 DH', color: '#3b82f6' }, // Blue
-        { type: 'points', value: 100, text: '100 PTS', color: '#8b5cf6' }, // Purple
-        { type: 'money', value: 2, text: '2 DH', color: '#eab308' }, // Yellow
-        { type: 'points', value: 500, text: '500 PTS', color: '#8b5cf6' }, // Purple
-        { type: 'money', value: 5, text: '5 DH', color: '#ef4444' }, // Red (Jackpot)
-        { type: 'none', value: 0, text: 'Retry', color: '#6b7280' } // Gray
-    ];
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -30,7 +22,15 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                 setProfile(data);
             }
         };
+        const fetchItems = async () => {
+            const { data } = await supabase.from('spin_wheel_items').select('*').eq('is_active', true).order('created_at', { ascending: true });
+            if (data && data.length > 0) {
+                setItems(data);
+            }
+            setLoadingItems(false);
+        };
         fetchProfile();
+        fetchItems();
     }, [session]);
 
     const handleSpin = async () => {
@@ -43,44 +43,52 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
             return;
         }
         if (spinning) return;
+        if (items.length === 0) {
+            addToast('Error', 'Wheel configuration invalid.', 'error');
+            return;
+        }
 
         setSpinning(true);
         setResult(null);
 
-        // Determine result (Weighted Random Logic)
-        // Probabilities: Retry (30%), 50 PTS (20%), 0.5 DH (20%), 100 PTS (15%), 1 DH (10%), 2 DH (3%), 500 PTS (1.5%), 5 DH (0.5%)
+        // Determine result (Weighted Random Logic based on DB probabilities)
         const rand = Math.random() * 100;
-        let winIndex = 7; // Default Retry
+        let cumulativeProbability = 0;
+        let selectedItem = items[items.length - 1]; // Default fallback
+        let winIndex = items.length - 1;
 
-        if (rand < 0.5) winIndex = 6; // 5 DH
-        else if (rand < 2) winIndex = 5; // 500 PTS
-        else if (rand < 5) winIndex = 4; // 2 DH
-        else if (rand < 15) winIndex = 0; // 1 DH
-        else if (rand < 30) winIndex = 3; // 100 PTS
-        else if (rand < 50) winIndex = 2; // 0.5 DH
-        else if (rand < 70) winIndex = 1; // 50 PTS
-        else winIndex = 7; // Retry
-
-        const selectedSegment = SEGMENTS[winIndex];
+        for (let i = 0; i < items.length; i++) {
+            cumulativeProbability += items[i].probability;
+            if (rand <= cumulativeProbability) {
+                selectedItem = items[i];
+                winIndex = i;
+                break;
+            }
+        }
         
         // Calculate rotation: 
-        // 8 segments = 45 deg each. 
-        // To land on index i, we need to rotate so that index i is at the top (pointer is usually top or right).
-        // Let's assume pointer is at Top (270deg in CSS rotation logic or 0 if we offset).
-        // A full spin is 360 * 5 (5 spins) + offset to land on segment.
-        const segmentAngle = 360 / SEGMENTS.length;
+        const segmentAngle = 360 / items.length;
         // The wheel rotates clockwise. To land on index, we need to rotate back by index * angle.
-        const targetRotation = 360 * 8 + (360 - (winIndex * segmentAngle)); 
-        // Add random jitter within the segment for realism
-        const finalRotation = targetRotation + Math.random() * (segmentAngle - 2) + 1;
+        // Assuming the pointer is at the top (0deg visually after offset adjustments).
+        // Standard CSS rotation starts at 3 o'clock (0deg). A conic gradient starts at 12 o'clock if from 0deg.
+        // Let's adjust so top center is the target.
+        // Target Rotation = Full Spins + (Offset to align segment i to top)
+        // Offset: 360 - (i * segmentAngle) - (segmentAngle / 2) center alignment
+        const targetRotation = 360 * 8 + (360 - (winIndex * segmentAngle)) - (segmentAngle / 2); 
+        // Add random jitter within the segment for realism (+/- 20% of segment)
+        const jitter = (Math.random() - 0.5) * (segmentAngle * 0.4);
+        const finalRotation = targetRotation + jitter;
 
         setRotation(finalRotation);
 
         // Database Update after animation delay (approx 4s)
         setTimeout(async () => {
             try {
-                const newPoints = profile.discord_points - SPIN_COST + (selectedSegment.type === 'points' ? selectedSegment.value : 0);
-                const newBalance = profile.wallet_balance + (selectedSegment.type === 'money' ? selectedSegment.value : 0);
+                let newPoints = profile.discord_points - SPIN_COST;
+                let newBalance = profile.wallet_balance;
+
+                if (selectedItem.type === 'points') newPoints += selectedItem.value;
+                if (selectedItem.type === 'money') newBalance += selectedItem.value;
 
                 await supabase.from('profiles').update({
                     discord_points: newPoints,
@@ -88,10 +96,10 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                 }).eq('id', profile.id);
 
                 setProfile({ ...profile, discord_points: newPoints, wallet_balance: newBalance });
-                setResult(selectedSegment);
+                setResult(selectedItem);
                 
-                if (selectedSegment.type !== 'none') {
-                    addToast('Winner!', `You won ${selectedSegment.text}!`, 'success');
+                if (selectedItem.type !== 'none') {
+                    addToast('Winner!', `You won ${selectedItem.text}!`, 'success');
                 } else {
                     addToast('So Close!', 'Better luck next time.', 'info');
                 }
@@ -102,6 +110,13 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
             }
         }, 4000);
     };
+
+    // Construct Conic Gradient for the Wheel
+    const wheelGradient = items.length > 0 
+        ? `conic-gradient(from 0deg, ${items.map((item, index) => `${item.color} ${index * (360/items.length)}deg ${(index + 1) * (360/items.length)}deg`).join(', ')})`
+        : 'conic-gradient(#333 0deg 360deg)';
+
+    if (loadingItems) return <div className="min-h-screen bg-[#0b0e14] flex items-center justify-center text-white"><Loader2 className="w-12 h-12 animate-spin text-purple-500"/></div>;
 
     return (
         <div className="min-h-screen bg-[#0b0e14] animate-fade-in pb-20 relative overflow-hidden">
@@ -135,10 +150,10 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                             className="w-full h-full rounded-full border-8 border-[#1e232e] shadow-2xl relative overflow-hidden transition-transform duration-[4000ms] cubic-bezier(0.1, 0.7, 0.1, 1)"
                             style={{ 
                                 transform: `rotate(${rotation}deg)`,
-                                background: 'conic-gradient(from 0deg, #10b981 0deg 45deg, #8b5cf6 45deg 90deg, #3b82f6 90deg 135deg, #8b5cf6 135deg 180deg, #eab308 180deg 225deg, #8b5cf6 225deg 270deg, #ef4444 270deg 315deg, #6b7280 315deg 360deg)'
+                                background: wheelGradient
                             }}
                         >
-                            {/* Inner Lines/Decorations could go here, simplistic CSS gradient used above */}
+                            {/* Can add internal lines or text overlays here if needed, keeping simple gradient for now */}
                         </div>
                         
                         {/* Center Cap */}

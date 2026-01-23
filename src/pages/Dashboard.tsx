@@ -602,6 +602,25 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                         <h2 className="text-4xl font-black italic tracking-tighter mb-4 uppercase relative z-10 leading-none">Welcome, {profile?.username}!</h2>
                         <p className="text-blue-100 font-black uppercase text-[11px] tracking-[0.3em] relative z-10 opacity-80">{isGuest ? "GUEST MODE: PROFILE NOT SYNCED" : "SECURE MARKETPLACE HUB ACTIVE"}</p>
                     </div>
+                    
+                    {/* Spin & Win Quick Access */}
+                    <div onClick={() => onNavigate('spin')} className="bg-gradient-to-r from-purple-900/40 to-pink-900/40 rounded-[2rem] p-8 border border-purple-500/20 shadow-2xl cursor-pointer hover:scale-[1.02] transition-transform group relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                        <div className="relative z-10 flex items-center justify-between">
+                            <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Sparkles className="w-5 h-5 text-purple-400" />
+                                    <p className="text-purple-300 font-black uppercase text-[10px] tracking-[0.3em]">Featured Game</p>
+                                </div>
+                                <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-2">Spin & Win</h3>
+                                <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Test your luck for instant prizes</p>
+                            </div>
+                            <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white shadow-lg group-hover:bg-purple-500 transition-colors">
+                                <ArrowUpRight className="w-6 h-6" />
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-2xl hover:border-blue-500/20 transition-all">
                            <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-3">Verified Commands</p>
@@ -812,91 +831,4 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                             <h3 className="text-7xl md:text-8xl font-black italic tracking-tighter leading-none mb-2 drop-shadow-2xl">{profile?.discord_points || 0}</h3>
                             <p className="text-sm font-bold text-purple-200 uppercase tracking-widest mb-6">Discord Points</p>
                             
-                            <button onClick={() => onNavigate('spin')} className="bg-white text-purple-900 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 hover:scale-105 transition-transform shadow-lg">
-                                <Sparkles className="w-4 h-4" /> Spin & Win
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* REDEEMED ITEMS SECTION - REDESIGNED */}
-                    <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="p-2 bg-[#0b0e14] rounded-xl text-purple-400 border border-purple-500/20"><Gift className="w-5 h-5" /></div>
-                            <h3 className="font-black text-white text-2xl italic uppercase tracking-tighter">My Redeemed Rewards</h3>
-                        </div>
-                        {pointRedemptions.length === 0 ? (
-                            <div className="text-center py-12 border-2 border-dashed border-gray-800 rounded-3xl">
-                                <p className="text-gray-600 font-black uppercase tracking-widest text-[10px]">No rewards redeemed yet.</p>
-                                <button onClick={() => onNavigate('pointsShop')} className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg">Visit Points Shop</button>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {pointRedemptions.map(redemption => (
-                                    <div key={redemption.id} onClick={() => setSelectedRedemption(redemption)} className="bg-[#0b0e14] rounded-[2rem] overflow-hidden border border-gray-800 hover:border-purple-500/50 transition-all duration-300 shadow-xl group flex flex-col cursor-pointer">
-                                        {/* Large Image Area */}
-                                        <div className="h-56 relative overflow-hidden">
-                                            {redemption.point_product?.image_url ? (
-                                                <img 
-                                                    src={redemption.point_product.image_url} 
-                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                                                    alt={redemption.point_product.name} 
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full bg-gray-900 flex items-center justify-center"><Gift className="w-12 h-12 text-gray-700" /></div>
-                                            )}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e14] to-transparent opacity-80"></div>
-                                            <div className="absolute bottom-4 left-4 right-4">
-                                                <h4 className="text-white font-black italic text-lg uppercase tracking-tighter leading-tight drop-shadow-md truncate">
-                                                    {redemption.point_product?.name || 'Unknown Reward'}
-                                                </h4>
-                                            </div>
-                                        </div>
-                                        
-                                        {/* Content Area */}
-                                        <div className="p-6 pt-2 flex flex-col flex-1 gap-4">
-                                            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-gray-800 pb-4">
-                                                <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(redemption.created_at).toLocaleDateString()}</span>
-                                                <span className="text-purple-400 font-black italic">{redemption.cost_at_redemption} PTS</span>
-                                            </div>
-                                            
-                                            <div className="flex items-center justify-between">
-                                                <div className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border flex items-center gap-1 ${
-                                                    redemption.status === 'delivered' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 
-                                                    'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                                                }`}>
-                                                    {redemption.status === 'delivered' ? <CheckCircle className="w-3 h-3"/> : <Clock className="w-3 h-3"/>}
-                                                    {redemption.status}
-                                                </div>
-                                                <button className="text-xs text-gray-400 hover:text-white transition font-bold uppercase tracking-widest flex items-center gap-1">
-                                                    Chat <MessageSquare className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                 </div>
-             )}
-          </div>
-       </div>
-
-       {selectedOrder && profile && (
-           <OrderDetailsModal 
-              order={selectedOrder} 
-              currentUser={profile} 
-              onClose={() => setSelectedOrder(null)} 
-           />
-       )}
-
-       {selectedRedemption && profile && (
-           <RedemptionDetailsModal 
-              redemption={selectedRedemption} 
-              currentUser={profile} 
-              onClose={() => setSelectedRedemption(null)} 
-           />
-       )}
-    </div>
-  );
-};
+                            <button onClick={() => onNavigate('spin')} className="bg-white text-
