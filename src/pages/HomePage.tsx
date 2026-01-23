@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar, Crown, TrendingUp, Sparkles, ShoppingCart, Zap, ShieldCheck, Headphones } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar, Crown, TrendingUp, Sparkles, ShoppingCart, Zap, ShieldCheck, Headphones, Cpu, Scan } from 'lucide-react';
 import { GameCategory, Product } from '../types';
 import { supabase } from '../supabaseClient';
 
@@ -9,6 +9,8 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isVip, setIsVip] = useState(false);
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
+  const [aiPicks, setAiPicks] = useState<Product[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
       const fetchData = async () => {
@@ -31,6 +33,40 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
             .order('created_at', { ascending: false });
           
           if (products) setTrendingProducts(products);
+
+          // --- MOON AI LOGIC ---
+          setAnalyzing(true);
+          try {
+              const storedInterests = JSON.parse(localStorage.getItem('moon_user_interests') || '{}');
+              const interestedCategories = Object.keys(storedInterests).sort((a, b) => storedInterests[b] - storedInterests[a]);
+              
+              let aiQuery = supabase.from('products').select('*').eq('is_hidden', false).limit(4);
+
+              if (interestedCategories.length > 0) {
+                  // Prioritize their top category
+                  aiQuery = aiQuery.eq('category', interestedCategories[0]);
+              } else {
+                  // Fallback: Randomize by picking VIP items or just trending if no history
+                  aiQuery = aiQuery.eq('is_vip', true);
+              }
+
+              const { data: aiData } = await aiQuery;
+              
+              // Artificial delay for "Scanning" animation effect
+              setTimeout(() => {
+                  if (aiData && aiData.length > 0) {
+                      setAiPicks(aiData);
+                  } else {
+                      // Fallback if query empty
+                      setAiPicks(products || []); 
+                  }
+                  setAnalyzing(false);
+              }, 1500);
+
+          } catch (e) {
+              console.error("AI Logic Failed", e);
+              setAnalyzing(false);
+          }
       };
       fetchData();
   }, []);
@@ -55,6 +91,9 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
          depts: "Elite Departments",
          products: "Global Products",
          trending: "Trending Now",
+         aiTitle: "Moon AI Picks",
+         aiDesc: "Curated based on your browsing habits",
+         analyzing: "Analyzing Profile...",
          viewItem: "View Item",
          cats: {
              [GameCategory.ACCOUNTS]: "Accounts",
@@ -65,8 +104,6 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
              [GameCategory.GIFT_CARD]: "Cards",
              [GameCategory.SUBSCRIPTION]: "Subscription"
          },
-         compete: "Competitions",
-         competeDesc: "Join Tournaments",
          servicesTitle: "Our Services",
          deliveryTitle: "Instant Delivery",
          deliveryDesc: "Get your items automatically within seconds of purchase.",
@@ -82,6 +119,9 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
          depts: "Départements d'Élite",
          products: "Produits Mondiaux",
          trending: "Tendance Actuelle",
+         aiTitle: "Sélection Moon AI",
+         aiDesc: "Sélectionné selon vos préférences",
+         analyzing: "Analyse du Profil...",
          viewItem: "Voir l'article",
          cats: {
              [GameCategory.ACCOUNTS]: "Comptes",
@@ -92,8 +132,6 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
              [GameCategory.GIFT_CARD]: "Cartes",
              [GameCategory.SUBSCRIPTION]: "Abonnement"
          },
-         compete: "Compétitions",
-         competeDesc: "Rejoindre les Tournois",
          servicesTitle: "Nos Services",
          deliveryTitle: "Livraison Instantanée",
          deliveryDesc: "Recevez vos articles automatiquement quelques secondes après l'achat.",
@@ -196,6 +234,71 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
               </div>
           </div>
         </div>
+      </section>
+
+      {/* --- MOON AI PICKS SECTION (NEW) --- */}
+      <section className="py-12 container mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400 animate-pulse"><Cpu className="w-6 h-6" /></div>
+                  <div>
+                      <h2 className="text-2xl md:text-3xl font-black text-white italic uppercase tracking-tighter">{text.aiTitle}</h2>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{text.aiDesc}</p>
+                  </div>
+              </div>
+              {analyzing && <div className="text-xs font-mono text-purple-400 animate-pulse flex items-center gap-2"><Scan className="w-4 h-4" /> {text.analyzing}</div>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {analyzing ? (
+                  // Skeleton Loaders with Glitch Effect
+                  [1,2,3,4].map(i => (
+                      <div key={i} className="h-80 bg-[#1e232e]/50 rounded-3xl border border-purple-500/20 animate-pulse relative overflow-hidden">
+                          <div className="absolute top-0 left-0 w-full h-1 bg-purple-500 animate-[loading_1s_ease-in-out_infinite]"></div>
+                      </div>
+                  ))
+              ) : (
+                  aiPicks.map((product) => (
+                      <div 
+                        key={product.id}
+                        onClick={() => { onSearch(product.name); onNavigate('shop'); }}
+                        className="bg-[#151a23] rounded-3xl border border-purple-900/30 overflow-hidden cursor-pointer group transition-all shadow-[0_0_20px_rgba(168,85,247,0.1)] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:-translate-y-2 relative"
+                      >
+                          {/* Holographic Overlay Effect on Hover */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 mix-blend-overlay"></div>
+                          
+                          <div className="relative h-64 bg-black">
+                              <img 
+                                src={product.image_url} 
+                                alt={product.name} 
+                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" 
+                                onError={(e) => { 
+                                    const target = e.target as HTMLImageElement;
+                                    if (product.image_url_2 && target.src !== product.image_url_2) {
+                                        target.src = product.image_url_2;
+                                    } else {
+                                        target.src = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80';
+                                    }
+                                }}
+                              />
+                              <div className="absolute top-3 left-3 bg-purple-600/90 backdrop-blur text-white text-[9px] font-black px-2 py-1 rounded uppercase tracking-widest shadow-lg flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3" /> Pick
+                              </div>
+                          </div>
+                          <div className="p-5 relative z-20 bg-gradient-to-b from-[#151a23] to-[#0b0e14]">
+                              <h3 className="text-white font-black italic uppercase tracking-tighter truncate text-lg mb-1 group-hover:text-purple-400 transition-colors">{product.name}</h3>
+                              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-4">{product.category}</p>
+                              <div className="flex justify-between items-center">
+                                  <span className="text-white font-mono font-bold text-xl">{product.price.toFixed(2)} DH</span>
+                                  <div className="w-8 h-8 bg-[#1e232e] rounded-full flex items-center justify-center text-purple-400 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                                      <ChevronRight className="w-4 h-4" />
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  ))
+              )}
+          </div>
       </section>
 
       {/* Trending Products Section */}

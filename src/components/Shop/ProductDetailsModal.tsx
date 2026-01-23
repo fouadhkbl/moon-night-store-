@@ -25,6 +25,18 @@ export const ProductDetailsModal = ({ product, onClose, onAddToCart, onSwitchPro
       // Scroll to top when product changes
       if (scrollRef.current) scrollRef.current.scrollTo(0, 0);
 
+      // --- MOON AI TRACKING ---
+      // Save user interest to LocalStorage for recommendations
+      try {
+          const interests = JSON.parse(localStorage.getItem('moon_user_interests') || '{}');
+          // Increment category interest
+          interests[product.category] = (interests[product.category] || 0) + 1;
+          localStorage.setItem('moon_user_interests', JSON.stringify(interests));
+      } catch (e) {
+          console.error('Tracking error', e);
+      }
+      // ------------------------
+
       const fetchData = async () => {
           setLoadingReviews(true);
           
@@ -77,7 +89,7 @@ export const ProductDetailsModal = ({ product, onClose, onAddToCart, onSwitchPro
           setLoadingReviews(false);
       };
       fetchData();
-  }, [product.id]);
+  }, [product.id, product.category]);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
       e.preventDefault();
