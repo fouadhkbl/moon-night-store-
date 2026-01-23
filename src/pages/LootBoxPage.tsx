@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Package, Zap, Trophy, Loader2, Sparkles, AlertCircle, Wallet, ArrowRight } from 'lucide-react';
+import { Package, Zap, Trophy, Loader2, Sparkles, Wallet, ArrowRight } from 'lucide-react';
 import { Profile } from '../types';
 
 interface CrateTier {
@@ -18,7 +18,7 @@ interface CrateTier {
 const CRATES: CrateTier[] = [
     {
         id: 'novice',
-        name: 'Novice Crate',
+        name: 'Novice Pack',
         price: 10,
         color: 'bg-blue-900/40',
         borderColor: 'border-blue-500',
@@ -28,7 +28,7 @@ const CRATES: CrateTier[] = [
     },
     {
         id: 'elite',
-        name: 'Elite Crate',
+        name: 'Elite Pack',
         price: 50,
         color: 'bg-purple-900/40',
         borderColor: 'border-purple-500',
@@ -38,7 +38,7 @@ const CRATES: CrateTier[] = [
     },
     {
         id: 'legend',
-        name: 'God Crate',
+        name: 'God Pack',
         price: 100,
         color: 'bg-yellow-900/40',
         borderColor: 'border-yellow-500',
@@ -62,50 +62,46 @@ export const LootBoxPage = ({ session, onNavigate, addToast }: { session: any, o
             }
         };
         fetchProfile();
-    }, [session, openingCrateId]); // Refresh when crate opens
+    }, [session, openingCrateId]); 
 
     const calculatePrize = (tierId: string) => {
         const rand = Math.random() * 100;
         
-        // REVISED ODDS (Hard Mode):
-        // 80% chance: Points (Consolation) - No money back
-        // 15% chance: Small Money (Significant Loss) - 10% to 40% of cost back
-        // 4.5% chance: Break Even / Tiny Profit - 90% to 120% of cost back
-        // 0.5% chance: JACKPOT - 2x to 3x cost back (Rare)
-
         let multiplier = 1;
         if (tierId === 'elite') multiplier = 5;
         if (tierId === 'legend') multiplier = 10;
 
-        if (rand < 80) {
-            // Points Reward (Common - 80%)
+        // NEW ODDS: 10/100 Winning Chance (Winning = Profit)
+        
+        if (rand < 60) {
+            // Points Reward (60%) - Consolation
             const basePoints = Math.floor(Math.random() * 50) + 50; // 50-100 base
             return { type: 'points', value: basePoints * multiplier * 2 }; 
-        } else if (rand < 95) {
-            // Small Money (Loss - 15%)
-            const returnRate = Math.random() * 0.3 + 0.1; // 10% to 40% of cost back
+        } else if (rand < 90) {
+            // Small Money Return (30%) - Loss of money but get partial back
+            const returnRate = Math.random() * 0.3 + 0.2; // 20% to 50% of cost
             const price = CRATES.find(c => c.id === tierId)?.price || 10;
             return { type: 'money', value: Number((price * returnRate).toFixed(2)) };
-        } else if (rand < 99.5) {
-            // Break Even / Tiny Win (4.5%)
-            const returnRate = Math.random() * 0.3 + 0.9; // 0.9x to 1.2x
+        } else if (rand < 98) {
+            // Winning / Profit (8%) - Modest Win
+            const returnRate = Math.random() * 0.5 + 1.1; // 1.1x to 1.6x of cost
             const price = CRATES.find(c => c.id === tierId)?.price || 10;
             return { type: 'money', value: Number((price * returnRate).toFixed(2)) };
         } else {
-            // JACKPOT (0.5%)
+            // JACKPOT (2%) - Big Win
             const price = CRATES.find(c => c.id === tierId)?.price || 10;
-            return { type: 'money', value: price * 3 };
+            return { type: 'money', value: price * 5 }; // 5x Multiplier
         }
     };
 
     const handleOpenCrate = async (crate: CrateTier) => {
         if (!profile) {
-            addToast('Login Required', 'You must be logged in to open crates.', 'error');
+            addToast('Login Required', 'You must be logged in to open packs.', 'error');
             return;
         }
 
         if (profile.wallet_balance < crate.price) {
-            addToast('Insufficient Funds', 'Top up your wallet to open this crate.', 'error');
+            addToast('Insufficient Funds', 'Top up your wallet to open this pack.', 'error');
             onNavigate('topup');
             return;
         }
@@ -129,7 +125,6 @@ export const LootBoxPage = ({ session, onNavigate, addToast }: { session: any, o
             }
 
             // 3. Database Update
-            // Note: In a real production app, this logic should be in a Postgres Function/Edge Function to prevent client-side manipulation.
             const { error } = await supabase.from('profiles').update({
                 wallet_balance: newBalance,
                 discord_points: newPoints
@@ -143,7 +138,7 @@ export const LootBoxPage = ({ session, onNavigate, addToast }: { session: any, o
                 setIsAnimating(false);
                 setOpeningCrateId(null);
                 setProfile({ ...profile, wallet_balance: newBalance, discord_points: newPoints });
-                addToast('Crate Opened!', `You won ${prize.type === 'money' ? prize.value + ' DH' : prize.value + ' Points'}`, 'success');
+                addToast('Pack Opened!', `You won ${prize.type === 'money' ? prize.value + ' DH' : prize.value + ' Points'}`, 'success');
             }, 2000);
 
         } catch (err: any) {
@@ -164,10 +159,10 @@ export const LootBoxPage = ({ session, onNavigate, addToast }: { session: any, o
                         <Sparkles className="w-4 h-4" /> Win Big Rewards
                     </div>
                     <h1 className="text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter mb-6 leading-none">
-                        Moon <span className="text-yellow-500">Loot</span>
+                        Moon <span className="text-yellow-500">Packs</span>
                     </h1>
                     <p className="text-gray-400 text-sm font-bold max-w-xl mx-auto mb-8">
-                        Open mystery crates for a chance to win massive Wallet Balance top-ups and Discord Points. Are you feeling lucky?
+                        Open mystery packs for a chance to win massive Wallet Balance top-ups and Discord Points. Are you feeling lucky?
                     </p>
                     
                     {profile && (
@@ -191,7 +186,7 @@ export const LootBoxPage = ({ session, onNavigate, addToast }: { session: any, o
                 </div>
             </div>
 
-            {/* Crates Grid */}
+            {/* Packs Grid */}
             <div className="container mx-auto px-4 py-16">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                     {CRATES.map((crate) => (
@@ -220,7 +215,7 @@ export const LootBoxPage = ({ session, onNavigate, addToast }: { session: any, o
                                         : `bg-gradient-to-r from-gray-100 to-gray-300 text-black hover:scale-[1.02] active:scale-95`
                                     }`}
                                 >
-                                    {openingCrateId === crate.id ? <Loader2 className="animate-spin w-4 h-4" /> : 'Open Crate'}
+                                    {openingCrateId === crate.id ? <Loader2 className="animate-spin w-4 h-4" /> : 'Open Pack'}
                                 </button>
                             </div>
                         </div>

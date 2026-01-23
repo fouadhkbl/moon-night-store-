@@ -123,7 +123,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                           <ShoppingBag className="w-4 h-4 text-cyan-500" /> Shop
                       </button>
                       <button onClick={() => handleMenuClick('loot')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white bg-gradient-to-r from-yellow-600/20 to-yellow-900/20 hover:from-yellow-600 hover:to-yellow-700 rounded-xl transition-all flex items-center gap-3 border border-yellow-500/30">
-                          <Package className="w-4 h-4 text-yellow-400" /> Moon Loot
+                          <Package className="w-4 h-4 text-yellow-400" /> Moon Packs
                       </button>
                       <button onClick={() => handleMenuClick('elite')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white bg-gradient-to-r from-yellow-700/20 to-yellow-900/20 hover:from-yellow-700 hover:to-yellow-800 rounded-xl transition-all flex items-center gap-3 border border-yellow-500/30">
                           <Crown className="w-4 h-4 text-yellow-400" /> Moon Elite
@@ -182,12 +182,12 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
         {/* Right: Actions */}
         <div className="flex items-center gap-2 md:gap-4 relative z-10">
           
-          {/* LOOT BUTTON (DESKTOP) */}
+          {/* PACKS BUTTON (DESKTOP) */}
           <button 
             onClick={() => onNavigate('loot')}
             className="hidden md:flex bg-[#1e232e] border border-gray-700 hover:border-blue-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest items-center gap-2 transition-all"
           >
-             <Package className="w-4 h-4 text-blue-400" /> Loot
+             <Package className="w-4 h-4 text-blue-400" /> Packs
           </button>
 
           {/* Mobile Search Toggle */}
