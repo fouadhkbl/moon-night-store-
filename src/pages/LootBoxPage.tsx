@@ -2,49 +2,45 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Package, Zap, Trophy, Loader2, Sparkles, Wallet, ArrowRight } from 'lucide-react';
-import { Profile } from '../types';
+import { Profile, LootBox } from '../types';
 
-interface CrateTier {
-    id: string;
-    name: string;
-    price: number;
-    color: string;
-    borderColor: string;
-    glowColor: string;
-    icon: React.ReactNode;
-    potentialRewards: string;
-}
-
-const CRATES: CrateTier[] = [
+// Fallback constant in case fetch fails or DB not set up yet
+const DEFAULT_CRATES: LootBox[] = [
     {
         id: 'novice',
         name: 'Novice Pack',
         price: 10,
+        multiplier: 1,
         color: 'bg-blue-900/40',
-        borderColor: 'border-blue-500',
-        glowColor: 'shadow-blue-500/20',
-        icon: <Package className="w-12 h-12 text-blue-400" />,
-        potentialRewards: 'Win up to 50 DH or 1000 Points'
+        border_color: 'border-blue-500',
+        glow_color: 'shadow-blue-500/20',
+        icon_type: 'package',
+        potential_rewards: 'Win up to 50 DH or 1000 Points',
+        created_at: new Date().toISOString()
     },
     {
         id: 'elite',
         name: 'Elite Pack',
         price: 50,
+        multiplier: 5,
         color: 'bg-purple-900/40',
-        borderColor: 'border-purple-500',
-        glowColor: 'shadow-purple-500/20',
-        icon: <Zap className="w-12 h-12 text-purple-400" />,
-        potentialRewards: 'Win up to 200 DH or 5000 Points'
+        border_color: 'border-purple-500',
+        glow_color: 'shadow-purple-500/20',
+        icon_type: 'zap',
+        potential_rewards: 'Win up to 200 DH or 5000 Points',
+        created_at: new Date().toISOString()
     },
     {
         id: 'legend',
         name: 'God Pack',
         price: 100,
+        multiplier: 10,
         color: 'bg-yellow-900/40',
-        borderColor: 'border-yellow-500',
-        glowColor: 'shadow-yellow-500/20',
-        icon: <Trophy className="w-12 h-12 text-yellow-400" />,
-        potentialRewards: 'Win up to 500 DH or 15000 Points'
+        border_color: 'border-yellow-500',
+        glow_color: 'shadow-yellow-500/20',
+        icon_type: 'trophy',
+        potential_rewards: 'Win up to 500 DH or 15000 Points',
+        created_at: new Date().toISOString()
     }
 ];
 
@@ -53,48 +49,54 @@ export const LootBoxPage = ({ session, onNavigate, addToast }: { session: any, o
     const [openingCrateId, setOpeningCrateId] = useState<string | null>(null);
     const [reward, setReward] = useState<{ type: 'money' | 'points', value: number } | null>(null);
     const [isAnimating, setIsAnimating] = useState(false);
+    const [crates, setCrates] = useState<LootBox[]>(DEFAULT_CRATES);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchData = async () => {
             if (session?.user?.id && session.user.id !== 'guest-user-123') {
                 const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
                 setProfile(data);
             }
+
+            try {
+                const { data: lootData, error } = await supabase.from('loot_boxes').select('*').order('price', { ascending: true });
+                if (!error && lootData && lootData.length > 0) {
+                    setCrates(lootData);
+                }
+            } catch (e) {
+                console.error("Using default crates due to error", e);
+            }
+            setLoading(false);
         };
-        fetchProfile();
+        fetchData();
     }, [session, openingCrateId]); 
 
-    const calculatePrize = (tierId: string) => {
+    const calculatePrize = (crate: LootBox) => {
         const rand = Math.random() * 100;
-        
-        let multiplier = 1;
-        if (tierId === 'elite') multiplier = 5;
-        if (tierId === 'legend') multiplier = 10;
+        const multiplier = crate.multiplier || 1; // Default to 1 if not set
 
-        // NEW ODDS: 10/100 Winning Chance (Winning = Profit)
+        // ODDS: 10/100 Winning Chance
         
         if (rand < 60) {
             // Points Reward (60%) - Consolation
-            const basePoints = Math.floor(Math.random() * 50) + 50; // 50-100 base
-            return { type: 'points', value: basePoints * multiplier * 2 }; 
+            const basePoints = Math.floor(Math.random() * 50) + 50; 
+            return { type: 'points', value: Math.floor(basePoints * multiplier * 2) }; 
         } else if (rand < 90) {
-            // Small Money Return (30%) - Loss of money but get partial back
-            const returnRate = Math.random() * 0.3 + 0.2; // 20% to 50% of cost
-            const price = CRATES.find(c => c.id === tierId)?.price || 10;
-            return { type: 'money', value: Number((price * returnRate).toFixed(2)) };
+            // Small Money Return (30%) - Partial refund
+            const returnRate = Math.random() * 0.3 + 0.2; 
+            return { type: 'money', value: Number((crate.price * returnRate).toFixed(2)) };
         } else if (rand < 98) {
             // Winning / Profit (8%) - Modest Win
-            const returnRate = Math.random() * 0.5 + 1.1; // 1.1x to 1.6x of cost
-            const price = CRATES.find(c => c.id === tierId)?.price || 10;
-            return { type: 'money', value: Number((price * returnRate).toFixed(2)) };
+            const returnRate = Math.random() * 0.5 + 1.1; 
+            return { type: 'money', value: Number((crate.price * returnRate).toFixed(2)) };
         } else {
             // JACKPOT (2%) - Big Win
-            const price = CRATES.find(c => c.id === tierId)?.price || 10;
-            return { type: 'money', value: price * 5 }; // 5x Multiplier
+            return { type: 'money', value: Number((crate.price * 5).toFixed(2)) }; // 5x
         }
     };
 
-    const handleOpenCrate = async (crate: CrateTier) => {
+    const handleOpenCrate = async (crate: LootBox) => {
         if (!profile) {
             addToast('Login Required', 'You must be logged in to open packs.', 'error');
             return;
@@ -112,7 +114,7 @@ export const LootBoxPage = ({ session, onNavigate, addToast }: { session: any, o
 
         try {
             // 1. Determine Prize
-            const prize = calculatePrize(crate.id);
+            const prize = calculatePrize(crate);
 
             // 2. Perform Transaction (Deduct Cost + Add Prize)
             let newBalance = profile.wallet_balance - crate.price;
@@ -148,6 +150,16 @@ export const LootBoxPage = ({ session, onNavigate, addToast }: { session: any, o
             setOpeningCrateId(null);
         }
     };
+
+    const getIcon = (type: string) => {
+        switch(type) {
+            case 'zap': return <Zap className="w-12 h-12 text-purple-400" />;
+            case 'trophy': return <Trophy className="w-12 h-12 text-yellow-400" />;
+            default: return <Package className="w-12 h-12 text-blue-400" />;
+        }
+    };
+
+    if (loading) return <div className="min-h-screen bg-[#0b0e14] flex items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-blue-500"/></div>;
 
     return (
         <div className="min-h-screen bg-[#0b0e14] animate-fade-in pb-20">
@@ -189,20 +201,20 @@ export const LootBoxPage = ({ session, onNavigate, addToast }: { session: any, o
             {/* Packs Grid */}
             <div className="container mx-auto px-4 py-16">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                    {CRATES.map((crate) => (
+                    {crates.map((crate) => (
                         <div 
                             key={crate.id}
-                            className={`relative bg-[#1e232e] rounded-[2.5rem] border-2 p-8 flex flex-col items-center text-center transition-all duration-300 group hover:-translate-y-2 ${crate.borderColor} ${openingCrateId === crate.id ? 'animate-bounce-slow' : ''}`}
+                            className={`relative bg-[#1e232e] rounded-[2.5rem] border-2 p-8 flex flex-col items-center text-center transition-all duration-300 group hover:-translate-y-2 ${crate.border_color || 'border-blue-500'} ${openingCrateId === crate.id ? 'animate-bounce-slow' : ''}`}
                         >
                             {/* Glow Effect */}
-                            <div className={`absolute inset-0 ${crate.color} blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity`}></div>
+                            <div className={`absolute inset-0 ${crate.color || 'bg-blue-900/40'} blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity`}></div>
                             
                             <div className="relative z-10 mb-6 group-hover:scale-110 transition-transform duration-500">
-                                {crate.icon}
+                                {getIcon(crate.icon_type)}
                             </div>
 
                             <h3 className="relative z-10 text-2xl font-black text-white italic uppercase tracking-tighter mb-2">{crate.name}</h3>
-                            <p className="relative z-10 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8 h-8">{crate.potentialRewards}</p>
+                            <p className="relative z-10 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8 h-8">{crate.potential_rewards}</p>
 
                             <div className="mt-auto relative z-10 w-full">
                                 <p className="text-3xl font-black text-white italic tracking-tighter mb-4">{crate.price} DH</p>

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap, Crown, Eye, EyeOff, Swords, Megaphone, Palette, Type } from 'lucide-react';
-import { Profile, Product, GameCategory, Coupon, PointProduct, Tournament, Announcement } from '../../types';
+import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap, Crown, Eye, EyeOff, Swords, Megaphone, Palette, Type, Package } from 'lucide-react';
+import { Profile, Product, GameCategory, Coupon, PointProduct, Tournament, Announcement, LootBox } from '../../types';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number, points: number) => void }) => {
   const [amount, setAmount] = useState<string>(user.wallet_balance.toString());
@@ -125,6 +125,142 @@ export const ReferralEditorModal = ({ user, onClose, onSave }: { user: Profile, 
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    );
+};
+
+export const LootBoxFormModal = ({ lootBox, onClose, onSave }: { lootBox: Partial<LootBox> | null, onClose: () => void, onSave: (p: any) => void }) => {
+    const [formData, setFormData] = useState<Partial<LootBox>>(lootBox || {
+        name: '',
+        price: 10,
+        multiplier: 1,
+        potential_rewards: '',
+        icon_type: 'package',
+        color: 'bg-blue-900/40',
+        border_color: 'border-blue-500',
+        glow_color: 'shadow-blue-500/20'
+    });
+    const [isSaving, setIsSaving] = useState(false);
+    const [theme, setTheme] = useState('novice');
+
+    // Sync theme if editing
+    React.useEffect(() => {
+        if(lootBox?.color) {
+            if(lootBox.color.includes('blue')) setTheme('novice');
+            else if(lootBox.color.includes('purple')) setTheme('elite');
+            else if(lootBox.color.includes('yellow')) setTheme('legend');
+            else if(lootBox.color.includes('red')) setTheme('ruby');
+            else if(lootBox.color.includes('green')) setTheme('emerald');
+        }
+    }, [lootBox]);
+
+    const handleThemeChange = (t: string) => {
+        setTheme(t);
+        let colors = { color: '', border_color: '', glow_color: '' };
+        switch(t) {
+            case 'novice': 
+                colors = { color: 'bg-blue-900/40', border_color: 'border-blue-500', glow_color: 'shadow-blue-500/20' };
+                break;
+            case 'elite':
+                colors = { color: 'bg-purple-900/40', border_color: 'border-purple-500', glow_color: 'shadow-purple-500/20' };
+                break;
+            case 'legend':
+                colors = { color: 'bg-yellow-900/40', border_color: 'border-yellow-500', glow_color: 'shadow-yellow-500/20' };
+                break;
+            case 'ruby':
+                colors = { color: 'bg-red-900/40', border_color: 'border-red-500', glow_color: 'shadow-red-500/20' };
+                break;
+            case 'emerald':
+                colors = { color: 'bg-green-900/40', border_color: 'border-green-500', glow_color: 'shadow-green-500/20' };
+                break;
+        }
+        setFormData(prev => ({ ...prev, ...colors }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        await onSave(formData);
+        setIsSaving(false);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up">
+                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]">
+                    <div className="flex items-center gap-3">
+                         <div className="bg-yellow-600/20 p-2 rounded-lg text-yellow-400"><Package className="w-5 h-5" /></div>
+                         <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
+                             {lootBox?.id ? 'Edit Moon Pack' : 'Create Moon Pack'}
+                         </h2>
+                    </div>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition"><X /></button>
+                </div>
+                
+                <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar max-h-[70vh]">
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Pack Name</label>
+                        <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. God Pack" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Price (DH)</label>
+                            <input required type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Reward Multiplier</label>
+                            <input required type="number" step="0.1" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" value={formData.multiplier} onChange={e => setFormData({...formData, multiplier: parseFloat(e.target.value)})} placeholder="e.g. 5" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Icon Style</label>
+                             <select className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" value={formData.icon_type} onChange={e => setFormData({...formData, icon_type: e.target.value})}>
+                                 <option value="package">Package</option>
+                                 <option value="zap">Lightning</option>
+                                 <option value="trophy">Trophy</option>
+                             </select>
+                        </div>
+                        <div>
+                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Visual Theme</label>
+                             <select className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" value={theme} onChange={e => handleThemeChange(e.target.value)}>
+                                 <option value="novice">Blue (Novice)</option>
+                                 <option value="elite">Purple (Elite)</option>
+                                 <option value="legend">Yellow (Legend)</option>
+                                 <option value="ruby">Red (Ruby)</option>
+                                 <option value="emerald">Green (Emerald)</option>
+                             </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Potential Rewards Text</label>
+                        <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-yellow-500 outline-none" value={formData.potential_rewards} onChange={e => setFormData({...formData, potential_rewards: e.target.value})} placeholder="e.g. Win up to 500 DH" />
+                    </div>
+
+                    <div className={`p-4 rounded-xl border flex items-center gap-4 ${formData.color} ${formData.border_color} ${formData.glow_color}`}>
+                        <div className="w-10 h-10 flex items-center justify-center">
+                            {formData.icon_type === 'package' && <Package className="w-6 h-6 text-white" />}
+                            {formData.icon_type === 'zap' && <Zap className="w-6 h-6 text-white" />}
+                            {formData.icon_type === 'trophy' && <Trophy className="w-6 h-6 text-white" />}
+                        </div>
+                        <div>
+                            <p className="text-white font-black italic uppercase tracking-tighter">{formData.name || 'Pack Name'}</p>
+                            <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">{formData.potential_rewards || 'Rewards info'}</p>
+                        </div>
+                    </div>
+
+                </form>
+
+                <div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3">
+                    <button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-700 transition">Cancel</button>
+                    <button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-yellow-600 text-white font-black py-3 rounded-xl hover:bg-yellow-700 transition flex items-center justify-center gap-2">
+                        {isSaving ? <Loader2 className="animate-spin" /> : <Save className="w-4 h-4" />} Save Pack
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -367,6 +503,7 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
 };
 
 export const TournamentFormModal = ({ tournament, onClose, onSave }: { tournament: Partial<Tournament> | null, onClose: () => void, onSave: (p: any) => void }) => {
+    // ... [existing implementation]
     const [formData, setFormData] = useState<Partial<Tournament>>(tournament || {
         title: '',
         game_name: 'Among Us',
@@ -494,6 +631,7 @@ export const TournamentFormModal = ({ tournament, onClose, onSave }: { tournamen
 };
 
 export const PointProductFormModal = ({ product, onClose, onSave }: { product: Partial<PointProduct> | null, onClose: () => void, onSave: (p: any) => void }) => {
+    // ... [existing implementation]
     const [formData, setFormData] = useState<Partial<PointProduct>>(product || {
         name: '',
         cost: 0,
@@ -576,6 +714,7 @@ export const PointProductFormModal = ({ product, onClose, onSave }: { product: P
 };
 
 export const CouponFormModal = ({ coupon, onClose, onSave }: { coupon: Partial<Coupon> | null, onClose: () => void, onSave: (c: any) => void }) => {
+    // ... [existing implementation]
     const [formData, setFormData] = useState<Partial<Coupon>>(coupon || {
         code: '',
         discount_type: 'percent',

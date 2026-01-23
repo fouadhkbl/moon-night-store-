@@ -178,7 +178,7 @@ create table if not exists public.reviews (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 16. ANNOUNCEMENTS (New Table for Multiple Announcements)
+-- 16. ANNOUNCEMENTS
 create table if not exists public.announcements (
   id uuid default uuid_generate_v4() primary key,
   message text not null,
@@ -188,10 +188,24 @@ create table if not exists public.announcements (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 17. APP SETTINGS (Admin Config)
+-- 17. APP SETTINGS
 create table if not exists public.app_settings (
   key text primary key,
   value text not null
+);
+
+-- 18. LOOT BOXES (Moon Packs)
+create table if not exists public.loot_boxes (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  price decimal(10,2) not null,
+  multiplier decimal(10,2) default 1.0,
+  color text default 'bg-blue-900/40',
+  border_color text default 'border-blue-500',
+  glow_color text default 'shadow-blue-500/20',
+  icon_type text default 'package',
+  potential_rewards text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- Insert Default Settings
@@ -199,6 +213,8 @@ insert into public.app_settings (key, value) values ('affiliate_invite_reward', 
 insert into public.app_settings (key, value) values ('affiliate_order_reward_percentage', '5') on conflict do nothing;
 insert into public.app_settings (key, value) values ('sale_code', 'MOON20') on conflict do nothing;
 insert into public.app_settings (key, value) values ('site_background', '') on conflict do nothing;
+insert into public.app_settings (key, value) values ('vip_membership_price', '199.00') on conflict do nothing;
+insert into public.app_settings (key, value) values ('vip_discount_percent', '5.00') on conflict do nothing;
 
 -- ENABLE ROW LEVEL SECURITY
 alter table public.profiles enable row level security;
@@ -218,8 +234,9 @@ alter table public.tournaments enable row level security;
 alter table public.reviews enable row level security;
 alter table public.app_settings enable row level security;
 alter table public.announcements enable row level security;
+alter table public.loot_boxes enable row level security;
 
--- SECURITY POLICIES (Previous policies remain, ensuring idempotent behavior)
+-- SECURITY POLICIES (Idempotent)
 
 -- Profiles
 drop policy if exists "Public profiles" on public.profiles;
@@ -242,6 +259,12 @@ drop policy if exists "Public read announcements" on public.announcements;
 create policy "Public read announcements" on public.announcements for select using (true);
 drop policy if exists "Admin manage announcements" on public.announcements;
 create policy "Admin manage announcements" on public.announcements for all using (true);
+
+-- Loot Boxes
+drop policy if exists "Public view loot boxes" on public.loot_boxes;
+create policy "Public view loot boxes" on public.loot_boxes for select using (true);
+drop policy if exists "Admin manage loot boxes" on public.loot_boxes;
+create policy "Admin manage loot boxes" on public.loot_boxes for all using (true);
 
 -- Products
 drop policy if exists "Public products" on public.products;

@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament, Announcement } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save, Megaphone, Image, LogOut, Crown } from 'lucide-react';
-import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal, AnnouncementFormModal, ReferralEditorModal } from './AdminModals';
+import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament, Announcement, LootBox } from '../../types';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save, Megaphone, Image, LogOut, Crown, Zap } from 'lucide-react';
+import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal, AnnouncementFormModal, ReferralEditorModal, LootBoxFormModal } from './AdminModals';
 
 const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
     return (
@@ -60,6 +60,7 @@ const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () =
 };
 
 const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption: PointRedemption, currentUser: Profile, onClose: () => void }) => {
+    // ... [existing implementation]
     const [messages, setMessages] = useState<RedemptionMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [status, setStatus] = useState(redemption.status);
@@ -185,6 +186,7 @@ const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption
 };
 
 const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
+    // ... [existing implementation]
     const [messages, setMessages] = useState<OrderMessage[]>([]);
     const [items, setItems] = useState<OrderItem[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -357,7 +359,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 };
 
 export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' | 'shop' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations' | 'tournaments' | 'system' | 'affiliates'>(role === 'shop' ? 'products' : 'stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations' | 'tournaments' | 'system' | 'affiliates' | 'lootBoxes'>(role === 'shop' ? 'products' : 'stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [pointProducts, setPointProducts] = useState<PointProduct[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -368,6 +370,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [logs, setLogs] = useState<AccessLog[]>([]);
+  const [lootBoxes, setLootBoxes] = useState<LootBox[]>([]);
   const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -387,13 +390,16 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [isTournamentModalOpen, setIsTournamentModalOpen] = useState(false);
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
+  const [isLootBoxModalOpen, setIsLootBoxModalOpen] = useState(false);
   const [isVisitsModalOpen, setIsVisitsModalOpen] = useState(false);
+  
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [editingPointProduct, setEditingPointProduct] = useState<Partial<PointProduct> | null>(null);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [editingLootBox, setEditingLootBox] = useState<Partial<LootBox> | null>(null);
   const [editingReferral, setEditingReferral] = useState<Profile | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedRedemption, setSelectedRedemption] = useState<PointRedemption | null>(null);
@@ -401,7 +407,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [providerFilter, setProviderFilter] = useState<'all' | 'email' | 'google' | 'discord'>('all');
 
   useEffect(() => {
-        // Fetch admin profile for chat identification
         const getAdminProfile = async () => {
             if(session?.user) {
                  const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
@@ -422,6 +427,10 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
 
     const { data: tData } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
     if (tData) setTournaments(tData);
+
+    // Fetch Loot Boxes
+    const { data: lbData } = await supabase.from('loot_boxes').select('*').order('price', { ascending: true });
+    if (lbData) setLootBoxes(lbData);
 
     if (role === 'full') {
         const { data: userData } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
@@ -571,6 +580,19 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       fetchData();
   };
 
+  const handleSaveLootBox = async (data: any) => {
+      if(data.id) await supabase.from('loot_boxes').update(data).eq('id', data.id);
+      else await supabase.from('loot_boxes').insert(data);
+      setIsLootBoxModalOpen(false);
+      fetchData();
+  };
+
+  const handleDeleteLootBox = async (id: string) => {
+      if(!window.confirm('Delete Moon Pack?')) return;
+      await supabase.from('loot_boxes').delete().eq('id', id);
+      fetchData();
+  };
+
   const handleSaveSettings = async () => {
       const updates = [
           { key: 'affiliate_invite_reward', value: inviteReward },
@@ -625,6 +647,10 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                     <Package className="w-4 h-4" /> Products
                 </button>
                 
+                <button onClick={() => setActiveSection('lootBoxes')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'lootBoxes' ? 'bg-yellow-600 text-white shadow-lg shadow-yellow-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
+                    <Zap className="w-4 h-4" /> Moon Packs
+                </button>
+
                 <button onClick={() => setActiveSection('pointsShop')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'pointsShop' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
                     <Trophy className="w-4 h-4" /> Rewards Shop
                 </button>
@@ -683,6 +709,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
             <div className="max-w-7xl mx-auto pb-20">
                 
                 {activeSection === 'stats' && role !== 'shop' && (
+                    // ... [stats content]
                     <div className="space-y-8 animate-slide-up">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-2xl relative overflow-hidden group">
@@ -713,7 +740,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                     </div>
                 )}
 
+                {/* Products Section */}
                 {activeSection === 'products' && (
+                    // ... [products content]
                     <div className="animate-slide-up">
                         <div className="flex justify-between items-center mb-8 gap-4">
                             <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Inventory</h2>
@@ -754,6 +783,35 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                     </div>
                 )}
 
+                {/* Loot Boxes Section */}
+                {activeSection === 'lootBoxes' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Moon Packs Config</h2>
+                            <button onClick={() => { setEditingLootBox(null); setIsLootBoxModalOpen(true); }} className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
+                                <PlusCircle className="w-4 h-4" /> New Pack
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {lootBoxes.map(box => (
+                                <div key={box.id} className={`bg-[#1e232e] p-6 rounded-3xl border flex flex-col items-center text-center relative group overflow-hidden ${box.border_color}`}>
+                                    <div className={`absolute inset-0 opacity-10 ${box.color}`}></div>
+                                    <h4 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2 relative z-10">{box.name}</h4>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 relative z-10">{box.potential_rewards}</p>
+                                    <p className="text-3xl font-black text-white italic tracking-tighter mb-4 relative z-10">{box.price} DH</p>
+                                    
+                                    <div className="flex gap-2 w-full relative z-10 mt-auto">
+                                        <button onClick={() => { setEditingLootBox(box); setIsLootBoxModalOpen(true); }} className="flex-1 bg-[#0b0e14] border border-gray-700 hover:border-white text-white py-2 rounded-xl text-xs font-black uppercase tracking-widest">Edit</button>
+                                        <button onClick={() => handleDeleteLootBox(box.id)} className="px-4 bg-red-900/20 text-red-500 hover:bg-red-600 hover:text-white rounded-xl"><Trash2 className="w-4 h-4"/></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* ... other sections ... */}
+                {/* Users Section */}
                 {activeSection === 'users' && role === 'full' && (
                     <div className="animate-slide-up">
                         <div className="flex justify-between items-center mb-8 gap-4">
@@ -806,6 +864,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                     </div>
                 )}
 
+                {/* Orders Section */}
                 {activeSection === 'orders' && role !== 'shop' && (
                     <div className="animate-slide-up">
                         <div className="flex justify-between items-center mb-8 gap-4">
@@ -837,6 +896,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                     </div>
                 )}
 
+                {/* System Section */}
                 {activeSection === 'system' && role === 'full' && (
                     <div className="animate-slide-up">
                         <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">System Configuration</h2>
@@ -925,8 +985,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                     </div>
                 )}
 
-                {/* Additional Sections for other roles/tabs would go here following the same pattern */}
-                {/* For brevity, Points Shop, Tournaments, Coupons, Redemptions, Donations, Affiliates use similar list rendering */}
+                {/* Additional Sections */}
                 {activeSection === 'pointsShop' && (
                     <div className="animate-slide-up">
                         <div className="flex justify-between items-center mb-8 gap-4">
@@ -1067,6 +1126,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         {isCouponModalOpen && <CouponFormModal coupon={editingCoupon} onClose={() => setIsCouponModalOpen(false)} onSave={handleSaveCoupon} />}
         {isTournamentModalOpen && <TournamentFormModal tournament={editingTournament} onClose={() => setIsTournamentModalOpen(false)} onSave={handleSaveTournament} />}
         {isAnnouncementModalOpen && <AnnouncementFormModal announcement={editingAnnouncement} onClose={() => setIsAnnouncementModalOpen(false)} onSave={handleSaveAnnouncement} />}
+        {isLootBoxModalOpen && <LootBoxFormModal lootBox={editingLootBox} onClose={() => setIsLootBoxModalOpen(false)} onSave={handleSaveLootBox} />}
         {isVisitsModalOpen && <VisitHistoryModal logs={logs} onClose={() => setIsVisitsModalOpen(false)} />}
         
         {editingUser && (

@@ -46,6 +46,19 @@ export interface Announcement {
   created_at: string;
 }
 
+export interface LootBox {
+  id: string;
+  name: string;
+  price: number;
+  multiplier: number;
+  color: string;
+  border_color: string;
+  glow_color: string;
+  icon_type: string;
+  potential_rewards: string;
+  created_at: string;
+}
+
 export interface Review {
   id: string;
   product_id: string;
