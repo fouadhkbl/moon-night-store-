@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product } from '../../types';
-import { ShoppingCart, Plus, Globe, Smartphone, Monitor, Gamepad2, Layers, Crown, Star, Eye, Lock } from 'lucide-react';
+import { ShoppingCart, Plus, Globe, Smartphone, Monitor, Gamepad2, Layers, Crown, Star, Eye } from 'lucide-react';
 
 export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { category: string | null, searchQuery: string, onProductClick: (p: Product) => void, language: 'en' | 'fr' }) => {
    const [products, setProducts] = useState<Product[]>([]);
@@ -65,14 +65,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
    }, [category, searchQuery, selectedRegion, selectedPlatform]);
 
    const handleProductClick = (p: Product) => {
-       // Lock VIP items if user is not VIP (level > 0)
-       if (p.is_vip && userVipLevel === 0) {
-           if(confirm("This is an Elite Member exclusive item. Would you like to upgrade to unlock it?")) {
-               window.location.href = '/elite'; // Use standard navigation or handle via prop
-           }
-       } else {
-           onProductClick(p);
-       }
+       onProductClick(p);
    };
 
    const regions = ['All', 'Global', 'Africa', 'Europe', 'Asia', 'North America', 'South America', 'Morocco'];
@@ -145,18 +138,10 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                             <div className="relative aspect-[3/4] overflow-hidden">
                             <img 
                                 src={p.image_url} 
-                                className={`w-full h-full object-cover group-hover:scale-110 transition duration-1000 brightness-75 group-hover:brightness-100 ${p.is_vip && userVipLevel === 0 ? 'blur-sm' : ''}`} 
+                                className="w-full h-full object-cover group-hover:scale-110 transition duration-1000 brightness-75 group-hover:brightness-100" 
                                 alt={p.name} 
                             />
                             
-                            {/* VIP LOCK OVERLAY */}
-                            {p.is_vip && userVipLevel === 0 && (
-                                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-20">
-                                    <Lock className="w-8 h-8 text-yellow-500 mb-2" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-yellow-400 border border-yellow-500/50 px-2 py-1 rounded bg-black/50">Elite Only</span>
-                                </div>
-                            )}
-
                             {/* Live Viewers (FOMO) */}
                             <div className="absolute top-3 right-3 z-10">
                                 <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-full border border-white/10 flex items-center gap-1.5 animate-pulse">
@@ -199,7 +184,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                             <div className="flex items-center justify-between mt-4">
                                 <div className="text-yellow-400 font-black italic text-xl md:text-2xl tracking-tighter leading-none">{p.price.toFixed(2)} <span className="text-[10px] md:text-xs">DH</span></div>
                                 <div className={`p-2.5 rounded-xl transition-all shadow-xl active:scale-90 ${p.is_vip ? 'bg-yellow-500/10 text-yellow-500 group-hover:bg-yellow-500 group-hover:text-black' : 'bg-blue-600/10 text-blue-400 group-hover:bg-blue-600 group-hover:text-white'}`}>
-                                    {p.is_vip && userVipLevel === 0 ? <Lock className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                                    <Plus className="w-4 h-4" />
                                 </div>
                             </div>
                             </div>
