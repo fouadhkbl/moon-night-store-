@@ -167,8 +167,30 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                                 background: wheelGradient
                             }}
                         >
+                            {/* Segment Labels */}
+                            {items.map((item, index) => {
+                                const segmentAngle = 360 / items.length;
+                                const rotate = (index * segmentAngle) + (segmentAngle / 2);
+                                return (
+                                    <div 
+                                        key={item.id}
+                                        className="absolute top-0 left-1/2 w-[1px] h-[50%] origin-bottom flex justify-center pt-4 md:pt-6"
+                                        style={{ transform: `translateX(-50%) rotate(${rotate}deg)` }}
+                                    >
+                                        <span 
+                                            className="text-white font-black text-[10px] md:text-xs uppercase tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] whitespace-nowrap"
+                                            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+                                        >
+                                            {item.text}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+
                             {/* Inner Circle for style */}
-                            <div className="absolute inset-0 m-auto w-3/4 h-3/4 rounded-full border-[1px] border-white/10"></div>
+                            <div className="absolute inset-0 m-auto w-3/4 h-3/4 rounded-full border-[1px] border-white/10 pointer-events-none"></div>
+                            {/* Hub Cap to hide center convergence */}
+                            <div className="absolute inset-0 m-auto w-1/4 h-1/4 rounded-full bg-[#1e232e] shadow-inner pointer-events-none"></div>
                         </div>
                         
                         {/* Center Cap */}
