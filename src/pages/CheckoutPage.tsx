@@ -78,12 +78,13 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
   useEffect(() => {
     const fetchProfile = async () => {
       if (!isGuest && session?.user?.id) {
-        const { data } = await supabase.from('profiles').select('wallet_balance, vip_level').eq('id', session.user.id).single();
+        const { data } = await supabase.from('profiles').select('wallet_balance, vip_level').eq('id', session.user.id).maybeSingle();
         if (data) {
             setWalletBalance(data.wallet_balance || 0); // Ensure non-null
             setVipLevel(data.vip_level || 0);
             
             // Auto switch to PayPal if balance low
+            // Note: We check against current total to decide initial method, but don't force it if user wants to change later (though UI logic handles disables)
             if ((data.wallet_balance || 0) < finalTotal) {
                 setPaymentMethod('paypal');
             }
@@ -91,7 +92,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       }
     };
     fetchProfile();
-  }, [session, isGuest]);
+  }, [session, isGuest, finalTotal]);
 
   useEffect(() => {
       if (window.paypal) {
@@ -171,8 +172,15 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
     }
     setIsProcessing(true);
     try {
-      const { data: profileData, error: profileFetchError } = await supabase.from('profiles').select('wallet_balance, discord_points, referred_by').eq('id', session.user.id).single();
-      if (profileFetchError) throw new Error("Failed to fetch user profile.");
+      // Use maybeSingle to properly handle missing rows without crashing immediately with PGRST116
+      const { data: profileData, error: profileFetchError } = await supabase
+          .from('profiles')
+          .select('wallet_balance, discord_points, referred_by')
+          .eq('id', session.user.id)
+          .maybeSingle();
+      
+      if (profileFetchError) throw new Error("Connection error while fetching profile.");
+      if (!profileData) throw new Error("Profile not found. Please log out and log in again.");
       
       const currentBalance = parseFloat(String(profileData.wallet_balance || 0));
       const currentPoints = parseInt(String(profileData.discord_points || 0));
