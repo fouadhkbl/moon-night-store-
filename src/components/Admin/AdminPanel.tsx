@@ -59,9 +59,7 @@ const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () =
     );
 };
 
-// ... (Redemption and Order Modals kept same as before, truncated for brevity if not changed) ...
 const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption: PointRedemption, currentUser: Profile, onClose: () => void }) => {
-    // ... [existing implementation of AdminRedemptionModal]
     const [messages, setMessages] = useState<RedemptionMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [status, setStatus] = useState(redemption.status);
@@ -187,7 +185,6 @@ const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption
 };
 
 const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
-    // ... [existing implementation of AdminOrderModal]
     const [messages, setMessages] = useState<OrderMessage[]>([]);
     const [items, setItems] = useState<OrderItem[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -430,13 +427,11 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
     const { data: tData } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
     if (tData) setTournaments(tData);
 
-    // Fetch Loot Boxes & History
     const { data: lbData } = await supabase.from('loot_boxes').select('*').order('price', { ascending: true });
     if (lbData) setLootBoxes(lbData);
 
     if (role === 'full' || role === 'limited') {
         const { data: lbOpens } = await supabase.from('loot_box_opens').select('*').order('created_at', { ascending: false }).limit(20);
-        // Need to fetch user details for opens manually since simple join might be tricky with types
         if (lbOpens) {
             const enrichedOpens = await Promise.all(lbOpens.map(async (open) => {
                 const { data: u } = await supabase.from('profiles').select('username, email').eq('id', open.user_id).single();
@@ -503,7 +498,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // --- ACTIONS --- (Actions remain same, skipping repetition of unchanged handlers)
   const handleDeleteProduct = async (id: string) => {
     if (!window.confirm('WARNING: Are you sure you want to delete this product forever?')) return;
     const { error } = await supabase.from('products').delete().eq('id', id);
@@ -623,7 +617,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       addToast('Saved', 'System settings updated.', 'success');
   };
 
-  // ... (Filtering logic remains same) ...
   const filteredProducts = products.filter(p => (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (p.category || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredPointProducts = pointProducts.filter(p => (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredTournaments = tournaments.filter(t => (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (t.game_name || '').toLowerCase().includes(searchQuery.toLowerCase()));
@@ -666,7 +659,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                     <Zap className="w-4 h-4" /> Moon Packs
                 </button>
 
-                {/* ... (Other nav buttons unchanged) ... */}
                 <button onClick={() => setActiveSection('pointsShop')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'pointsShop' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
                     <Trophy className="w-4 h-4" /> Rewards Shop
                 </button>
@@ -724,10 +716,8 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         <main className="flex-1 ml-72 p-10 overflow-y-auto h-screen relative bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
             <div className="max-w-7xl mx-auto pb-20">
                 
-                {/* ... (Stats Section unchanged) ... */}
                 {activeSection === 'stats' && role !== 'shop' && (
                     <div className="space-y-8 animate-slide-up">
-                        {/* ... */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-2xl relative overflow-hidden group">
                                 <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:scale-110 transition-transform"><Users className="w-24 h-24" /></div>
@@ -757,7 +747,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                     </div>
                 )}
 
-                {/* Products Section (unchanged) */}
                 {activeSection === 'products' && (
                     <div className="animate-slide-up">
                         <div className="flex justify-between items-center mb-8 gap-4">
@@ -799,7 +788,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                     </div>
                 )}
 
-                {/* Loot Boxes Section - Updated */}
                 {activeSection === 'lootBoxes' && (
                     <div className="animate-slide-up space-y-12">
                         {/* Config */}
@@ -870,7 +858,308 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                     </div>
                 )}
 
-                {/* ... other sections ... */}
+                {activeSection === 'users' && role === 'full' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">User Database</h2>
+                            <div className="flex gap-4">
+                                <select className="bg-[#1e232e] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs font-bold uppercase tracking-widest focus:border-indigo-500 outline-none" value={providerFilter} onChange={(e) => setProviderFilter(e.target.value as any)}>
+                                    <option value="all">All Providers</option>
+                                    <option value="email">Email</option>
+                                    <option value="google">Google</option>
+                                    <option value="discord">Discord</option>
+                                </select>
+                                <input type="text" placeholder="Search users..." className="bg-[#1e232e] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs font-bold uppercase tracking-widest focus:border-indigo-500 outline-none w-64" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="bg-[#1e232e] rounded-2xl border border-gray-800 overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="bg-[#151a23] text-gray-500 text-[10px] font-black uppercase tracking-widest">
+                                    <tr>
+                                        <th className="p-4">User</th>
+                                        <th className="p-4">Balance</th>
+                                        <th className="p-4">Points</th>
+                                        <th className="p-4">Auth</th>
+                                        <th className="p-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-800">
+                                    {filteredUsers.map(user => (
+                                        <tr key={user.id} className="hover:bg-[#0b0e14] transition-colors">
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">{user.username?.charAt(0)}</div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-xs">{user.username}</p>
+                                                        <p className="text-gray-500 text-[10px]">{user.email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-yellow-400 font-bold font-mono text-sm">{user.wallet_balance.toFixed(2)}</td>
+                                            <td className="p-4 text-purple-400 font-bold font-mono text-sm">{user.discord_points}</td>
+                                            <td className="p-4 text-gray-500 text-[10px] font-black uppercase">{user.auth_provider}</td>
+                                            <td className="p-4 text-right flex justify-end gap-2">
+                                                <button onClick={() => setEditingUser(user)} className="p-2 bg-indigo-600/10 text-indigo-400 rounded-lg hover:bg-indigo-600 hover:text-white transition"><Edit2 className="w-4 h-4" /></button>
+                                                <button onClick={() => handleDeleteUser(user.id)} className="p-2 bg-red-600/10 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition"><Trash2 className="w-4 h-4" /></button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'orders' && role !== 'shop' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Order History</h2>
+                            <input type="text" placeholder="Search orders..." className="bg-[#1e232e] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs font-bold uppercase tracking-widest focus:border-blue-500 outline-none w-64" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                        </div>
+                        <div className="space-y-4">
+                            {filteredOrders.map(order => (
+                                <div key={order.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center group hover:border-blue-500/50 transition-all">
+                                    <div className="flex items-center gap-6">
+                                        <div className={`p-4 rounded-xl ${order.status === 'completed' ? 'bg-green-500/10 text-green-500' : order.status === 'canceled' ? 'bg-red-500/10 text-red-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
+                                            <ShoppingCart className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-white font-black uppercase text-lg">Order #{order.id.slice(0,6)}</p>
+                                            <p className="text-gray-500 text-xs font-bold">{order.profile?.email} • {new Date(order.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right flex items-center gap-6">
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Total</p>
+                                            <p className="text-2xl font-black text-white italic tracking-tighter">{order.total_amount.toFixed(2)} DH</p>
+                                        </div>
+                                        <button onClick={() => setSelectedOrder(order)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg transition-all">View</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'system' && role === 'full' && (
+                    <div className="animate-slide-up">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">System Configuration</h2>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div className="space-y-6">
+                                <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 space-y-6">
+                                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter border-b border-gray-800 pb-4">Global Settings</h3>
+                                    
+                                    <h4 className="text-indigo-400 font-black uppercase tracking-widest text-xs mt-4 mb-2">Affiliate Program</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Invite Reward (DH)</label>
+                                            <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={inviteReward} onChange={e => setInviteReward(e.target.value)} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Order Commission (%)</label>
+                                            <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={orderCommission} onChange={e => setOrderCommission(e.target.value)} />
+                                        </div>
+                                    </div>
+
+                                    <h4 className="text-yellow-400 font-black uppercase tracking-widest text-xs mt-4 mb-2 flex items-center gap-2"><Crown className="w-3 h-3" /> VIP / Elite Configuration</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Membership Price (DH)</label>
+                                            <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-yellow-500" value={vipPrice} onChange={e => setVipPrice(e.target.value)} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Member Discount (%)</label>
+                                            <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-yellow-500" value={vipDiscount} onChange={e => setVipDiscount(e.target.value)} />
+                                        </div>
+                                    </div>
+
+                                    <h4 className="text-blue-400 font-black uppercase tracking-widest text-xs mt-4 mb-2">Store Config</h4>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Flash Sale Code</label>
+                                        <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500 uppercase" value={saleCode} onChange={e => setSaleCode(e.target.value)} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Site Background URL (Optional)</label>
+                                        <div className="flex gap-2">
+                                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={siteBackground} onChange={e => setSiteBackground(e.target.value)} placeholder="https://..." />
+                                            {siteBackground && <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-800 flex-shrink-0"><img src={siteBackground} className="w-full h-full object-cover" /></div>}
+                                        </div>
+                                    </div>
+
+                                    <button onClick={handleSaveSettings} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl uppercase tracking-widest text-xs shadow-lg shadow-indigo-900/20 transition-all flex items-center justify-center gap-2">
+                                        <Save className="w-4 h-4" /> Save Global Config
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                 <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800">
+                                     <div className="flex justify-between items-center mb-6">
+                                         <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Announcements</h3>
+                                         <button onClick={() => { setEditingAnnouncement(null); setIsAnnouncementModalOpen(true); }} className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest flex items-center gap-2 shadow-lg hover:bg-indigo-700 transition-all">
+                                             <PlusCircle className="w-3 h-3" /> Add New
+                                         </button>
+                                     </div>
+                                     
+                                     <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar">
+                                         {announcements.length === 0 && <p className="text-center text-gray-500 text-xs py-8 uppercase font-bold tracking-widest">No active announcements.</p>}
+                                         {announcements.map(ann => (
+                                             <div key={ann.id} className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 relative group hover:border-indigo-500/50 transition-all">
+                                                 <div className="flex justify-between items-start mb-2">
+                                                     <div className="flex items-center gap-2">
+                                                         <div className={`w-2 h-2 rounded-full ${ann.is_active ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                                                         <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{ann.is_active ? 'Active' : 'Inactive'}</span>
+                                                     </div>
+                                                     <div className="flex gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                                         <button onClick={() => { setEditingAnnouncement(ann); setIsAnnouncementModalOpen(true); }} className="hover:text-white text-gray-400"><Edit2 className="w-3 h-3" /></button>
+                                                         <button onClick={() => handleDeleteAnnouncement(ann.id)} className="hover:text-red-500 text-gray-400"><Trash2 className="w-3 h-3" /></button>
+                                                     </div>
+                                                 </div>
+                                                 <div className="p-3 rounded-lg text-xs font-bold uppercase tracking-widest text-center shadow-inner" style={{ background: ann.background_color, color: ann.text_color }}>
+                                                     {ann.message}
+                                                 </div>
+                                             </div>
+                                         ))}
+                                     </div>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'pointsShop' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Points Shop</h2>
+                            <button onClick={() => { setEditingPointProduct(null); setIsPointProductModalOpen(true); }} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
+                                <PlusCircle className="w-4 h-4" /> Add Reward
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {filteredPointProducts.map(p => (
+                                <div key={p.id} className="bg-[#1e232e] p-4 rounded-2xl border border-gray-800">
+                                    <img src={p.image_url} className="w-full h-32 object-cover rounded-xl mb-4 bg-black" alt="" />
+                                    <h4 className="text-white font-bold mb-1">{p.name}</h4>
+                                    <p className="text-purple-400 text-xs font-black italic mb-4">{p.cost} PTS</p>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { setEditingPointProduct(p); setIsPointProductModalOpen(true); }} className="flex-1 bg-gray-800 text-gray-400 hover:text-white py-2 rounded-lg text-[10px] font-black uppercase">Edit</button>
+                                        <button onClick={() => handleDeletePointProduct(p.id)} className="px-3 bg-red-900/20 text-red-500 hover:bg-red-600 hover:text-white rounded-lg"><Trash2 className="w-4 h-4"/></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'tournaments' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Tournaments</h2>
+                            <button onClick={() => { setEditingTournament(null); setIsTournamentModalOpen(true); }} className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
+                                <PlusCircle className="w-4 h-4" /> Create
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            {filteredTournaments.map(t => (
+                                <div key={t.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center">
+                                    <div>
+                                        <h4 className="text-white font-bold text-lg">{t.title}</h4>
+                                        <p className="text-gray-500 text-xs">{t.game_name} • {t.status}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { setEditingTournament(t); setIsTournamentModalOpen(true); }} className="bg-gray-800 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Edit</button>
+                                        <button onClick={() => handleDeleteTournament(t.id)} className="bg-red-900/20 text-red-500 px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-red-600 hover:text-white">Delete</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'coupons' && role === 'full' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Coupons</h2>
+                            <button onClick={() => { setEditingCoupon(null); setIsCouponModalOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
+                                <PlusCircle className="w-4 h-4" /> Add Code
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {filteredCoupons.map(c => (
+                                <div key={c.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 relative group">
+                                    <div className="absolute top-4 right-4 text-xs font-black uppercase tracking-widest text-gray-500">{c.is_active ? 'Active' : 'Inactive'}</div>
+                                    <h4 className="text-white font-mono text-xl font-black tracking-widest mb-2">{c.code}</h4>
+                                    <p className="text-indigo-400 font-bold text-sm mb-4">{c.discount_type === 'percent' ? `${c.discount_value}% OFF` : `-${c.discount_value} DH`}</p>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { setEditingCoupon(c); setIsCouponModalOpen(true); }} className="flex-1 bg-gray-800 text-white py-2 rounded-lg text-xs font-bold">Edit</button>
+                                        <button onClick={() => handleDeleteCoupon(c.id)} className="px-3 bg-red-900/20 text-red-500 hover:text-white hover:bg-red-600 rounded-lg"><Trash2 className="w-4 h-4"/></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'redemptions' && (
+                    <div className="animate-slide-up">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Redemption Requests</h2>
+                        <div className="space-y-4">
+                            {filteredRedemptions.map(r => (
+                                <div key={r.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <img src={r.point_product?.image_url} className="w-12 h-12 rounded-lg bg-black object-cover" alt="" />
+                                        <div>
+                                            <h4 className="text-white font-bold">{r.profile?.username}</h4>
+                                            <p className="text-gray-500 text-xs">Redeemed: {r.point_product?.name}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setSelectedRedemption(r)} className="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold text-xs uppercase hover:bg-purple-700">Manage</button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'donations' && (
+                    <div className="animate-slide-up">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Donation Log</h2>
+                        <div className="space-y-4">
+                            {filteredDonations.map(d => (
+                                <div key={d.id} className="bg-[#1e232e] p-4 rounded-2xl border border-gray-800 flex justify-between items-center">
+                                    <div>
+                                        <p className="text-white font-bold text-sm">{d.profile?.username || 'Guest'}</p>
+                                        <p className="text-gray-500 text-[10px]">{new Date(d.created_at).toLocaleDateString()}</p>
+                                    </div>
+                                    <p className="text-yellow-400 font-black italic text-lg">{d.amount.toFixed(2)} DH</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'affiliates' && role === 'full' && (
+                    <div className="animate-slide-up">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Affiliate Partners</h2>
+                        <div className="space-y-4">
+                            {affiliateProfiles.map(p => (
+                                <div key={p.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center">
+                                    <div>
+                                        <h4 className="text-white font-bold">{p.username}</h4>
+                                        <p className="text-green-400 text-xs font-mono">Code: {p.referral_code}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-gray-500 text-[10px] font-black uppercase">Earnings</p>
+                                        <p className="text-white font-bold">{p.referral_earnings} DH</p>
+                                        <button onClick={() => setEditingReferral(p)} className="text-blue-500 text-xs hover:text-white mt-1">Edit</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
             </div>
         </main>
 

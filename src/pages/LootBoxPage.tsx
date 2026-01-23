@@ -17,6 +17,30 @@ const DEFAULT_CRATES: LootBox[] = [
         icon_type: 'package',
         potential_rewards: 'Win up to 50 DH or 1000 Points',
         created_at: new Date().toISOString()
+    },
+    {
+        id: 'elite',
+        name: 'Elite Pack',
+        price: 50,
+        multiplier: 5,
+        color: 'bg-purple-900/40',
+        border_color: 'border-purple-500',
+        glow_color: 'shadow-purple-500/20',
+        icon_type: 'zap',
+        potential_rewards: 'Win up to 250 DH or 5000 Points',
+        created_at: new Date().toISOString()
+    },
+    {
+        id: 'god',
+        name: 'God Pack',
+        price: 100,
+        multiplier: 10,
+        color: 'bg-yellow-900/40',
+        border_color: 'border-yellow-500',
+        glow_color: 'shadow-yellow-500/20',
+        icon_type: 'trophy',
+        potential_rewards: 'Win up to 500 DH or 10000 Points',
+        created_at: new Date().toISOString()
     }
 ];
 
@@ -227,7 +251,7 @@ export const LootBoxPage = ({ session, onNavigate, addToast }: { session: any, o
 
             {/* Packs Grid */}
             <div className="container mx-auto px-4 py-16">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                     {crates.map((crate) => (
                         <div 
                             key={crate.id}

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap, Crown, Eye, EyeOff, Swords, Megaphone, Palette, Type, Package } from 'lucide-react';
 import { Profile, Product, GameCategory, Coupon, PointProduct, Tournament, Announcement, LootBox } from '../../types';
+import { supabase } from '../../supabaseClient';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number, points: number) => void }) => {
   const [amount, setAmount] = useState<string>(user.wallet_balance.toString());
@@ -144,7 +145,6 @@ export const LootBoxFormModal = ({ lootBox, onClose, onSave }: { lootBox: Partia
     const [isSaving, setIsSaving] = useState(false);
     const [theme, setTheme] = useState('novice');
 
-    // Sync theme if editing
     React.useEffect(() => {
         if(lootBox?.color) {
             if(lootBox.color.includes('blue')) setTheme('novice');
@@ -389,7 +389,6 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
             </div>
           </div>
 
-          {/* CATEGORY & PLATFORM */}
           <div className="grid grid-cols-2 gap-4">
              <div>
               <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Category</label>
@@ -417,7 +416,6 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
             </div>
           </div>
 
-          {/* REGION / COUNTRY */}
           <div>
                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Region / Country</label>
                 {customCountry ? (
@@ -459,7 +457,6 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
             <textarea className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none h-24" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}></textarea>
           </div>
 
-          {/* TRENDING, VIP & VISIBILITY TOGGLES */}
           <div className="pt-2">
             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Product Highlights & Visibility</label>
             <div className="grid grid-cols-3 gap-3">
@@ -503,7 +500,6 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
 };
 
 export const TournamentFormModal = ({ tournament, onClose, onSave }: { tournament: Partial<Tournament> | null, onClose: () => void, onSave: (p: any) => void }) => {
-    // ... [existing implementation]
     const [formData, setFormData] = useState<Partial<Tournament>>(tournament || {
         title: '',
         game_name: 'Among Us',
@@ -631,7 +627,6 @@ export const TournamentFormModal = ({ tournament, onClose, onSave }: { tournamen
 };
 
 export const PointProductFormModal = ({ product, onClose, onSave }: { product: Partial<PointProduct> | null, onClose: () => void, onSave: (p: any) => void }) => {
-    // ... [existing implementation]
     const [formData, setFormData] = useState<Partial<PointProduct>>(product || {
         name: '',
         cost: 0,
@@ -714,7 +709,6 @@ export const PointProductFormModal = ({ product, onClose, onSave }: { product: P
 };
 
 export const CouponFormModal = ({ coupon, onClose, onSave }: { coupon: Partial<Coupon> | null, onClose: () => void, onSave: (c: any) => void }) => {
-    // ... [existing implementation]
     const [formData, setFormData] = useState<Partial<Coupon>>(coupon || {
         code: '',
         discount_type: 'percent',
