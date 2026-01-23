@@ -208,6 +208,18 @@ create table if not exists public.loot_boxes (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 19. LOOT BOX OPENS
+create table if not exists public.loot_box_opens (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  loot_box_id uuid references public.loot_boxes(id) on delete set null,
+  box_name text,
+  box_price decimal(10,2) not null,
+  reward_type text not null, -- 'money' or 'points'
+  reward_value decimal(10,2) not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- Insert Default Settings
 insert into public.app_settings (key, value) values ('affiliate_invite_reward', '5') on conflict do nothing;
 insert into public.app_settings (key, value) values ('affiliate_order_reward_percentage', '5') on conflict do nothing;
@@ -235,6 +247,7 @@ alter table public.reviews enable row level security;
 alter table public.app_settings enable row level security;
 alter table public.announcements enable row level security;
 alter table public.loot_boxes enable row level security;
+alter table public.loot_box_opens enable row level security;
 
 -- SECURITY POLICIES (Idempotent)
 
@@ -265,6 +278,14 @@ drop policy if exists "Public view loot boxes" on public.loot_boxes;
 create policy "Public view loot boxes" on public.loot_boxes for select using (true);
 drop policy if exists "Admin manage loot boxes" on public.loot_boxes;
 create policy "Admin manage loot boxes" on public.loot_boxes for all using (true);
+
+-- Loot Box Opens
+drop policy if exists "User view own loot history" on public.loot_box_opens;
+create policy "User view own loot history" on public.loot_box_opens for select using (auth.uid() = user_id);
+drop policy if exists "Admin view all loot history" on public.loot_box_opens;
+create policy "Admin view all loot history" on public.loot_box_opens for select using (true);
+drop policy if exists "User insert loot history" on public.loot_box_opens;
+create policy "User insert loot history" on public.loot_box_opens for insert with check (auth.uid() = user_id);
 
 -- Products
 drop policy if exists "Public products" on public.products;

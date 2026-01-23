@@ -59,6 +59,18 @@ export interface LootBox {
   created_at: string;
 }
 
+export interface LootBoxOpen {
+  id: string;
+  user_id: string;
+  loot_box_id: string;
+  box_name: string;
+  box_price: number;
+  reward_type: 'money' | 'points';
+  reward_value: number;
+  created_at: string;
+  profile?: Profile;
+}
+
 export interface Review {
   id: string;
   product_id: string;
