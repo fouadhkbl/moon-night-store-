@@ -10,7 +10,8 @@ export const TournamentDetailsPage = ({ tournament, onNavigate, addToast }: { to
     }
 
     const handleShare = () => {
-        const url = `${window.location.origin}/?tournament_id=${tournament.id}`;
+        // Use hash (#) instead of query param (?) to avoid server 404 errors
+        const url = `${window.location.origin}/#tournament=${tournament.id}`;
         navigator.clipboard.writeText(url).then(() => {
             addToast('Link Copied', 'Tournament shared link copied to clipboard!', 'success');
         });

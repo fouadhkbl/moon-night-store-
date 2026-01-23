@@ -173,21 +173,36 @@ const App: React.FC = () => {
      setTimeout(() => setToasts(curr => curr.filter(t => t.id !== id)), 4000);
   };
 
-  // --- HANDLE DEEP LINKS ---
+  // --- HANDLE DEEP LINKS (Updated for Hash and Query Params) ---
   useEffect(() => {
-      const params = new URLSearchParams(window.location.search);
-      const tournamentId = params.get('tournament_id');
-      
-      if (tournamentId) {
-          const fetchTournament = async () => {
+      const handleDeepLink = async () => {
+          let tournamentId: string | null = null;
+
+          // 1. Check Hash (#tournament=ID) - Priority for 404 avoidance
+          if (window.location.hash && window.location.hash.includes('tournament=')) {
+              const parts = window.location.hash.split('tournament=');
+              if (parts.length > 1) {
+                  tournamentId = parts[1];
+              }
+          }
+
+          // 2. Fallback to Query Params (?tournament_id=ID)
+          if (!tournamentId) {
+              const params = new URLSearchParams(window.location.search);
+              tournamentId = params.get('tournament_id');
+          }
+          
+          if (tournamentId) {
               const { data } = await supabase.from('tournaments').select('*').eq('id', tournamentId).single();
               if (data) {
                   setSelectedTournament(data);
                   setCurrentPage('tournament-details');
+                  // Clean the URL to remove the hash/query param after navigation
+                  window.history.replaceState(null, '', window.location.pathname);
               }
-          };
-          fetchTournament();
-      }
+          }
+      };
+      handleDeepLink();
   }, []);
 
   // --- SEO MANAGEMENT ---
