@@ -5,7 +5,9 @@ import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, Po
 import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save, Megaphone, Image, LogOut, Crown } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal, AnnouncementFormModal, ReferralEditorModal } from './AdminModals';
 
-// ... [Keep VisitHistoryModal, AdminRedemptionModal, AdminOrderModal unmodified] ...
+// ... [Keep VisitHistoryModal, AdminRedemptionModal, AdminOrderModal unmodified, inserting their code here if they are not imported or just assuming the rest of file is preserved if partial replacement not supported. Since full file replacement is safer:] ...
+
+// --- [RE-INSERTING HELPER COMPONENTS TO ENSURE FILE INTEGRITY] ---
 const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
@@ -770,8 +772,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                     </div>
                 )}
 
-                {/* ... [Keeping Products, Tournaments, Users, Affiliates, Orders, Redemptions, Coupons, PointsShop, Donations sections essentially the same, removed for brevity in XML, assuming they exist in the file] ... */}
-                
                 {/* SYSTEM SETTINGS SECTION */}
                 {activeSection === 'system' && role === 'full' && (
                     <div className="animate-slide-up">

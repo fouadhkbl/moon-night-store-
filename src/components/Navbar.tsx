@@ -182,14 +182,6 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
         {/* Right: Actions */}
         <div className="flex items-center gap-2 md:gap-4 relative z-10">
           
-          {/* ELITE BUTTON (DESKTOP) */}
-          <button 
-            onClick={() => onNavigate('elite')}
-            className="hidden md:flex bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-yellow-500 hover:to-yellow-700 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest items-center gap-2 shadow-lg shadow-yellow-600/20 active:scale-95 transition-all"
-          >
-             <Crown className="w-4 h-4 text-yellow-200" /> Elite
-          </button>
-
           {/* LOOT BUTTON (DESKTOP) */}
           <button 
             onClick={() => onNavigate('loot')}
