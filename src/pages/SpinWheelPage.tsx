@@ -46,59 +46,50 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
         setSpinning(true);
         setShowWinModal(false);
 
-        // 1. STRICT CHECK: Fetch fresh profile to prevent free spin glitches
-        const { data: freshProfile, error: profileError } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-        
-        if (profileError || !freshProfile) {
-            addToast('Error', 'Could not verify balance. Try again.', 'error');
-            setSpinning(false);
-            return;
-        }
-
-        const hasFreeSpin = (freshProfile.spins_count || 0) > 0;
-
-        if (!hasFreeSpin && freshProfile.discord_points < SPIN_COST) {
-            addToast('Insufficient Points', `You need ${SPIN_COST} points to spin.`, 'error');
-            setSpinning(false);
-            // Update local state to match server
-            setProfile(freshProfile);
-            return;
-        }
-
-        if (items.length === 0) {
-            addToast('Error', 'Wheel configuration invalid.', 'error');
-            setSpinning(false);
-            return;
-        }
-
-        // 2. Determine Result
-        const rand = Math.random() * 100;
-        let cumulativeProbability = 0;
-        let selectedItem = items[items.length - 1]; // Default fallback
-        let winIndex = items.length - 1;
-
-        for (let i = 0; i < items.length; i++) {
-            cumulativeProbability += items[i].probability;
-            if (rand <= cumulativeProbability) {
-                selectedItem = items[i];
-                winIndex = i;
-                break;
-            }
-        }
-        
-        // 3. Calculate Physics
-        const segmentAngle = 360 / items.length;
-        // Logic: 360*5 (spins) + (360 - index*angle) - half_segment (to center)
-        // Adjust for default 0deg being 12 o'clock
-        const targetRotation = rotation + 1800 + (360 - (winIndex * segmentAngle)) - (rotation % 360); 
-        // Note: Simplified logic to ensure forward rotation
-        const finalRotation = 360 * 5 + (360 - winIndex * segmentAngle) - (segmentAngle / 2);
-
-        setRotation(prev => prev + 360 * 5 + (360 - (winIndex * segmentAngle) - (prev % 360)) - (segmentAngle / 2));
-
-        // 4. Update Database IMMEDIATELY (to prevent tab-closing exploits)
-        // We do this while animation plays, but result is shown after.
         try {
+            // 1. STRICT CHECK: Fetch fresh profile to prevent free spin glitches
+            const { data: freshProfile, error: profileError } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+            
+            if (profileError || !freshProfile) {
+                throw new Error('Could not verify balance. Try again.');
+            }
+
+            const hasFreeSpin = (freshProfile.spins_count || 0) > 0;
+
+            if (!hasFreeSpin && freshProfile.discord_points < SPIN_COST) {
+                setProfile(freshProfile); // Sync local state
+                throw new Error(`Insufficient Points. You need ${SPIN_COST} points.`);
+            }
+
+            if (items.length === 0) {
+                throw new Error('Wheel configuration invalid.');
+            }
+
+            // 2. Determine Result
+            const rand = Math.random() * 100;
+            let cumulativeProbability = 0;
+            let selectedItem = items[items.length - 1]; // Default fallback
+            let winIndex = items.length - 1;
+
+            for (let i = 0; i < items.length; i++) {
+                cumulativeProbability += items[i].probability;
+                if (rand <= cumulativeProbability) {
+                    selectedItem = items[i];
+                    winIndex = i;
+                    break;
+                }
+            }
+            
+            // 3. Calculate Physics
+            const segmentAngle = 360 / items.length;
+            // Logic: 360*5 (spins) + (360 - index*angle) - half_segment (to center)
+            const targetRotation = rotation + 1800 + (360 - (winIndex * segmentAngle)) - (rotation % 360); 
+            // Note: Simplified logic to ensure forward rotation
+            const spinAmount = 360 * 5 + (360 - winIndex * segmentAngle) - (segmentAngle / 2);
+
+            setRotation(prev => prev + spinAmount);
+
+            // 4. Update Database IMMEDIATELY (to prevent tab-closing exploits)
             let newPoints = freshProfile.discord_points;
             let newBalance = freshProfile.wallet_balance;
             let newSpins = freshProfile.spins_count || 0;
@@ -137,9 +128,9 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                 }
             }, 4500); // 4.5s animation match
 
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            addToast('Error', 'Transaction failed. Please contact support.', 'error');
+            addToast('Error', e.message || 'Transaction failed.', 'error');
             setSpinning(false);
         }
     };
@@ -152,6 +143,7 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
     if (loadingItems) return <div className="min-h-screen bg-[#0b0e14] flex items-center justify-center text-white"><Loader2 className="w-12 h-12 animate-spin text-purple-500"/></div>;
 
     const hasSpins = profile && (profile.spins_count || 0) > 0;
+    const canSpin = !spinning && profile && (hasSpins || profile.discord_points >= SPIN_COST);
 
     return (
         <div className="min-h-screen bg-[#0b0e14] animate-fade-in pb-20 relative overflow-hidden">
@@ -182,7 +174,7 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                     <div className="relative w-[340px] h-[340px] md:w-[450px] md:h-[450px] mb-12">
                         {/* Pointer - Top Center */}
                         <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-20 drop-shadow-xl">
-                            <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[40px] border-t-white filter drop-shadow-md"></div>
+                            <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[40px] border-t-white filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]"></div>
                         </div>
 
                         {/* The Wheel */}
@@ -193,7 +185,7 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                                 background: wheelGradient
                             }}
                         >
-                            {/* Segment Labels */}
+                            {/* Segment Labels - Improved Visibility */}
                             {items.map((item, index) => {
                                 const segmentAngle = 360 / items.length;
                                 // Rotation to position text in center of slice
@@ -201,13 +193,13 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                                 return (
                                     <div 
                                         key={item.id}
-                                        className="absolute top-0 left-1/2 w-[1px] h-[50%] origin-bottom"
-                                        style={{ transform: `translateX(-50%) rotate(${rotate}deg)` }}
+                                        className="absolute top-0 left-1/2 w-8 h-[50%] origin-bottom -ml-4 z-10 pointer-events-none"
+                                        style={{ transform: `rotate(${rotate}deg)` }}
                                     >
-                                        <div className="mt-8 md:mt-12 flex flex-col items-center justify-start h-full">
+                                        <div className="mt-8 md:mt-10 flex justify-center text-center">
                                             <span 
-                                                className="text-white font-black text-[10px] md:text-sm uppercase tracking-widest whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-                                                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                                                className="text-white font-black text-[10px] md:text-sm uppercase tracking-widest whitespace-nowrap drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+                                                style={{ writingMode: 'vertical-rl' }}
                                             >
                                                 {item.text}
                                             </span>
@@ -219,8 +211,8 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                             {/* Inner Circle for style */}
                             <div className="absolute inset-0 m-auto w-2/3 h-2/3 rounded-full border-[1px] border-white/10 pointer-events-none"></div>
                             {/* Hub Cap to hide center convergence */}
-                            <div className="absolute inset-0 m-auto w-[25%] h-[25%] rounded-full bg-[#1e232e] shadow-2xl flex items-center justify-center border-4 border-gray-800 z-10">
-                                <Trophy className="w-8 h-8 md:w-12 md:h-12 text-yellow-500 drop-shadow-lg" />
+                            <div className="absolute inset-0 m-auto w-[20%] h-[20%] rounded-full bg-[#1e232e] shadow-2xl flex items-center justify-center border-4 border-gray-800 z-20">
+                                <Trophy className="w-6 h-6 md:w-10 md:h-10 text-yellow-500 drop-shadow-lg" />
                             </div>
                         </div>
                     </div>
@@ -238,15 +230,13 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                             <>
                                 <button 
                                     onClick={handleSpin}
-                                    disabled={spinning || (!hasSpins && profile && profile.discord_points < SPIN_COST)}
+                                    disabled={!canSpin}
                                     className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all shadow-xl ${
-                                        spinning 
-                                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
-                                        : (!hasSpins && profile && profile.discord_points < SPIN_COST)
-                                            ? 'bg-red-900/20 text-red-500 border border-red-500/20 cursor-not-allowed'
-                                            : hasSpins 
-                                                ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:scale-105 active:scale-95 shadow-green-500/20'
-                                                : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:scale-105 active:scale-95'
+                                        !canSpin 
+                                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700' 
+                                        : hasSpins 
+                                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:scale-105 active:scale-95 shadow-green-500/20'
+                                            : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:scale-105 active:scale-95 shadow-purple-500/20'
                                     }`}
                                 >
                                     {spinning ? <Loader2 className="animate-spin w-5 h-5" /> : <RefreshCw className="w-5 h-5" />} 
