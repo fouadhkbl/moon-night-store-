@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, SpinWheelItem } from '../types';
-import { ArrowLeft, Coins, Trophy, Loader2, RefreshCw, Wallet, AlertCircle, Lock, Ticket } from 'lucide-react';
+import { ArrowLeft, Coins, Trophy, Loader2, RefreshCw, Wallet, AlertCircle, Lock, Ticket, X } from 'lucide-react';
 
 export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any, onNavigate: (p: string) => void, addToast: any }) => {
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -11,11 +11,13 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
     const [rotation, setRotation] = useState(0);
     const [items, setItems] = useState<SpinWheelItem[]>([]);
     const [loadingItems, setLoadingItems] = useState(true);
+    const [showWinModal, setShowWinModal] = useState(false);
     
     // Wheel Config
     const SPIN_COST = 200; 
     const isGuest = !session?.user || session.user.id === 'guest-user-123';
 
+    // Initial Fetch
     useEffect(() => {
         const fetchProfile = async () => {
             if (session?.user?.id && !isGuest) {
@@ -35,27 +37,41 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
     }, [session, isGuest]);
 
     const handleSpin = async () => {
-        if (isGuest || !profile) {
+        if (isGuest) {
             addToast('Login Required', 'You must be logged in to spin the wheel.', 'error');
             return;
         }
 
-        const hasFreeSpin = (profile.spins_count || 0) > 0;
+        if (spinning) return;
+        setSpinning(true);
+        setShowWinModal(false);
 
-        if (!hasFreeSpin && profile.discord_points < SPIN_COST) {
-            addToast('Insufficient Points', `You need ${SPIN_COST} points to spin.`, 'error');
+        // 1. STRICT CHECK: Fetch fresh profile to prevent free spin glitches
+        const { data: freshProfile, error: profileError } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        
+        if (profileError || !freshProfile) {
+            addToast('Error', 'Could not verify balance. Try again.', 'error');
+            setSpinning(false);
             return;
         }
-        if (spinning) return;
+
+        const hasFreeSpin = (freshProfile.spins_count || 0) > 0;
+
+        if (!hasFreeSpin && freshProfile.discord_points < SPIN_COST) {
+            addToast('Insufficient Points', `You need ${SPIN_COST} points to spin.`, 'error');
+            setSpinning(false);
+            // Update local state to match server
+            setProfile(freshProfile);
+            return;
+        }
+
         if (items.length === 0) {
             addToast('Error', 'Wheel configuration invalid.', 'error');
+            setSpinning(false);
             return;
         }
 
-        setSpinning(true);
-        setResult(null);
-
-        // Determine result (Weighted Random Logic based on DB probabilities)
+        // 2. Determine Result
         const rand = Math.random() * 100;
         let cumulativeProbability = 0;
         let selectedItem = items[items.length - 1]; // Default fallback
@@ -70,57 +86,65 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
             }
         }
         
-        // Calculate rotation
+        // 3. Calculate Physics
         const segmentAngle = 360 / items.length;
-        // Offset logic to align top
-        const targetRotation = 360 * 8 + (360 - (winIndex * segmentAngle)) - (segmentAngle / 2); 
-        // Add random jitter within the segment (+/- 40% of segment width)
-        const jitter = (Math.random() - 0.5) * (segmentAngle * 0.8);
-        const finalRotation = targetRotation + jitter;
+        // Logic: 360*5 (spins) + (360 - index*angle) - half_segment (to center)
+        // Adjust for default 0deg being 12 o'clock
+        const targetRotation = rotation + 1800 + (360 - (winIndex * segmentAngle)) - (rotation % 360); 
+        // Note: Simplified logic to ensure forward rotation
+        const finalRotation = 360 * 5 + (360 - winIndex * segmentAngle) - (segmentAngle / 2);
 
-        setRotation(finalRotation);
+        setRotation(prev => prev + 360 * 5 + (360 - (winIndex * segmentAngle) - (prev % 360)) - (segmentAngle / 2));
 
-        // Database Update after animation delay (approx 4s)
-        setTimeout(async () => {
-            try {
-                let newPoints = profile.discord_points;
-                let newBalance = profile.wallet_balance;
-                let newSpins = profile.spins_count || 0;
+        // 4. Update Database IMMEDIATELY (to prevent tab-closing exploits)
+        // We do this while animation plays, but result is shown after.
+        try {
+            let newPoints = freshProfile.discord_points;
+            let newBalance = freshProfile.wallet_balance;
+            let newSpins = freshProfile.spins_count || 0;
 
-                // Deduct Cost
-                if (hasFreeSpin) {
-                    newSpins -= 1;
-                } else {
-                    newPoints -= SPIN_COST;
-                }
+            // Deduct Cost
+            if (hasFreeSpin) {
+                newSpins = Math.max(0, newSpins - 1);
+            } else {
+                newPoints -= SPIN_COST;
+            }
 
-                // Add Reward
-                if (selectedItem.type === 'points') newPoints += selectedItem.value;
-                if (selectedItem.type === 'money') newBalance += selectedItem.value;
+            // Add Reward
+            if (selectedItem.type === 'points') newPoints += selectedItem.value;
+            if (selectedItem.type === 'money') newBalance += selectedItem.value;
 
-                await supabase.from('profiles').update({
-                    discord_points: newPoints,
-                    wallet_balance: newBalance,
-                    spins_count: newSpins
-                }).eq('id', profile.id);
+            const { error: updateError } = await supabase.from('profiles').update({
+                discord_points: newPoints,
+                wallet_balance: newBalance,
+                spins_count: newSpins
+            }).eq('id', freshProfile.id);
 
-                setProfile({ ...profile, discord_points: newPoints, wallet_balance: newBalance, spins_count: newSpins });
-                setResult(selectedItem);
-                
+            if (updateError) throw updateError;
+
+            // Update local profile state for UI (optimistic/confirmed)
+            setProfile({ ...freshProfile, discord_points: newPoints, wallet_balance: newBalance, spins_count: newSpins });
+            setResult(selectedItem);
+
+            // 5. Show Result AFTER Animation
+            setTimeout(() => {
+                setSpinning(false);
+                setShowWinModal(true);
                 if (selectedItem.type !== 'none') {
                     addToast('Winner!', `You won ${selectedItem.text}!`, 'success');
                 } else {
                     addToast('So Close!', 'Better luck next time.', 'info');
                 }
-            } catch (e) {
-                addToast('Error', 'Transaction failed.', 'error');
-            } finally {
-                setSpinning(false);
-            }
-        }, 4000);
+            }, 4500); // 4.5s animation match
+
+        } catch (e) {
+            console.error(e);
+            addToast('Error', 'Transaction failed. Please contact support.', 'error');
+            setSpinning(false);
+        }
     };
 
-    // Construct Conic Gradient for the Wheel
+    // Wheel Gradient
     const wheelGradient = items.length > 0 
         ? `conic-gradient(from 0deg, ${items.map((item, index) => `${item.color} ${index * (360/items.length)}deg ${(index + 1) * (360/items.length)}deg`).join(', ')})`
         : 'conic-gradient(#333 0deg 360deg)';
@@ -155,13 +179,15 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
 
                 <div className="flex flex-col items-center">
                     {/* WHEEL CONTAINER */}
-                    <div className="relative w-80 h-80 md:w-96 md:h-96 mb-12">
-                        {/* Pointer */}
-                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[30px] border-t-white drop-shadow-lg"></div>
+                    <div className="relative w-[340px] h-[340px] md:w-[450px] md:h-[450px] mb-12">
+                        {/* Pointer - Top Center */}
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-20 drop-shadow-xl">
+                            <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[40px] border-t-white filter drop-shadow-md"></div>
+                        </div>
 
                         {/* The Wheel */}
                         <div 
-                            className="w-full h-full rounded-full border-8 border-[#1e232e] shadow-2xl relative overflow-hidden transition-transform duration-[4000ms] cubic-bezier(0.1, 0.7, 0.1, 1)"
+                            className="w-full h-full rounded-full border-8 border-[#1e232e] shadow-[0_0_50px_rgba(139,92,246,0.2)] relative overflow-hidden transition-transform duration-[4500ms] cubic-bezier(0.1, 0.7, 0.1, 1)"
                             style={{ 
                                 transform: `rotate(${rotation}deg)`,
                                 background: wheelGradient
@@ -170,45 +196,34 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                             {/* Segment Labels */}
                             {items.map((item, index) => {
                                 const segmentAngle = 360 / items.length;
+                                // Rotation to position text in center of slice
                                 const rotate = (index * segmentAngle) + (segmentAngle / 2);
                                 return (
                                     <div 
                                         key={item.id}
-                                        className="absolute top-0 left-1/2 w-[1px] h-[50%] origin-bottom flex justify-center pt-4 md:pt-6"
+                                        className="absolute top-0 left-1/2 w-[1px] h-[50%] origin-bottom"
                                         style={{ transform: `translateX(-50%) rotate(${rotate}deg)` }}
                                     >
-                                        <span 
-                                            className="text-white font-black text-[10px] md:text-xs uppercase tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] whitespace-nowrap"
-                                            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-                                        >
-                                            {item.text}
-                                        </span>
+                                        <div className="mt-8 md:mt-12 flex flex-col items-center justify-start h-full">
+                                            <span 
+                                                className="text-white font-black text-[10px] md:text-sm uppercase tracking-widest whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
+                                                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                                            >
+                                                {item.text}
+                                            </span>
+                                        </div>
                                     </div>
                                 );
                             })}
 
                             {/* Inner Circle for style */}
-                            <div className="absolute inset-0 m-auto w-3/4 h-3/4 rounded-full border-[1px] border-white/10 pointer-events-none"></div>
+                            <div className="absolute inset-0 m-auto w-2/3 h-2/3 rounded-full border-[1px] border-white/10 pointer-events-none"></div>
                             {/* Hub Cap to hide center convergence */}
-                            <div className="absolute inset-0 m-auto w-1/4 h-1/4 rounded-full bg-[#1e232e] shadow-inner pointer-events-none"></div>
-                        </div>
-                        
-                        {/* Center Cap */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-[#1e232e] rounded-full border-4 border-gray-800 flex items-center justify-center shadow-xl z-10">
-                            <Trophy className="w-8 h-8 text-yellow-500" />
+                            <div className="absolute inset-0 m-auto w-[25%] h-[25%] rounded-full bg-[#1e232e] shadow-2xl flex items-center justify-center border-4 border-gray-800 z-10">
+                                <Trophy className="w-8 h-8 md:w-12 md:h-12 text-yellow-500 drop-shadow-lg" />
+                            </div>
                         </div>
                     </div>
-
-                    {/* Result Display */}
-                    {result && (
-                        <div className="mb-8 bg-[#1e232e] border border-gray-800 p-6 rounded-2xl text-center animate-pop-in shadow-2xl">
-                            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Result</p>
-                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-2">{result.text}</h2>
-                            {result.type !== 'none' && (
-                                <p className="text-green-400 font-bold text-xs uppercase tracking-widest">Added to Account</p>
-                            )}
-                        </div>
-                    )}
 
                     {/* Controls */}
                     <div className="flex flex-col gap-4 w-full max-w-xs">
@@ -235,7 +250,7 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                                     }`}
                                 >
                                     {spinning ? <Loader2 className="animate-spin w-5 h-5" /> : <RefreshCw className="w-5 h-5" />} 
-                                    {spinning ? 'Spinning...' : (hasSpins ? 'SPIN FREE' : 'SPIN NOW')}
+                                    {spinning ? 'Spinning...' : (hasSpins ? `SPIN FREE (${profile?.spins_count})` : 'SPIN NOW')}
                                 </button>
 
                                 {profile && !hasSpins && profile.discord_points < SPIN_COST && (
@@ -261,6 +276,37 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                     </div>
                 </div>
             </div>
+
+            {/* WIN MODAL */}
+            {showWinModal && result && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+                    <div className="bg-[#1e232e] border border-gray-800 p-10 rounded-[3rem] text-center max-w-sm w-full relative shadow-2xl animate-pop-in">
+                        <button onClick={() => setShowWinModal(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white"><X className="w-6 h-6"/></button>
+                        
+                        <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                            {result.type === 'money' ? (
+                                <Wallet className="w-20 h-20 text-green-400 animate-bounce-slow" />
+                            ) : result.type === 'points' ? (
+                                <Trophy className="w-20 h-20 text-purple-400 animate-bounce-slow" />
+                            ) : (
+                                <RefreshCw className="w-20 h-20 text-gray-500" />
+                            )}
+                        </div>
+
+                        <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-2">{result.text}</h2>
+                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-8">
+                            {result.type === 'none' ? 'Bad luck! Try again.' : 'Reward has been added to your account.'}
+                        </p>
+
+                        <button 
+                            onClick={() => setShowWinModal(false)}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all active:scale-95"
+                        >
+                            Collect
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

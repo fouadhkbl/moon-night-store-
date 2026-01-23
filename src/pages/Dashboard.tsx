@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, Order, OrderItem, OrderMessage, PointRedemption, RedemptionMessage } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar, LayoutDashboard, ClipboardList, Copy, Users, Link, Crown, Sparkles, Timer } from 'lucide-react';
+import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar, LayoutDashboard, ClipboardList, Copy, Users, Link, Crown, Sparkles, Timer, RotateCw } from 'lucide-react';
 
 // --- SHARED CHAT MODAL LOGIC (Order & Redemption) ---
 // Note: Created separate components for simplicity in state management types
@@ -575,13 +575,24 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                     )}
                  </div>
 
-                 <div className="bg-[#0b0e14]/80 backdrop-blur-xl px-8 py-4 rounded-[2rem] border border-blue-500/30 flex items-center gap-4 shadow-2xl w-full md:w-auto justify-between md:justify-end">
+                 {/* Balance & Spins */}
+                 <div className="bg-[#0b0e14]/80 backdrop-blur-xl px-8 py-4 rounded-[2rem] border border-blue-500/30 flex items-center gap-6 shadow-2xl w-full md:w-auto justify-between md:justify-end">
                     <div className="text-right">
                         <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest leading-none mb-1">Solde Balance</p>
                         <p className="text-3xl font-black text-yellow-400 italic tracking-tighter leading-none">{profile?.wallet_balance?.toFixed(2) || '0.00'} DH</p>
                     </div>
+                    {/* Free Spins Indicator */}
+                    {(profile?.spins_count || 0) > 0 && (
+                        <div className="flex flex-col items-center">
+                            <div className="bg-pink-600/20 p-2 rounded-full mb-1 border border-pink-500/30 animate-pulse">
+                                <RotateCw className="w-4 h-4 text-pink-500" />
+                            </div>
+                            <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest">{profile?.spins_count} Spins</p>
+                        </div>
+                    )}
                     <Wallet className="w-10 h-10 text-blue-500 opacity-80"/>
                  </div>
+
                  {isGuest ? (
                      <div className="flex gap-3 mt-2 w-full">
                         <button onClick={() => setAuthMode('login')} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl font-black shadow-2xl text-[10px] uppercase tracking-widest transition-all active:scale-95">Log In</button>
