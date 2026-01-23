@@ -1,12 +1,20 @@
+
 import React from 'react';
 import { Tournament } from '../types';
 import { ArrowLeft, Trophy, Calendar, Users, Gamepad2, Shield, Share2, Crown, Award, Medal } from 'lucide-react';
 
-export const TournamentDetailsPage = ({ tournament, onNavigate }: { tournament: Tournament | null, onNavigate: (p: string) => void }) => {
+export const TournamentDetailsPage = ({ tournament, onNavigate, addToast }: { tournament: Tournament | null, onNavigate: (p: string) => void, addToast: any }) => {
     if (!tournament) {
         onNavigate('tournaments');
         return null;
     }
+
+    const handleShare = () => {
+        const url = `${window.location.origin}/?tournament_id=${tournament.id}`;
+        navigator.clipboard.writeText(url).then(() => {
+            addToast('Link Copied', 'Tournament shared link copied to clipboard!', 'success');
+        });
+    };
 
     return (
         <div className="min-h-screen bg-[#0b0e14] animate-fade-in pb-24">
@@ -78,7 +86,7 @@ export const TournamentDetailsPage = ({ tournament, onNavigate }: { tournament: 
                         <div className="bg-[#1e232e] rounded-[2rem] border border-gray-800 p-6 shadow-xl">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-lg font-black text-white italic uppercase tracking-tighter">Tournament Info</h3>
-                                <button className="p-2 bg-[#0b0e14] rounded-lg text-gray-400 hover:text-white transition"><Share2 className="w-4 h-4"/></button>
+                                <button onClick={handleShare} className="p-2 bg-[#0b0e14] rounded-lg text-gray-400 hover:text-white transition"><Share2 className="w-4 h-4"/></button>
                             </div>
                             
                             <div className="space-y-4">

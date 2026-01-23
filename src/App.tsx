@@ -173,6 +173,23 @@ const App: React.FC = () => {
      setTimeout(() => setToasts(curr => curr.filter(t => t.id !== id)), 4000);
   };
 
+  // --- HANDLE DEEP LINKS ---
+  useEffect(() => {
+      const params = new URLSearchParams(window.location.search);
+      const tournamentId = params.get('tournament_id');
+      
+      if (tournamentId) {
+          const fetchTournament = async () => {
+              const { data } = await supabase.from('tournaments').select('*').eq('id', tournamentId).single();
+              if (data) {
+                  setSelectedTournament(data);
+                  setCurrentPage('tournament-details');
+              }
+          };
+          fetchTournament();
+      }
+  }, []);
+
   // --- SEO MANAGEMENT ---
   useEffect(() => {
     let title = "Moon Night | #1 Gaming Marketplace";
@@ -233,6 +250,10 @@ const App: React.FC = () => {
         case 'leaderboard-points':
             title = "Top Players | Moon Night";
             break;
+        case 'tournament-details':
+            title = selectedTournament ? `${selectedTournament.title} | Moon Night Tournaments` : "Tournament Details | Moon Night";
+            desc = selectedTournament ? `Join the ${selectedTournament.title} tournament for ${selectedTournament.game_name}. Win cash prizes!` : desc;
+            break;
         default:
             title = "Moon Night | Gaming Marketplace";
     }
@@ -255,7 +276,7 @@ const App: React.FC = () => {
     let ogDesc = document.querySelector("meta[property='og:description']");
     if (ogDesc) ogDesc.setAttribute('content', desc);
 
-  }, [currentPage, selectedCategory, searchQuery]);
+  }, [currentPage, selectedCategory, searchQuery, selectedTournament]);
 
   // --- FETCH APP SETTINGS ---
   useEffect(() => {
@@ -569,6 +590,7 @@ const App: React.FC = () => {
             <TournamentDetailsPage
                 tournament={selectedTournament}
                 onNavigate={handleNavigate}
+                addToast={addToast}
             />
         )}
 

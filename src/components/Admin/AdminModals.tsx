@@ -299,7 +299,6 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
     );
 };
 
-// ... keep existing CouponFormModal, PointProductFormModal, TournamentFormModal, AnnouncementFormModal, LootBoxFormModal, SpinWheelItemFormModal unchanged ...
 export const CouponFormModal = ({ coupon, onClose, onSave }: { coupon: Partial<Coupon> | null, onClose: () => void, onSave: (c: any) => void }) => {
     const [formData, setFormData] = useState<Partial<Coupon>>(coupon || {
         code: '',
@@ -461,8 +460,11 @@ export const TournamentFormModal = ({ tournament, onClose, onSave }: { tournamen
         image_url: '',
         start_date: '',
         status: 'open',
-        max_participants: 64,
+        max_participants: 12,
+        current_participants: 0,
         prize_pool: '500 DH',
+        prize_2nd: '',
+        prize_3rd: '',
         format: '1v1 Single Elimination',
         rules: ''
     });
@@ -514,12 +516,33 @@ export const TournamentFormModal = ({ tournament, onClose, onSave }: { tournamen
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Current Players</label>
+                            <input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.current_participants} onChange={e => setFormData({...formData, current_participants: parseInt(e.target.value)})} placeholder="0" />
+                        </div>
+                        <div>
                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Max Participants</label>
                             <input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.max_participants} onChange={e => setFormData({...formData, max_participants: parseInt(e.target.value)})} />
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Game Format</label>
+                        <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.format} onChange={e => setFormData({...formData, format: e.target.value})} placeholder="e.g. 1v1 Single Elimination" />
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Prize Pool (1st Place)</label>
+                        <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.prize_pool} onChange={e => setFormData({...formData, prize_pool: e.target.value})} placeholder="e.g. 500 DH" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Prize Pool</label>
-                            <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.prize_pool} onChange={e => setFormData({...formData, prize_pool: e.target.value})} placeholder="e.g. 500 DH" />
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">2nd Place Prize</label>
+                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.prize_2nd || ''} onChange={e => setFormData({...formData, prize_2nd: e.target.value})} placeholder="e.g. 200 DH" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">3rd Place Prize</label>
+                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.prize_3rd || ''} onChange={e => setFormData({...formData, prize_3rd: e.target.value})} placeholder="e.g. 100 DH" />
                         </div>
                     </div>
 
