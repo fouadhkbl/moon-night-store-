@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product } from '../../types';
-import { ShoppingCart, Plus, Globe, Smartphone, Monitor, Gamepad2, Layers, Crown, Star, Eye } from 'lucide-react';
+import { ShoppingCart, Plus, Globe, Smartphone, Monitor, Gamepad2, Layers, Crown, Star, Eye, Lock } from 'lucide-react';
 
 export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { category: string | null, searchQuery: string, onProductClick: (p: Product) => void, language: 'en' | 'fr' }) => {
    const [products, setProducts] = useState<Product[]>([]);
    const [isLoading, setIsLoading] = useState(true);
    const [selectedRegion, setSelectedRegion] = useState<string>('All');
    const [selectedPlatform, setSelectedPlatform] = useState<string>('All');
+   const [userVipLevel, setUserVipLevel] = useState(0);
 
    const t = {
        en: {
@@ -30,25 +31,24 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
    }[language];
 
    useEffect(() => {
+       const checkVip = async () => {
+           const { data: { user } } = await supabase.auth.getUser();
+           if (user) {
+               const { data } = await supabase.from('profiles').select('vip_level').eq('id', user.id).single();
+               if (data) setUserVipLevel(data.vip_level);
+           }
+       };
+       checkVip();
+   }, []);
+
+   useEffect(() => {
      setIsLoading(true);
-     // Only select items that are NOT hidden
      let query = supabase.from('products').select('*').eq('is_hidden', false);
      
-     if (category) {
-         query = query.eq('category', category);
-     }
-     
-     if (selectedRegion !== 'All') {
-         query = query.eq('country', selectedRegion);
-     }
-
-     if (selectedPlatform !== 'All') {
-         query = query.in('platform', [selectedPlatform, 'All Platforms']);
-     }
-     
-     if (searchQuery) {
-         query = query.or(`name.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
-     }
+     if (category) query = query.eq('category', category);
+     if (selectedRegion !== 'All') query = query.eq('country', selectedRegion);
+     if (selectedPlatform !== 'All') query = query.in('platform', [selectedPlatform, 'All Platforms']);
+     if (searchQuery) query = query.or(`name.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
 
      query.then(({ data }) => { 
        if (data) {
@@ -56,11 +56,6 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                const aVip = a.is_vip ? 1 : 0;
                const bVip = b.is_vip ? 1 : 0;
                if (aVip !== bVip) return bVip - aVip;
-
-               const aTrend = a.is_trending ? 1 : 0;
-               const bTrend = b.is_trending ? 1 : 0;
-               if (aTrend !== bTrend) return bTrend - aTrend;
-
                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
            });
            setProducts(sortedData);
@@ -68,6 +63,17 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
        setIsLoading(false);
      }); 
    }, [category, searchQuery, selectedRegion, selectedPlatform]);
+
+   const handleProductClick = (p: Product) => {
+       // Lock VIP items if user is not VIP (level > 0)
+       if (p.is_vip && userVipLevel === 0) {
+           if(confirm("This is an Elite Member exclusive item. Would you like to upgrade to unlock it?")) {
+               window.location.href = '/elite'; // Use standard navigation or handle via prop
+           }
+       } else {
+           onProductClick(p);
+       }
+   };
 
    const regions = ['All', 'Global', 'Africa', 'Europe', 'Asia', 'North America', 'South America', 'Morocco'];
    const platforms = ['All', 'PC', 'Mobile', 'Console'];
@@ -79,20 +85,9 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
        return <Layers className="w-3 h-3" />;
    };
 
-   // Mock rating generator for visual consistency (In real app, fetch joined reviews)
-   const getRating = (id: string) => {
-       const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-       return (4 + (hash % 10) / 10).toFixed(1);
-   };
-
-   // Mock viewers generator for FOMO
-   const getViewers = (id: string) => {
-       // Deterministic but pseudo-random based on ID so it doesn't flicker on re-render, 
-       // but ideally this would be real-time or active
-       const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-       // Return a number between 3 and 18
-       return (hash % 15) + 3;
-   }
+   // Mock generators
+   const getRating = (id: string) => (4 + (id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%10)/10).toFixed(1);
+   const getViewers = (id: string) => (id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%15)+3;
 
    return (
       <div className="animate-slide-up">
@@ -145,16 +140,24 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                         <div 
                         key={p.id} 
                         className={`bg-[#1e232e] rounded-2xl overflow-hidden border transition-all duration-500 cursor-pointer group shadow-2xl flex flex-col h-full active:scale-95 ${p.is_vip ? 'border-yellow-500/30 hover:border-yellow-500/60' : 'border-gray-800 hover:border-blue-500/60'}`}
-                        onClick={() => onProductClick(p)}
+                        onClick={() => handleProductClick(p)}
                         >
                             <div className="relative aspect-[3/4] overflow-hidden">
                             <img 
                                 src={p.image_url} 
-                                className="w-full h-full object-cover group-hover:scale-110 transition duration-1000 brightness-75 group-hover:brightness-100" 
+                                className={`w-full h-full object-cover group-hover:scale-110 transition duration-1000 brightness-75 group-hover:brightness-100 ${p.is_vip && userVipLevel === 0 ? 'blur-sm' : ''}`} 
                                 alt={p.name} 
                             />
                             
-                            {/* Live Viewers (FOMO) - Top Right */}
+                            {/* VIP LOCK OVERLAY */}
+                            {p.is_vip && userVipLevel === 0 && (
+                                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-20">
+                                    <Lock className="w-8 h-8 text-yellow-500 mb-2" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-yellow-400 border border-yellow-500/50 px-2 py-1 rounded bg-black/50">Elite Only</span>
+                                </div>
+                            )}
+
+                            {/* Live Viewers (FOMO) */}
                             <div className="absolute top-3 right-3 z-10">
                                 <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-full border border-white/10 flex items-center gap-1.5 animate-pulse">
                                     <Eye className="w-3 h-3 text-red-400" />
@@ -166,11 +169,6 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                                 <div className="bg-black/70 backdrop-blur-xl px-2.5 py-1 rounded-lg text-[8px] font-black text-white border border-white/10 uppercase tracking-widest shadow-2xl flex items-center gap-1">
                                     {getPlatformIcon(p.platform)} {p.platform === 'All Platforms' ? t.cross : p.platform}
                                 </div>
-                                {p.country && p.country !== 'Global' && (
-                                    <div className="bg-blue-900/80 backdrop-blur-xl px-2.5 py-1 rounded-lg text-[8px] font-black text-blue-100 border border-blue-500/30 uppercase tracking-widest shadow-2xl flex items-center gap-1">
-                                        <Globe className="w-2 h-2" /> {p.country}
-                                    </div>
-                                )}
                             </div>
                             
                             <div className="absolute bottom-12 right-3 flex flex-col gap-2 z-10 items-end">
@@ -201,7 +199,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                             <div className="flex items-center justify-between mt-4">
                                 <div className="text-yellow-400 font-black italic text-xl md:text-2xl tracking-tighter leading-none">{p.price.toFixed(2)} <span className="text-[10px] md:text-xs">DH</span></div>
                                 <div className={`p-2.5 rounded-xl transition-all shadow-xl active:scale-90 ${p.is_vip ? 'bg-yellow-500/10 text-yellow-500 group-hover:bg-yellow-500 group-hover:text-black' : 'bg-blue-600/10 text-blue-400 group-hover:bg-blue-600 group-hover:text-white'}`}>
-                                    <Plus className="w-4 h-4" />
+                                    {p.is_vip && userVipLevel === 0 ? <Lock className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                                 </div>
                             </div>
                             </div>

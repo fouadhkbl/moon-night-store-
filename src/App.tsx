@@ -19,6 +19,8 @@ import { DonatePage } from './pages/DonatePage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { TournamentsPage } from './pages/TournamentsPage';
 import { TournamentDetailsPage } from './pages/TournamentDetailsPage';
+import { LootBoxPage } from './pages/LootBoxPage';
+import { ElitePage } from './pages/ElitePage'; // Import New Page
 import { Loader2, ShoppingBag, X, Zap, Clock, Users, Megaphone } from 'lucide-react';
 
 // New Component: Dynamic Announcement Bar
@@ -450,6 +452,22 @@ const App: React.FC = () => {
             <TournamentsPage 
                 onNavigate={handleNavigate}
                 onSelectTournament={setSelectedTournament}
+            />
+        )}
+
+        {currentPage === 'loot' && (
+            <LootBoxPage 
+                session={session}
+                onNavigate={handleNavigate}
+                addToast={addToast}
+            />
+        )}
+
+        {currentPage === 'elite' && (
+            <ElitePage 
+                session={session}
+                onNavigate={handleNavigate}
+                addToast={addToast}
             />
         )}
 

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home, Swords, LogOut, Crown } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home, Swords, LogOut, Crown, Package, Zap } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Profile } from '../types';
 
@@ -122,6 +122,12 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                       <button onClick={() => handleMenuClick('shop')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
                           <ShoppingBag className="w-4 h-4 text-cyan-500" /> Shop
                       </button>
+                      <button onClick={() => handleMenuClick('loot')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white bg-gradient-to-r from-yellow-600/20 to-yellow-900/20 hover:from-yellow-600 hover:to-yellow-700 rounded-xl transition-all flex items-center gap-3 border border-yellow-500/30">
+                          <Package className="w-4 h-4 text-yellow-400" /> Moon Loot
+                      </button>
+                      <button onClick={() => handleMenuClick('elite')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white bg-gradient-to-r from-yellow-700/20 to-yellow-900/20 hover:from-yellow-700 hover:to-yellow-800 rounded-xl transition-all flex items-center gap-3 border border-yellow-500/30">
+                          <Crown className="w-4 h-4 text-yellow-400" /> Moon Elite
+                      </button>
                       <button onClick={() => handleMenuClick('tournaments')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
                           <Swords className="w-4 h-4 text-green-500" /> Competitions
                       </button>
@@ -175,6 +181,23 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2 md:gap-4 relative z-10">
+          
+          {/* ELITE BUTTON (DESKTOP) */}
+          <button 
+            onClick={() => onNavigate('elite')}
+            className="hidden md:flex bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-yellow-500 hover:to-yellow-700 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest items-center gap-2 shadow-lg shadow-yellow-600/20 active:scale-95 transition-all"
+          >
+             <Crown className="w-4 h-4 text-yellow-200" /> Elite
+          </button>
+
+          {/* LOOT BUTTON (DESKTOP) */}
+          <button 
+            onClick={() => onNavigate('loot')}
+            className="hidden md:flex bg-[#1e232e] border border-gray-700 hover:border-blue-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest items-center gap-2 transition-all"
+          >
+             <Package className="w-4 h-4 text-blue-400" /> Loot
+          </button>
+
           {/* Mobile Search Toggle */}
           <button 
             onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
@@ -208,21 +231,24 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
           <div className="relative group z-50">
             <button 
                 onClick={() => onNavigate('dashboard')}
-                className="flex items-center gap-3 bg-[#151a23] border border-gray-800 text-white p-1.5 pr-1.5 md:pr-4 rounded-full hover:border-blue-500 transition shadow-lg"
+                className={`flex items-center gap-3 border text-white p-1.5 pr-1.5 md:pr-4 rounded-full transition shadow-lg ${profile?.vip_level && profile.vip_level > 0 ? 'bg-yellow-900/10 border-yellow-500/50 hover:border-yellow-400' : 'bg-[#151a23] border-gray-800 hover:border-blue-500'}`}
             >
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 border border-gray-700">
+                <div className={`w-8 h-8 rounded-full overflow-hidden border ${profile?.vip_level && profile.vip_level > 0 ? 'border-yellow-500' : 'border-gray-700 bg-gray-800'}`}>
                     {profile?.avatar_url ? (
                         <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center bg-blue-600"><User className="w-4 h-4" /></div>
                     )}
                 </div>
-                <span className="text-xs font-bold max-w-[80px] truncate hidden md:block">{profile?.username || 'Guest'}</span>
+                <span className={`text-xs font-bold max-w-[80px] truncate hidden md:block ${profile?.vip_level && profile.vip_level > 0 ? 'text-yellow-400' : ''}`}>{profile?.username || 'Guest'}</span>
             </button>
             
             <div className="absolute right-0 mt-2 w-64 bg-[#1e232e] border border-gray-800 rounded-xl shadow-2xl py-2 hidden group-hover:block animate-fade-in overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-800 bg-[#151a23]">
-                    <p className="text-sm font-bold text-white truncate">{profile?.username || 'Guest Gamer'}</p>
+                    <p className={`text-sm font-bold truncate ${profile?.vip_level && profile.vip_level > 0 ? 'text-yellow-400' : 'text-white'}`}>
+                        {profile?.username || 'Guest Gamer'} 
+                        {profile?.vip_level && profile.vip_level > 0 && <span className="ml-2 text-[9px] bg-yellow-500 text-black px-1.5 py-0.5 rounded font-black">ELITE</span>}
+                    </p>
                     <p className="text-xs text-gray-500 truncate">{session?.user?.email || 'Not logged in'}</p>
                 </div>
                 
