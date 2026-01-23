@@ -80,11 +80,11 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       if (!isGuest && session?.user?.id) {
         const { data } = await supabase.from('profiles').select('wallet_balance, vip_level').eq('id', session.user.id).single();
         if (data) {
-            setWalletBalance(data.wallet_balance);
+            setWalletBalance(data.wallet_balance || 0); // Ensure non-null
             setVipLevel(data.vip_level || 0);
             
             // Auto switch to PayPal if balance low
-            if (data.wallet_balance < finalTotal) {
+            if ((data.wallet_balance || 0) < finalTotal) {
                 setPaymentMethod('paypal');
             }
         }
@@ -174,11 +174,13 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       const { data: profileData, error: profileFetchError } = await supabase.from('profiles').select('wallet_balance, discord_points, referred_by').eq('id', session.user.id).single();
       if (profileFetchError) throw new Error("Failed to fetch user profile.");
       
-      const currentBalance = profileData.wallet_balance;
-      const currentPoints = profileData.discord_points || 0;
+      const currentBalance = parseFloat(profileData.wallet_balance || '0');
+      const currentPoints = parseInt(profileData.discord_points || '0');
 
       // Only check balance if paying via Wallet
-      if (method === 'Wallet' && currentBalance < finalTotal) throw new Error("Insufficient wallet funds.");
+      if (method === 'Wallet' && currentBalance < finalTotal) {
+          throw new Error("Insufficient wallet funds.");
+      }
 
       const points = Math.floor(finalTotal * 10);
       setEarnedPoints(points);

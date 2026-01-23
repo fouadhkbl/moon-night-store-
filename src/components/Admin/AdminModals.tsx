@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap, Crown, Eye, EyeOff, Swords, Megaphone, Palette, Type, Package } from 'lucide-react';
 import { Profile, Product, GameCategory, Coupon, PointProduct, Tournament, Announcement, LootBox } from '../../types';
-import { supabase } from '../../supabaseClient';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number, points: number) => void }) => {
   const [amount, setAmount] = useState<string>(user.wallet_balance.toString());
