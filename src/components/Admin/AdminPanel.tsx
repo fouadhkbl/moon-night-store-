@@ -470,11 +470,11 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       addToast('Saved', 'Product updated.', 'success');
   };
 
-  const handleSaveUserBalance = async (id: string, amount: number, points: number) => {
-      await supabase.from('profiles').update({ wallet_balance: amount, discord_points: points }).eq('id', id);
+  const handleSaveUserBalance = async (id: string, amount: number, points: number, spins: number) => {
+      await supabase.from('profiles').update({ wallet_balance: amount, discord_points: points, spins_count: spins }).eq('id', id);
       setIsBalanceModalOpen(false);
       fetchData();
-      addToast('Saved', 'User balance updated.', 'success');
+      addToast('Saved', 'User balance & spins updated.', 'success');
   };
 
   const handleSaveReferral = async (id: string, code: string, earnings: number) => {
@@ -654,6 +654,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                      <th className="p-4">User</th>
                                      <th className="p-4">Balance</th>
                                      <th className="p-4">Points</th>
+                                     <th className="p-4">Spins</th>
                                      <th className="p-4">Referrals</th>
                                      <th className="p-4 text-right">Actions</th>
                                  </tr>
@@ -672,6 +673,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                          </td>
                                          <td className="p-4 font-mono text-green-400 text-sm font-bold">{user.wallet_balance.toFixed(2)}</td>
                                          <td className="p-4 font-mono text-purple-400 text-sm font-bold">{user.discord_points}</td>
+                                         <td className="p-4 font-mono text-pink-400 text-sm font-bold">{user.spins_count || 0}</td>
                                          <td className="p-4 font-mono text-gray-400 text-sm">{user.referral_code || '-'}</td>
                                          <td className="p-4 text-right flex justify-end gap-2">
                                              <button onClick={() => { setSelectedProfile(user); setIsBalanceModalOpen(true); }} className="p-2 bg-gray-800 rounded-lg text-blue-400 hover:bg-blue-600 hover:text-white transition"><Wallet className="w-4 h-4" /></button>
@@ -780,7 +782,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                          <button onClick={() => handleDelete('tournaments', t.id, t.title)} className="p-2 bg-black/50 rounded-lg hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
                                      </div>
                                      <h3 className="text-xl font-black text-white italic uppercase">{t.title}</h3>
-                                     <p className="text-gray-500 text-xs mb-4">{new Date(t.start_date).toLocaleDateString()} • {t.status}</p>
+                                     <p className="text-gray-500 text-xs mb-4">{new Date(t.start_date).toLocaleDateString() • {t.status}}</p>
                                      <div className="flex gap-4 text-xs font-bold text-gray-400">
                                          <span>Players: {t.current_participants}/{t.max_participants}</span>
                                          <span>Prize: {t.prize_pool}</span>

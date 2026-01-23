@@ -25,6 +25,7 @@ export interface Profile {
   vip_level: number;
   vip_points: number;
   discord_points: number; 
+  spins_count: number;
   total_donated: number; 
   referral_code?: string;
   referred_by?: string;

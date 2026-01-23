@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, SpinWheelItem } from '../types';
-import { ArrowLeft, Coins, Trophy, Loader2, RefreshCw, Wallet, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Coins, Trophy, Loader2, RefreshCw, Wallet, AlertCircle, Lock, Ticket } from 'lucide-react';
 
 export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any, onNavigate: (p: string) => void, addToast: any }) => {
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -14,10 +14,11 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
     
     // Wheel Config
     const SPIN_COST = 200; 
+    const isGuest = !session?.user || session.user.id === 'guest-user-123';
 
     useEffect(() => {
         const fetchProfile = async () => {
-            if (session?.user?.id && session.user.id !== 'guest-user-123') {
+            if (session?.user?.id && !isGuest) {
                 const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
                 setProfile(data);
             }
@@ -31,14 +32,17 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
         };
         fetchProfile();
         fetchItems();
-    }, [session]);
+    }, [session, isGuest]);
 
     const handleSpin = async () => {
-        if (!profile) {
-            addToast('Login Required', 'Please login to spin.', 'error');
+        if (isGuest || !profile) {
+            addToast('Login Required', 'You must be logged in to spin the wheel.', 'error');
             return;
         }
-        if (profile.discord_points < SPIN_COST) {
+
+        const hasFreeSpin = (profile.spins_count || 0) > 0;
+
+        if (!hasFreeSpin && profile.discord_points < SPIN_COST) {
             addToast('Insufficient Points', `You need ${SPIN_COST} points to spin.`, 'error');
             return;
         }
@@ -66,17 +70,12 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
             }
         }
         
-        // Calculate rotation: 
+        // Calculate rotation
         const segmentAngle = 360 / items.length;
-        // The wheel rotates clockwise. To land on index, we need to rotate back by index * angle.
-        // Assuming the pointer is at the top (0deg visually after offset adjustments).
-        // Standard CSS rotation starts at 3 o'clock (0deg). A conic gradient starts at 12 o'clock if from 0deg.
-        // Let's adjust so top center is the target.
-        // Target Rotation = Full Spins + (Offset to align segment i to top)
-        // Offset: 360 - (i * segmentAngle) - (segmentAngle / 2) center alignment
+        // Offset logic to align top
         const targetRotation = 360 * 8 + (360 - (winIndex * segmentAngle)) - (segmentAngle / 2); 
-        // Add random jitter within the segment for realism (+/- 20% of segment)
-        const jitter = (Math.random() - 0.5) * (segmentAngle * 0.4);
+        // Add random jitter within the segment (+/- 40% of segment width)
+        const jitter = (Math.random() - 0.5) * (segmentAngle * 0.8);
         const finalRotation = targetRotation + jitter;
 
         setRotation(finalRotation);
@@ -84,18 +83,28 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
         // Database Update after animation delay (approx 4s)
         setTimeout(async () => {
             try {
-                let newPoints = profile.discord_points - SPIN_COST;
+                let newPoints = profile.discord_points;
                 let newBalance = profile.wallet_balance;
+                let newSpins = profile.spins_count || 0;
 
+                // Deduct Cost
+                if (hasFreeSpin) {
+                    newSpins -= 1;
+                } else {
+                    newPoints -= SPIN_COST;
+                }
+
+                // Add Reward
                 if (selectedItem.type === 'points') newPoints += selectedItem.value;
                 if (selectedItem.type === 'money') newBalance += selectedItem.value;
 
                 await supabase.from('profiles').update({
                     discord_points: newPoints,
-                    wallet_balance: newBalance
+                    wallet_balance: newBalance,
+                    spins_count: newSpins
                 }).eq('id', profile.id);
 
-                setProfile({ ...profile, discord_points: newPoints, wallet_balance: newBalance });
+                setProfile({ ...profile, discord_points: newPoints, wallet_balance: newBalance, spins_count: newSpins });
                 setResult(selectedItem);
                 
                 if (selectedItem.type !== 'none') {
@@ -118,6 +127,8 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
 
     if (loadingItems) return <div className="min-h-screen bg-[#0b0e14] flex items-center justify-center text-white"><Loader2 className="w-12 h-12 animate-spin text-purple-500"/></div>;
 
+    const hasSpins = profile && (profile.spins_count || 0) > 0;
+
     return (
         <div className="min-h-screen bg-[#0b0e14] animate-fade-in pb-20 relative overflow-hidden">
             {/* Background FX */}
@@ -130,8 +141,11 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                 </button>
 
                 <div className="text-center mb-10">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-900/20 border border-purple-500/30 text-purple-400 font-black uppercase text-[10px] tracking-[0.2em] mb-4">
-                        <Coins className="w-4 h-4" /> Cost: {SPIN_COST} Points
+                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border mb-4 ${hasSpins ? 'bg-green-900/20 border-green-500/30 text-green-400 animate-pulse' : 'bg-purple-900/20 border-purple-500/30 text-purple-400'}`}>
+                        {hasSpins ? <Ticket className="w-4 h-4" /> : <Coins className="w-4 h-4" />} 
+                        <span className="font-black uppercase text-[10px] tracking-[0.2em]">
+                            {hasSpins ? `${profile?.spins_count} Free Spin(s) Available` : `Cost: ${SPIN_COST} Points`}
+                        </span>
                     </div>
                     <h1 className="text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter mb-4">Spin & <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Win</span></h1>
                     <p className="text-gray-400 text-sm font-bold uppercase tracking-widest max-w-md mx-auto">
@@ -153,7 +167,8 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
                                 background: wheelGradient
                             }}
                         >
-                            {/* Can add internal lines or text overlays here if needed, keeping simple gradient for now */}
+                            {/* Inner Circle for style */}
+                            <div className="absolute inset-0 m-auto w-3/4 h-3/4 rounded-full border-[1px] border-white/10"></div>
                         </div>
                         
                         {/* Center Cap */}
@@ -175,38 +190,51 @@ export const SpinWheelPage = ({ session, onNavigate, addToast }: { session: any,
 
                     {/* Controls */}
                     <div className="flex flex-col gap-4 w-full max-w-xs">
-                        <button 
-                            onClick={handleSpin}
-                            disabled={spinning || !profile || profile.discord_points < SPIN_COST}
-                            className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all shadow-xl ${
-                                spinning 
-                                ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
-                                : (!profile || profile.discord_points < SPIN_COST)
-                                    ? 'bg-red-900/20 text-red-500 border border-red-500/20 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:scale-105 active:scale-95'
-                            }`}
-                        >
-                            {spinning ? <Loader2 className="animate-spin w-5 h-5" /> : <RefreshCw className="w-5 h-5" />} 
-                            {spinning ? 'Spinning...' : 'SPIN NOW'}
-                        </button>
-
-                        {profile && profile.discord_points < SPIN_COST && (
-                            <div className="flex items-center justify-center gap-2 text-red-400 text-xs font-bold uppercase tracking-widest bg-red-900/10 p-3 rounded-xl border border-red-500/20">
-                                <AlertCircle className="w-4 h-4" /> Not enough points
+                        {isGuest ? (
+                            <div className="bg-[#1e232e] p-6 rounded-2xl border border-red-500/20 text-center">
+                                <Lock className="w-8 h-8 text-red-500 mx-auto mb-3" />
+                                <h3 className="text-white font-bold mb-2">Login Required</h3>
+                                <p className="text-gray-500 text-xs mb-4">You must be logged in to play.</p>
+                                <button onClick={() => onNavigate('dashboard')} className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest">Go to Login</button>
                             </div>
-                        )}
+                        ) : (
+                            <>
+                                <button 
+                                    onClick={handleSpin}
+                                    disabled={spinning || (!hasSpins && profile && profile.discord_points < SPIN_COST)}
+                                    className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all shadow-xl ${
+                                        spinning 
+                                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
+                                        : (!hasSpins && profile && profile.discord_points < SPIN_COST)
+                                            ? 'bg-red-900/20 text-red-500 border border-red-500/20 cursor-not-allowed'
+                                            : hasSpins 
+                                                ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:scale-105 active:scale-95 shadow-green-500/20'
+                                                : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:scale-105 active:scale-95'
+                                    }`}
+                                >
+                                    {spinning ? <Loader2 className="animate-spin w-5 h-5" /> : <RefreshCw className="w-5 h-5" />} 
+                                    {spinning ? 'Spinning...' : (hasSpins ? 'SPIN FREE' : 'SPIN NOW')}
+                                </button>
 
-                        {profile && (
-                            <div className="flex justify-between items-center bg-[#1e232e] p-4 rounded-xl border border-gray-800">
-                                <div className="flex items-center gap-2">
-                                    <Wallet className="w-4 h-4 text-blue-500" />
-                                    <span className="text-white font-bold text-xs">{profile.wallet_balance.toFixed(2)} DH</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Coins className="w-4 h-4 text-purple-500" />
-                                    <span className="text-white font-bold text-xs">{profile.discord_points} PTS</span>
-                                </div>
-                            </div>
+                                {profile && !hasSpins && profile.discord_points < SPIN_COST && (
+                                    <div className="flex items-center justify-center gap-2 text-red-400 text-xs font-bold uppercase tracking-widest bg-red-900/10 p-3 rounded-xl border border-red-500/20">
+                                        <AlertCircle className="w-4 h-4" /> Not enough points
+                                    </div>
+                                )}
+
+                                {profile && (
+                                    <div className="flex justify-between items-center bg-[#1e232e] p-4 rounded-xl border border-gray-800">
+                                        <div className="flex items-center gap-2">
+                                            <Wallet className="w-4 h-4 text-blue-500" />
+                                            <span className="text-white font-bold text-xs">{profile.wallet_balance.toFixed(2)} DH</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Coins className="w-4 h-4 text-purple-500" />
+                                            <span className="text-white font-bold text-xs">{profile.discord_points} PTS</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

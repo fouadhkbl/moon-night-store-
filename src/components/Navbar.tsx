@@ -35,7 +35,8 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                 vip_level: 0,
                 vip_points: 0,
                 discord_points: 0,
-                total_donated: 0
+                total_donated: 0,
+                spins_count: 0
           });
           return;
       }

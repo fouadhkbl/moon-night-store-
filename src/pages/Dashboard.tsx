@@ -382,7 +382,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
             setProfile({
                 id: 'guest-user-123', email: 'guest@moonnight.com', username: 'Guest Gamer',
                 avatar_url: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=200&q=80',
-                wallet_balance: 0.00, vip_level: 0, vip_points: 0, discord_points: 0, total_donated: 0
+                wallet_balance: 0.00, vip_level: 0, vip_points: 0, discord_points: 0, total_donated: 0, spins_count: 0
             });
             setOrders([]);
         } else {

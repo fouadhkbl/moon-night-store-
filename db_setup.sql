@@ -12,6 +12,7 @@ create table if not exists public.profiles (
   vip_level int default 0,
   vip_points int default 0,
   discord_points int default 0,
+  spins_count int default 0,
   total_donated decimal(10,2) default 0.00,
   referral_code text unique,
   referred_by uuid references public.profiles(id) on delete set null,
@@ -39,6 +40,10 @@ begin
   
   if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'discord_points') then
     alter table public.profiles add column discord_points int default 0;
+  end if;
+
+  if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'spins_count') then
+    alter table public.profiles add column spins_count int default 0;
   end if;
 
   if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'vip_level') then
