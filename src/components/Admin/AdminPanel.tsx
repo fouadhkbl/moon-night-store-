@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, PointTransaction, PointProduct, PointRedemption, RedemptionMessage, Donation, Tournament, Announcement, LootBox, LootBoxOpen, SpinWheelItem } from '../../types';
-import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save, Megaphone, Image, LogOut, Crown, Zap, History, RotateCw, PieChart } from 'lucide-react';
+import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save, Megaphone, Image, LogOut, Crown, Zap, History, RotateCw, PieChart, AlertCircle } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal, AnnouncementFormModal, ReferralEditorModal, LootBoxFormModal, SpinWheelItemFormModal } from './AdminModals';
 
 const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
@@ -357,7 +357,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 };
 
 export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' | 'shop' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations' | 'tournaments' | 'system' | 'affiliates' | 'lootBoxes' | 'wheel'>(role === 'shop' ? 'products' : 'stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations' | 'tournaments' | 'system' | 'affiliates' | 'lootBoxes' | 'wheel' | 'announcements'>(role === 'shop' ? 'products' : 'stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [pointProducts, setPointProducts] = useState<PointProduct[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -369,930 +369,520 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [lootBoxes, setLootBoxes] = useState<LootBox[]>([]);
-  const [spinWheelItems, setSpinWheelItems] = useState<SpinWheelItem[]>([]);
-  const [recentLootOpens, setRecentLootOpens] = useState<LootBoxOpen[]>([]);
-  const [stats, setStats] = useState({ users: 0, orders: 0, revenue: 0 });
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [adminProfile, setAdminProfile] = useState<Profile | null>(null);
+  const [wheelItems, setWheelItems] = useState<SpinWheelItem[]>([]);
   
-  // System Settings State
-  const [inviteReward, setInviteReward] = useState('5');
-  const [orderCommission, setOrderCommission] = useState('5');
-  const [saleCode, setSaleCode] = useState('');
-  const [siteBackground, setSiteBackground] = useState('');
-  const [vipPrice, setVipPrice] = useState('199');
-  const [vipDiscount, setVipDiscount] = useState('5');
-  
-  // Modal States
+  // Modals States
+  const [visitHistoryOpen, setVisitHistoryOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Partial<Product> | null>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isPointProductModalOpen, setIsPointProductModalOpen] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+  const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState<Partial<Coupon> | null>(null);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
-  const [isTournamentModalOpen, setIsTournamentModalOpen] = useState(false);
-  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
-  const [isLootBoxModalOpen, setIsLootBoxModalOpen] = useState(false);
-  const [isSpinWheelModalOpen, setIsSpinWheelModalOpen] = useState(false);
-  const [isVisitsModalOpen, setIsVisitsModalOpen] = useState(false);
-  
-  const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
-  const [editingPointProduct, setEditingPointProduct] = useState<Partial<PointProduct> | null>(null);
-  const [editingUser, setEditingUser] = useState<Profile | null>(null);
-  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
-  const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
-  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
-  const [editingLootBox, setEditingLootBox] = useState<Partial<LootBox> | null>(null);
-  const [editingSpinWheelItem, setEditingSpinWheelItem] = useState<Partial<SpinWheelItem> | null>(null);
-  const [editingReferral, setEditingReferral] = useState<Profile | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedRedemption, setSelectedRedemption] = useState<PointRedemption | null>(null);
+  const [selectedPointProduct, setSelectedPointProduct] = useState<Partial<PointProduct> | null>(null);
+  const [isPointProductModalOpen, setIsPointProductModalOpen] = useState(false);
+  const [selectedTournament, setSelectedTournament] = useState<Partial<Tournament> | null>(null);
+  const [isTournamentModalOpen, setIsTournamentModalOpen] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Partial<Announcement> | null>(null);
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
+  const [selectedLootBox, setSelectedLootBox] = useState<Partial<LootBox> | null>(null);
+  const [isLootBoxModalOpen, setIsLootBoxModalOpen] = useState(false);
+  const [selectedWheelItem, setSelectedWheelItem] = useState<Partial<SpinWheelItem> | null>(null);
+  const [isWheelItemModalOpen, setIsWheelItemModalOpen] = useState(false);
   
-  const [providerFilter, setProviderFilter] = useState<'all' | 'email' | 'google' | 'discord'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
-        const getAdminProfile = async () => {
-            if(session?.user) {
-                 const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-                 setAdminProfile(data);
-            }
-        }
-        getAdminProfile();
+      const getProfile = async () => {
+          if (session?.user?.id) {
+              const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+              setCurrentUserProfile(data);
+          }
+      }
+      getProfile();
   }, [session]);
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    
-    const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    if (pData) setProducts(pData);
-    
-    const { data: ppData } = await supabase.from('point_products').select('*').order('cost', { ascending: true });
-    if (ppData) setPointProducts(ppData);
-
-    const { data: tData } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
-    if (tData) setTournaments(tData);
-
-    const { data: lbData } = await supabase.from('loot_boxes').select('*').order('price', { ascending: true });
-    if (lbData) setLootBoxes(lbData);
-
-    const { data: swData } = await supabase.from('spin_wheel_items').select('*').order('probability', { ascending: false });
-    if (swData) setSpinWheelItems(swData);
-
-    if (role === 'full' || role === 'limited') {
-        const { data: lbOpens } = await supabase.from('loot_box_opens').select('*').order('created_at', { ascending: false }).limit(20);
-        if (lbOpens) {
-            const enrichedOpens = await Promise.all(lbOpens.map(async (open) => {
-                const { data: u } = await supabase.from('profiles').select('username, email').eq('id', open.user_id).single();
-                return { ...open, profile: u };
-            }));
-            setRecentLootOpens(enrichedOpens);
-        }
-    }
-
-    if (role === 'full') {
-        const { data: userData } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-        if (userData) setProfiles(userData);
-        const { data: cData } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
-        if (cData) setCoupons(cData);
-    }
-    
-    if (role !== 'shop') {
-        const { data: dData } = await supabase.from('donations').select('*, profile:profiles(*)').order('created_at', { ascending: false });
-        if (dData) setDonations(dData);
-    }
-
-    if (role === 'full' || role === 'limited') {
-        const { data: prData } = await supabase.from('point_redemptions').select('*, profile:profiles(*), point_product:point_products(*)').order('created_at', { ascending: false });
-        if (prData) setPointRedemptions(prData);
-    }
-
-    if (role === 'full') {
-        const { data: settings } = await supabase.from('app_settings').select('*');
-        if (settings) {
-            settings.forEach(item => {
-                if (item.key === 'affiliate_invite_reward') setInviteReward(item.value);
-                if (item.key === 'affiliate_order_reward_percentage') setOrderCommission(item.value);
-                if (item.key === 'sale_code') setSaleCode(item.value);
-                if (item.key === 'site_background') setSiteBackground(item.value);
-                if (item.key === 'vip_membership_price') setVipPrice(item.value);
-                if (item.key === 'vip_discount_percent') setVipDiscount(item.value);
-            });
-        }
-        const { data: ann } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
-        if (ann) setAnnouncements(ann);
-    }
-
-    if (role !== 'shop') {
-        const { data: oData } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
-        if (oData) setOrders(oData);
-        
-        const totalRevenue = oData?.reduce((acc, curr) => curr.status !== 'canceled' ? acc + Number(curr.total_amount) : acc, 0) || 0;
-        
-        const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-        const { count: orderCount } = await supabase.from('orders').select('*', { count: 'exact', head: true });
-        
-        setStats({ users: userCount || 0, orders: orderCount || 0, revenue: totalRevenue });
-    }
-    
-    if (role !== 'shop') {
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const { data: lData } = await supabase.from('access_logs').select('*').gte('created_at', today.toISOString()).order('created_at', { ascending: false });
-        if (lData) setLogs(lData);
-    }
-
-    setIsLoading(false);
-  }, [role]);
+      if (activeSection === 'products') {
+          const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+          if(data) setProducts(data);
+      } else if (activeSection === 'users') {
+          const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+          if(data) setProfiles(data);
+      } else if (activeSection === 'orders') {
+          const { data } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
+          if(data) setOrders(data);
+      } else if (activeSection === 'coupons') {
+          const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+          if(data) setCoupons(data);
+      } else if (activeSection === 'pointsShop') {
+          const { data } = await supabase.from('point_products').select('*').order('created_at', { ascending: false });
+          if(data) setPointProducts(data);
+      } else if (activeSection === 'redemptions') {
+          const { data } = await supabase.from('point_redemptions').select('*, profile:profiles(*), point_product:point_products(*)').order('created_at', { ascending: false });
+          if(data) setPointRedemptions(data);
+      } else if (activeSection === 'donations') {
+          const { data } = await supabase.from('donations').select('*, profile:profiles(*)').order('created_at', { ascending: false });
+          if(data) setDonations(data);
+      } else if (activeSection === 'tournaments') {
+          const { data } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
+          if(data) setTournaments(data);
+      } else if (activeSection === 'announcements') {
+          const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+          if(data) setAnnouncements(data);
+      } else if (activeSection === 'lootBoxes') {
+          const { data } = await supabase.from('loot_boxes').select('*').order('price', { ascending: true });
+          if(data) setLootBoxes(data);
+      } else if (activeSection === 'wheel') {
+          const { data } = await supabase.from('spin_wheel_items').select('*').order('created_at', { ascending: false });
+          if(data) setWheelItems(data);
+      } else if (activeSection === 'stats') {
+          const { data: logData } = await supabase.from('access_logs').select('*').order('created_at', { ascending: false }).limit(100);
+          if (logData) setLogs(logData);
+          // Also fetch recent orders for stats
+          const { data: orderData } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10);
+          if(orderData) setOrders(orderData);
+      }
+  }, [activeSection]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleDeleteProduct = async (id: string) => {
-    if (!window.confirm('WARNING: Are you sure you want to delete this product forever?')) return;
-    const { error } = await supabase.from('products').delete().eq('id', id);
-    if (!error) { addToast('Deleted', 'Item removed.', 'success'); fetchData(); }
+  // Generic Handlers
+  const handleDelete = async (table: string, id: string, name: string) => {
+      if(!window.confirm(`Delete ${name}?`)) return;
+      await supabase.from(table).delete().eq('id', id);
+      addToast('Deleted', `${name} deleted successfully.`, 'success');
+      fetchData();
   };
 
-  const handleSaveProduct = async (data: any) => { 
-      if(data.id) await supabase.from('products').update(data).eq('id', data.id);
-      else await supabase.from('products').insert(data);
+  const handleSaveProduct = async (formData: any) => {
+      if (selectedProduct?.id) {
+          await supabase.from('products').update(formData).eq('id', selectedProduct.id);
+      } else {
+          await supabase.from('products').insert(formData);
+      }
       setIsProductModalOpen(false);
       fetchData();
+      addToast('Saved', 'Product updated.', 'success');
   };
 
-  const handleSavePointProduct = async (data: any) => { 
-      if(data.id) await supabase.from('point_products').update(data).eq('id', data.id);
-      else await supabase.from('point_products').insert(data);
-      setIsPointProductModalOpen(false);
+  const handleSaveUserBalance = async (id: string, amount: number, points: number) => {
+      await supabase.from('profiles').update({ wallet_balance: amount, discord_points: points }).eq('id', id);
+      setIsBalanceModalOpen(false);
       fetchData();
+      addToast('Saved', 'User balance updated.', 'success');
   };
 
-  const handleSaveTournament = async (data: any) => { 
-      if(data.id) await supabase.from('tournaments').update(data).eq('id', data.id);
-      else await supabase.from('tournaments').insert(data);
-      setIsTournamentModalOpen(false);
+  const handleSaveReferral = async (id: string, code: string, earnings: number) => {
+      await supabase.from('profiles').update({ referral_code: code, referral_earnings: earnings }).eq('id', id);
+      setIsReferralModalOpen(false);
       fetchData();
+      addToast('Saved', 'Referral info updated.', 'success');
   };
 
-  const handleDeleteTournament = async (id: string) => {
-      if(!window.confirm('Delete Tournament?')) return;
-      await supabase.from('tournaments').delete().eq('id', id);
-      fetchData();
-  };
-
-  const handleDeletePointProduct = async (id: string) => { 
-      if(!window.confirm('Delete Reward?')) return;
-      await supabase.from('point_products').delete().eq('id', id);
-      fetchData();
-  };
-
-  const handleUpdateBalance = async (uid: string, bal: number, pts: number) => { 
-      await supabase.from('profiles').update({ wallet_balance: bal, discord_points: pts }).eq('id', uid);
-      setEditingUser(null);
-      fetchData();
-      addToast('Updated', 'Balance synced.', 'success');
-  };
-
-  const handleUpdateReferral = async (id: string, code: string, earnings: number) => {
-      const { error } = await supabase.from('profiles').update({ referral_code: code, referral_earnings: earnings }).eq('id', id);
-      if (error) {
-          addToast('Error', 'Code might be taken or invalid.', 'error');
-      } else {
-          setEditingReferral(null);
-          fetchData();
-          addToast('Updated', 'Affiliate details updated.', 'success');
-      }
-  };
-
-  const handleDeleteUser = async (uid: string) => { 
-      if(!window.confirm('Delete User?')) return;
-      await supabase.from('profiles').delete().eq('id', uid);
-      fetchData();
-      addToast('Deleted', 'User removed.', 'success');
-  };
-
-  const handleSaveCoupon = async (data: any) => { 
-      if(data.id) await supabase.from('coupons').update(data).eq('id', data.id);
-      else await supabase.from('coupons').insert(data);
+  const handleSaveCoupon = async (formData: any) => {
+      if (selectedCoupon?.id) await supabase.from('coupons').update(formData).eq('id', selectedCoupon.id);
+      else await supabase.from('coupons').insert(formData);
       setIsCouponModalOpen(false);
       fetchData();
+      addToast('Saved', 'Coupon updated.', 'success');
   };
 
-  const handleDeleteCoupon = async (id: string) => { 
-      if(!window.confirm('Delete Coupon?')) return;
-      await supabase.from('coupons').delete().eq('id', id);
+  const handleSavePointProduct = async (formData: any) => {
+      if (selectedPointProduct?.id) await supabase.from('point_products').update(formData).eq('id', selectedPointProduct.id);
+      else await supabase.from('point_products').insert(formData);
+      setIsPointProductModalOpen(false);
       fetchData();
+      addToast('Saved', 'Reward updated.', 'success');
   };
 
-  const handleSaveAnnouncement = async (data: any) => {
-      if(data.id) await supabase.from('announcements').update(data).eq('id', data.id);
-      else await supabase.from('announcements').insert(data);
+  const handleSaveTournament = async (formData: any) => {
+      if (selectedTournament?.id) await supabase.from('tournaments').update(formData).eq('id', selectedTournament.id);
+      else await supabase.from('tournaments').insert(formData);
+      setIsTournamentModalOpen(false);
+      fetchData();
+      addToast('Saved', 'Tournament updated.', 'success');
+  };
+
+  const handleSaveAnnouncement = async (formData: any) => {
+      if (selectedAnnouncement?.id) await supabase.from('announcements').update(formData).eq('id', selectedAnnouncement.id);
+      else await supabase.from('announcements').insert(formData);
       setIsAnnouncementModalOpen(false);
       fetchData();
+      addToast('Saved', 'Announcement updated.', 'success');
   };
 
-  const handleDeleteAnnouncement = async (id: string) => {
-      if(!window.confirm('Delete Announcement?')) return;
-      await supabase.from('announcements').delete().eq('id', id);
-      fetchData();
-  };
-
-  const handleSaveLootBox = async (data: any) => {
-      if(data.id) await supabase.from('loot_boxes').update(data).eq('id', data.id);
-      else await supabase.from('loot_boxes').insert(data);
+  const handleSaveLootBox = async (formData: any) => {
+      if (selectedLootBox?.id) await supabase.from('loot_boxes').update(formData).eq('id', selectedLootBox.id);
+      else await supabase.from('loot_boxes').insert(formData);
       setIsLootBoxModalOpen(false);
       fetchData();
+      addToast('Saved', 'Loot Box updated.', 'success');
   };
 
-  const handleDeleteLootBox = async (id: string) => {
-      if(!window.confirm('Delete Moon Pack?')) return;
-      await supabase.from('loot_boxes').delete().eq('id', id);
+  const handleSaveWheelItem = async (formData: any) => {
+      if (selectedWheelItem?.id) await supabase.from('spin_wheel_items').update(formData).eq('id', selectedWheelItem.id);
+      else await supabase.from('spin_wheel_items').insert(formData);
+      setIsWheelItemModalOpen(false);
       fetchData();
+      addToast('Saved', 'Wheel item updated.', 'success');
   };
 
-  const handleSaveSpinWheelItem = async (data: any) => {
-      if(data.id) await supabase.from('spin_wheel_items').update(data).eq('id', data.id);
-      else await supabase.from('spin_wheel_items').insert(data);
-      setIsSpinWheelModalOpen(false);
-      fetchData();
-  };
-
-  const handleDeleteSpinWheelItem = async (id: string) => {
-      if(!window.confirm('Delete Wheel Item?')) return;
-      await supabase.from('spin_wheel_items').delete().eq('id', id);
-      fetchData();
-  };
-
-  const handleSaveSettings = async () => {
-      const updates = [
-          { key: 'affiliate_invite_reward', value: inviteReward },
-          { key: 'affiliate_order_reward_percentage', value: orderCommission },
-          { key: 'sale_code', value: saleCode },
-          { key: 'site_background', value: siteBackground },
-          { key: 'vip_membership_price', value: vipPrice },
-          { key: 'vip_discount_percent', value: vipDiscount }
-      ];
-
-      for (const item of updates) {
-          await supabase.from('app_settings').upsert(item, { onConflict: 'key' });
-      }
-      addToast('Saved', 'System settings updated.', 'success');
-  };
-
-  const filteredProducts = products.filter(p => (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (p.category || '').toLowerCase().includes(searchQuery.toLowerCase()));
-  const filteredPointProducts = pointProducts.filter(p => (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()));
-  const filteredTournaments = tournaments.filter(t => (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (t.game_name || '').toLowerCase().includes(searchQuery.toLowerCase()));
-  const filteredUsers = profiles.filter(u => {
-    const matchesSearch = (u.email || '').toLowerCase().includes(searchQuery.toLowerCase()) || (u.username || '').toLowerCase().includes(searchQuery.toLowerCase());
-    if (providerFilter === 'all') return matchesSearch;
-    return matchesSearch && u.auth_provider === providerFilter;
-  });
-  const filteredCoupons = coupons.filter(c => (c.code || '').includes(searchQuery.toUpperCase()));
-  const filteredOrders = orders.filter(o => (o.id || '').includes(searchQuery) || (o.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
-  const filteredRedemptions = pointRedemptions.filter(pr => (pr.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase()) || (pr.point_product?.name || '').toLowerCase().includes(searchQuery.toLowerCase()));
-  const filteredDonations = donations.filter(d => (d.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
-  const affiliateProfiles = profiles.filter(p => (p.referral_earnings || 0) > 0 || profiles.some(sub => sub.referred_by === p.id));
-
-  // Wheel Prob Calculation
-  const totalProbability = spinWheelItems.reduce((acc, item) => item.is_active ? acc + Number(item.probability) : acc, 0);
+  const navItems = [
+      { id: 'stats', label: 'Overview', icon: BarChart3, role: ['full', 'limited'] },
+      { id: 'products', label: 'Products', icon: Package, role: ['full', 'limited', 'shop'] },
+      { id: 'orders', label: 'Orders', icon: ClipboardList, role: ['full', 'limited'] },
+      { id: 'users', label: 'Users', icon: Users, role: ['full'] },
+      { id: 'coupons', label: 'Coupons', icon: Ticket, role: ['full'] },
+      { id: 'pointsShop', label: 'Points Shop', icon: Trophy, role: ['full'] },
+      { id: 'redemptions', label: 'Redemptions', icon: Gift, role: ['full', 'limited'] },
+      { id: 'tournaments', label: 'Tournaments', icon: Swords, role: ['full'] },
+      { id: 'lootBoxes', label: 'Loot Boxes', icon: Package, role: ['full'] },
+      { id: 'wheel', label: 'Spin Wheel', icon: RotateCw, role: ['full'] },
+      { id: 'announcements', label: 'Announcements', icon: Megaphone, role: ['full'] },
+      { id: 'donations', label: 'Donations', icon: Heart, role: ['full'] },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#0b0e14] text-white flex font-sans selection:bg-blue-500 selection:text-white">
-        <aside className="w-72 bg-[#1e232e] border-r border-gray-800 flex flex-col fixed h-full z-50 shadow-2xl">
-            <div className="p-8 border-b border-gray-800 bg-[#151a23]">
-                <h1 className="text-2xl font-black text-white italic uppercase tracking-tighter">System<span className="text-blue-500">Core</span></h1>
-                <div className="mt-2 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Operator: <span className="text-white">{role.toUpperCase()}</span></p>
-                </div>
-            </div>
-            
-            <nav className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                {role !== 'shop' && (
-                    <button onClick={() => setActiveSection('stats')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'stats' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                        <BarChart3 className="w-4 h-4" /> Overview
-                    </button>
-                )}
-                
-                <p className="px-4 pt-6 pb-2 text-[9px] font-black text-gray-600 uppercase tracking-[0.2em]">Management</p>
-                
-                <button onClick={() => setActiveSection('products')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'products' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                    <Package className="w-4 h-4" /> Products
-                </button>
-                
-                <button onClick={() => setActiveSection('lootBoxes')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'lootBoxes' ? 'bg-yellow-600 text-white shadow-lg shadow-yellow-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                    <Zap className="w-4 h-4" /> Moon Packs
-                </button>
+    <div className="flex h-screen bg-[#0b0e14] overflow-hidden">
+        {/* Sidebar */}
+        <div className="w-20 md:w-64 bg-[#1e232e] border-r border-gray-800 flex flex-col flex-shrink-0">
+             <div className="p-6 border-b border-gray-800 flex items-center gap-3">
+                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black italic">A</div>
+                 <span className="text-white font-black italic text-lg hidden md:block uppercase tracking-tighter">Admin Panel</span>
+             </div>
+             <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
+                 {navItems.filter(i => i.role.includes(role)).map(item => (
+                     <button 
+                         key={item.id} 
+                         onClick={() => setActiveSection(item.id as any)}
+                         className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all group ${activeSection === item.id ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:bg-[#151a23] hover:text-white'}`}
+                     >
+                         <item.icon className="w-5 h-5 flex-shrink-0" />
+                         <span className="text-xs font-bold uppercase tracking-widest hidden md:block">{item.label}</span>
+                     </button>
+                 ))}
+             </div>
+        </div>
 
-                <button onClick={() => setActiveSection('wheel')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'wheel' ? 'bg-pink-600 text-white shadow-lg shadow-pink-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                    <RotateCw className="w-4 h-4" /> Spin & Win
-                </button>
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+             {/* Header */}
+             <div className="h-20 border-b border-gray-800 bg-[#1e232e] px-6 flex items-center justify-between flex-shrink-0">
+                 <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{navItems.find(i => i.id === activeSection)?.label}</h2>
+                 {['products', 'users', 'orders'].includes(activeSection) && (
+                     <div className="relative hidden md:block">
+                         <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                         <input type="text" placeholder="Search..." className="bg-[#0b0e14] border border-gray-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 w-64" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                     </div>
+                 )}
+             </div>
 
-                <button onClick={() => setActiveSection('pointsShop')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'pointsShop' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                    <Trophy className="w-4 h-4" /> Rewards Shop
-                </button>
+             {/* Dynamic Content */}
+             <div className="flex-1 overflow-y-auto p-6 bg-[#0b0e14]">
+                 
+                 {/* STATS */}
+                 {activeSection === 'stats' && (
+                     <div className="space-y-6">
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                             <div className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 shadow-xl">
+                                 <div className="flex justify-between items-start mb-4">
+                                     <div className="p-3 bg-blue-600/20 rounded-xl text-blue-400"><Globe className="w-6 h-6"/></div>
+                                     <button onClick={() => setVisitHistoryOpen(true)} className="text-xs text-gray-500 hover:text-white underline">View Log</button>
+                                 </div>
+                                 <h3 className="text-3xl font-black text-white italic">{logs.length}</h3>
+                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Recent Visitors</p>
+                             </div>
+                             <div className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 shadow-xl">
+                                 <div className="flex justify-between items-start mb-4">
+                                     <div className="p-3 bg-green-600/20 rounded-xl text-green-400"><ClipboardList className="w-6 h-6"/></div>
+                                 </div>
+                                 <h3 className="text-3xl font-black text-white italic">{orders.length}</h3>
+                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Recent Orders</p>
+                             </div>
+                             <div className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 shadow-xl">
+                                 <div className="flex justify-between items-start mb-4">
+                                     <div className="p-3 bg-purple-600/20 rounded-xl text-purple-400"><Wallet className="w-6 h-6"/></div>
+                                 </div>
+                                 <h3 className="text-3xl font-black text-white italic">---</h3>
+                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Revenue</p>
+                             </div>
+                         </div>
+                     </div>
+                 )}
 
-                <button onClick={() => setActiveSection('tournaments')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'tournaments' ? 'bg-pink-600 text-white shadow-lg shadow-pink-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                    <Swords className="w-4 h-4" /> Tournaments
-                </button>
-
-                {role !== 'shop' && (
-                    <>
-                        <button onClick={() => setActiveSection('orders')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'orders' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                            <ShoppingCart className="w-4 h-4" /> Orders
-                        </button>
-                        
-                        <button onClick={() => setActiveSection('redemptions')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'redemptions' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                            <Gift className="w-4 h-4" /> Redemptions
-                        </button>
-
-                        <button onClick={() => setActiveSection('donations')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'donations' ? 'bg-yellow-600 text-white shadow-lg shadow-yellow-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                            <Heart className="w-4 h-4" /> Donations
-                        </button>
-                    </>
-                )}
-
-                {role === 'full' && (
-                    <>
-                        <p className="px-4 pt-6 pb-2 text-[9px] font-black text-gray-600 uppercase tracking-[0.2em]">Super Admin</p>
-                        
-                        <button onClick={() => setActiveSection('users')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'users' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                            <Users className="w-4 h-4" /> Users
-                        </button>
-
-                        <button onClick={() => setActiveSection('affiliates')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'affiliates' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                            <Percent className="w-4 h-4" /> Affiliates
-                        </button>
-                        
-                        <button onClick={() => setActiveSection('coupons')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'coupons' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                            <Ticket className="w-4 h-4" /> Coupons
-                        </button>
-
-                        <button onClick={() => setActiveSection('system')} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === 'system' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-gray-400 hover:bg-[#0b0e14] hover:text-white'}`}>
-                            <Settings className="w-4 h-4" /> System
-                        </button>
-                    </>
-                )}
-            </nav>
-            
-            <div className="p-4 border-t border-gray-800 bg-[#151a23]">
-                <button onClick={() => window.location.href='/'} className="w-full bg-[#0b0e14] text-gray-400 hover:text-white hover:border-gray-500 border border-gray-800 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 transition-all">
-                    <LogOut className="w-4 h-4" /> Exit Console
-                </button>
-            </div>
-        </aside>
-
-        <main className="flex-1 ml-72 p-10 overflow-y-auto h-screen relative bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
-            <div className="max-w-7xl mx-auto pb-20">
-                
-                {activeSection === 'stats' && role !== 'shop' && (
-                    <div className="space-y-8 animate-slide-up">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-2xl relative overflow-hidden group">
-                                <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:scale-110 transition-transform"><Users className="w-24 h-24" /></div>
-                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-2 relative z-10">Total Users</p>
-                                <h3 className="text-5xl font-black text-white italic tracking-tighter relative z-10">{stats.users}</h3>
-                            </div>
-                            <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-2xl relative overflow-hidden group">
-                                <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:scale-110 transition-transform"><ShoppingCart className="w-24 h-24" /></div>
-                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-2 relative z-10">Total Orders</p>
-                                <h3 className="text-5xl font-black text-white italic tracking-tighter relative z-10">{stats.orders}</h3>
-                            </div>
-                            <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 shadow-2xl relative overflow-hidden group">
-                                <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:scale-110 transition-transform"><Wallet className="w-24 h-24" /></div>
-                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-2 relative z-10">Total Revenue</p>
-                                <h3 className="text-5xl font-black text-yellow-400 italic tracking-tighter relative z-10">{stats.revenue.toFixed(2)} DH</h3>
-                            </div>
-                        </div>
-                        
-                        <div className="flex gap-4">
-                            <button onClick={() => setIsVisitsModalOpen(true)} className="bg-[#1e232e] border border-gray-800 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:border-blue-500 transition-all shadow-xl">
-                                <Globe className="w-5 h-5 text-blue-500" /> View Live Traffic Logs
-                            </button>
-                            <button onClick={() => setActiveSection('system')} className="bg-[#1e232e] border border-gray-800 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:border-yellow-500 transition-all shadow-xl">
-                                <Megaphone className="w-5 h-5 text-yellow-500" /> Manage Announcements
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {activeSection === 'products' && (
-                    <div className="animate-slide-up">
-                        <div className="flex justify-between items-center mb-8 gap-4">
-                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Inventory</h2>
-                            <div className="flex gap-4">
-                                <input type="text" placeholder="Search items..." className="bg-[#1e232e] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs font-bold uppercase tracking-widest focus:border-blue-500 outline-none w-64" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                                <button onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
-                                    <PlusCircle className="w-4 h-4" /> Add Item
-                                </button>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredProducts.map(product => (
-                                <div key={product.id} className="bg-[#1e232e] rounded-2xl border border-gray-800 p-4 flex gap-4 group hover:border-blue-500/30 transition-all">
-                                    <div className="w-20 h-20 bg-[#0b0e14] rounded-xl overflow-hidden flex-shrink-0 relative">
-                                        <img src={product.image_url} className="w-full h-full object-cover" alt="" />
-                                        {product.is_vip && <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[8px] font-black px-1.5 rounded">VIP</div>}
-                                    </div>
-                                    <div className="flex-1 min-w-0 flex flex-col justify-between">
-                                        <div>
-                                            <div className="flex justify-between items-start">
-                                                <h4 className="text-white font-bold text-sm truncate">{product.name}</h4>
-                                                <span className="text-[10px] text-gray-500 font-black uppercase">{product.category}</span>
-                                            </div>
-                                            <p className="text-yellow-400 font-black italic">{product.price} DH</p>
-                                        </div>
-                                        <div className="flex gap-2 mt-2">
-                                            <button onClick={() => { setEditingProduct(product); setIsProductModalOpen(true); }} className="flex-1 bg-[#0b0e14] border border-gray-800 hover:border-blue-500 text-gray-400 hover:text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1 transition-all">
-                                                <Edit2 className="w-3 h-3" /> Edit
-                                            </button>
-                                            <button onClick={() => handleDeleteProduct(product.id)} className="px-3 bg-red-900/10 border border-red-500/20 hover:bg-red-500 hover:text-white text-red-500 rounded-lg transition-all">
-                                                <Trash2 className="w-3 h-3" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {activeSection === 'wheel' && (
-                    <div className="animate-slide-up">
-                        <div className="flex justify-between items-center mb-8 gap-4">
-                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Wheel Configuration</h2>
-                            <button onClick={() => { setEditingSpinWheelItem(null); setIsSpinWheelModalOpen(true); }} className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
-                                <PlusCircle className="w-4 h-4" /> Add Segment
-                            </button>
-                        </div>
-
-                        {/* Probability Warning */}
-                        <div className={`mb-8 p-4 rounded-xl border flex items-center justify-between ${Math.abs(totalProbability - 100) < 0.1 ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
-                            <div className="flex items-center gap-3">
-                                <PieChart className="w-6 h-6" />
-                                <div>
-                                    <p className="font-black uppercase tracking-widest text-xs">Total Probability</p>
-                                    <p className="text-xl font-black">{totalProbability.toFixed(1)}%</p>
-                                </div>
-                            </div>
-                            {Math.abs(totalProbability - 100) >= 0.1 && (
-                                <p className="text-xs font-bold uppercase tracking-widest">Warning: Should equal 100%</p>
-                            )}
-                        </div>
-
-                        <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden">
-                            <table className="w-full text-left">
-                                <thead className="bg-[#151a23] text-gray-500 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
-                                    <tr>
-                                        <th className="p-4">Color</th>
-                                        <th className="p-4">Text</th>
-                                        <th className="p-4">Reward</th>
-                                        <th className="p-4">Probability</th>
-                                        <th className="p-4">Status</th>
-                                        <th className="p-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-800">
-                                    {spinWheelItems.map(item => (
-                                        <tr key={item.id} className="hover:bg-[#0b0e14]/50 transition-colors">
-                                            <td className="p-4">
-                                                <div className="w-8 h-8 rounded-lg border border-gray-700" style={{ backgroundColor: item.color }}></div>
-                                            </td>
-                                            <td className="p-4 font-bold text-sm text-white">{item.text}</td>
-                                            <td className="p-4 text-xs font-mono text-gray-400">
-                                                {item.type === 'none' ? 'None' : `${item.value} ${item.type === 'money' ? 'DH' : 'PTS'}`}
-                                            </td>
-                                            <td className="p-4 text-sm font-black text-white">{item.probability}%</td>
-                                            <td className="p-4">
-                                                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded ${item.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                    {item.is_active ? 'Active' : 'Disabled'}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-right flex justify-end gap-2">
-                                                <button onClick={() => { setEditingSpinWheelItem(item); setIsSpinWheelModalOpen(true); }} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition"><Edit2 className="w-4 h-4" /></button>
-                                                <button onClick={() => handleDeleteSpinWheelItem(item.id)} className="p-2 bg-red-900/20 rounded-lg hover:bg-red-600 text-red-500 hover:text-white transition"><Trash2 className="w-4 h-4" /></button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {activeSection === 'lootBoxes' && (
-                    <div className="animate-slide-up space-y-12">
-                        {/* Config */}
-                        <div>
-                            <div className="flex justify-between items-center mb-8 gap-4">
-                                <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Moon Packs Config</h2>
-                                <button onClick={() => { setEditingLootBox(null); setIsLootBoxModalOpen(true); }} className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
-                                    <PlusCircle className="w-4 h-4" /> New Pack
-                                </button>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {lootBoxes.map(box => (
-                                    <div key={box.id} className={`bg-[#1e232e] p-6 rounded-3xl border flex flex-col items-center text-center relative group overflow-hidden ${box.border_color}`}>
-                                        <div className={`absolute inset-0 opacity-10 ${box.color}`}></div>
-                                        <h4 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2 relative z-10">{box.name}</h4>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 relative z-10">{box.potential_rewards}</p>
-                                        <p className="text-3xl font-black text-white italic tracking-tighter mb-4 relative z-10">{box.price} DH</p>
-                                        
-                                        <div className="flex gap-2 w-full relative z-10 mt-auto">
-                                            <button onClick={() => { setEditingLootBox(box); setIsLootBoxModalOpen(true); }} className="flex-1 bg-[#0b0e14] border border-gray-700 hover:border-white text-white py-2 rounded-xl text-xs font-black uppercase tracking-widest">Edit</button>
-                                            <button onClick={() => handleDeleteLootBox(box.id)} className="px-4 bg-red-900/20 text-red-500 hover:bg-red-600 hover:text-white rounded-xl"><Trash2 className="w-4 h-4"/></button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Recent History Log */}
-                        <div className="bg-[#1e232e] rounded-3xl border border-gray-800 p-8">
-                            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-6 flex items-center gap-2">
-                                <History className="w-5 h-5 text-gray-400" /> Recent Crate Activity
-                            </h3>
-                            {recentLootOpens.length === 0 ? (
-                                <p className="text-center text-gray-500 font-bold uppercase tracking-widest text-xs py-10">No recent openings.</p>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left">
-                                        <thead className="text-[10px] font-black uppercase tracking-widest text-gray-500 border-b border-gray-800">
-                                            <tr>
-                                                <th className="pb-4 pl-4">Time</th>
-                                                <th className="pb-4">User</th>
-                                                <th className="pb-4">Pack</th>
-                                                <th className="pb-4 text-right">Result</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-800">
-                                            {recentLootOpens.map((open) => (
-                                                <tr key={open.id} className="hover:bg-[#0b0e14]/50 transition-colors">
-                                                    <td className="py-4 pl-4 text-xs font-mono text-gray-500">{new Date(open.created_at).toLocaleTimeString()}</td>
-                                                    <td className="py-4 text-xs font-bold text-white">{open.profile?.username || 'Unknown'}</td>
-                                                    <td className="py-4 text-xs text-gray-400 font-bold">{open.box_name} <span className="opacity-50">({open.box_price} DH)</span></td>
-                                                    <td className="py-4 text-right">
-                                                        <span className={`text-xs font-black italic tracking-tighter px-3 py-1 rounded-lg ${
-                                                            open.reward_type === 'money' 
-                                                                ? (open.reward_value > open.box_price ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-gray-800 text-gray-400')
-                                                                : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                                                        }`}>
-                                                            {open.reward_type === 'money' ? `+${open.reward_value} DH` : `+${open.reward_value} PTS`}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {activeSection === 'users' && role === 'full' && (
-                    <div className="animate-slide-up">
-                        <div className="flex justify-between items-center mb-8 gap-4">
-                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">User Database</h2>
-                            <div className="flex gap-4">
-                                <select className="bg-[#1e232e] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs font-bold uppercase tracking-widest focus:border-indigo-500 outline-none" value={providerFilter} onChange={(e) => setProviderFilter(e.target.value as any)}>
-                                    <option value="all">All Providers</option>
-                                    <option value="email">Email</option>
-                                    <option value="google">Google</option>
-                                    <option value="discord">Discord</option>
-                                </select>
-                                <input type="text" placeholder="Search users..." className="bg-[#1e232e] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs font-bold uppercase tracking-widest focus:border-indigo-500 outline-none w-64" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                            </div>
-                        </div>
-                        <div className="bg-[#1e232e] rounded-2xl border border-gray-800 overflow-hidden">
-                            <table className="w-full text-left">
-                                <thead className="bg-[#151a23] text-gray-500 text-[10px] font-black uppercase tracking-widest">
-                                    <tr>
-                                        <th className="p-4">User</th>
-                                        <th className="p-4">Balance</th>
-                                        <th className="p-4">Points</th>
-                                        <th className="p-4">Auth</th>
-                                        <th className="p-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-800">
-                                    {filteredUsers.map(user => (
-                                        <tr key={user.id} className="hover:bg-[#0b0e14] transition-colors">
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">{user.username?.charAt(0)}</div>
-                                                    <div>
-                                                        <p className="text-white font-bold text-xs">{user.username}</p>
-                                                        <p className="text-gray-500 text-[10px]">{user.email}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="p-4 text-yellow-400 font-bold font-mono text-sm">{user.wallet_balance.toFixed(2)}</td>
-                                            <td className="p-4 text-purple-400 font-bold font-mono text-sm">{user.discord_points}</td>
-                                            <td className="p-4 text-gray-500 text-[10px] font-black uppercase">{user.auth_provider}</td>
-                                            <td className="p-4 text-right flex justify-end gap-2">
-                                                <button onClick={() => setEditingUser(user)} className="p-2 bg-indigo-600/10 text-indigo-400 rounded-lg hover:bg-indigo-600 hover:text-white transition"><Edit2 className="w-4 h-4" /></button>
-                                                <button onClick={() => handleDeleteUser(user.id)} className="p-2 bg-red-600/10 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition"><Trash2 className="w-4 h-4" /></button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {activeSection === 'orders' && role !== 'shop' && (
-                    <div className="animate-slide-up">
-                        <div className="flex justify-between items-center mb-8 gap-4">
-                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Order History</h2>
-                            <input type="text" placeholder="Search orders..." className="bg-[#1e232e] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs font-bold uppercase tracking-widest focus:border-blue-500 outline-none w-64" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                        </div>
-                        <div className="space-y-4">
-                            {filteredOrders.map(order => (
-                                <div key={order.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center group hover:border-blue-500/50 transition-all">
-                                    <div className="flex items-center gap-6">
-                                        <div className={`p-4 rounded-xl ${order.status === 'completed' ? 'bg-green-500/10 text-green-500' : order.status === 'canceled' ? 'bg-red-500/10 text-red-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
-                                            <ShoppingCart className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-white font-black uppercase text-lg">Order #{order.id.slice(0,6)}</p>
-                                            <p className="text-gray-500 text-xs font-bold">{order.profile?.email} • {new Date(order.created_at).toLocaleDateString()}</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right flex items-center gap-6">
-                                        <div>
-                                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Total</p>
-                                            <p className="text-2xl font-black text-white italic tracking-tighter">{order.total_amount.toFixed(2)} DH</p>
-                                        </div>
-                                        <button onClick={() => setSelectedOrder(order)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg transition-all">View</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {activeSection === 'system' && role === 'full' && (
-                    <div className="animate-slide-up">
-                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">System Configuration</h2>
-                        
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="space-y-6">
-                                <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800 space-y-6">
-                                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter border-b border-gray-800 pb-4">Global Settings</h3>
-                                    
-                                    <h4 className="text-indigo-400 font-black uppercase tracking-widest text-xs mt-4 mb-2">Affiliate Program</h4>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Invite Reward (DH)</label>
-                                            <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={inviteReward} onChange={e => setInviteReward(e.target.value)} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Order Commission (%)</label>
-                                            <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={orderCommission} onChange={e => setOrderCommission(e.target.value)} />
-                                        </div>
-                                    </div>
-
-                                    <h4 className="text-yellow-400 font-black uppercase tracking-widest text-xs mt-4 mb-2 flex items-center gap-2"><Crown className="w-3 h-3" /> VIP / Elite Configuration</h4>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Membership Price (DH)</label>
-                                            <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-yellow-500" value={vipPrice} onChange={e => setVipPrice(e.target.value)} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Member Discount (%)</label>
-                                            <input type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-yellow-500" value={vipDiscount} onChange={e => setVipDiscount(e.target.value)} />
-                                        </div>
-                                    </div>
-
-                                    <h4 className="text-blue-400 font-black uppercase tracking-widest text-xs mt-4 mb-2">Store Config</h4>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Flash Sale Code</label>
-                                        <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500 uppercase" value={saleCode} onChange={e => setSaleCode(e.target.value)} />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Site Background URL (Optional)</label>
-                                        <div className="flex gap-2">
-                                            <input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-bold outline-none focus:border-indigo-500" value={siteBackground} onChange={e => setSiteBackground(e.target.value)} placeholder="https://..." />
-                                            {siteBackground && <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-800 flex-shrink-0"><img src={siteBackground} className="w-full h-full object-cover" /></div>}
-                                        </div>
-                                    </div>
-
-                                    <button onClick={handleSaveSettings} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl uppercase tracking-widest text-xs shadow-lg shadow-indigo-900/20 transition-all flex items-center justify-center gap-2">
-                                        <Save className="w-4 h-4" /> Save Global Config
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6">
-                                 <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-gray-800">
-                                     <div className="flex justify-between items-center mb-6">
-                                         <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Announcements</h3>
-                                         <button onClick={() => { setEditingAnnouncement(null); setIsAnnouncementModalOpen(true); }} className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-black uppercase text-[10px] tracking-widest flex items-center gap-2 shadow-lg hover:bg-indigo-700 transition-all">
-                                             <PlusCircle className="w-3 h-3" /> Add New
-                                         </button>
+                 {/* PRODUCTS */}
+                 {activeSection === 'products' && (
+                     <div className="space-y-6">
+                         <button onClick={() => { setSelectedProduct(null); setIsProductModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg">
+                             <PlusCircle className="w-4 h-4" /> Add Product
+                         </button>
+                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                             {products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())).map(product => (
+                                 <div key={product.id} className="bg-[#1e232e] rounded-2xl border border-gray-800 overflow-hidden group hover:border-blue-500/50 transition-all">
+                                     <div className="relative h-40 bg-gray-900">
+                                         <img src={product.image_url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt={product.name} />
+                                         <div className="absolute top-2 right-2 flex gap-1">
+                                             <button onClick={() => { setSelectedProduct(product); setIsProductModalOpen(true); }} className="p-2 bg-black/60 rounded-lg text-white hover:bg-blue-600 transition"><Edit2 className="w-3 h-3"/></button>
+                                             <button onClick={() => handleDelete('products', product.id, product.name)} className="p-2 bg-black/60 rounded-lg text-white hover:bg-red-600 transition"><Trash2 className="w-3 h-3"/></button>
+                                         </div>
                                      </div>
-                                     
-                                     <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar">
-                                         {announcements.length === 0 && <p className="text-center text-gray-500 text-xs py-8 uppercase font-bold tracking-widest">No active announcements.</p>}
-                                         {announcements.map(ann => (
-                                             <div key={ann.id} className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 relative group hover:border-indigo-500/50 transition-all">
-                                                 <div className="flex justify-between items-start mb-2">
-                                                     <div className="flex items-center gap-2">
-                                                         <div className={`w-2 h-2 rounded-full ${ann.is_active ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                                                         <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{ann.is_active ? 'Active' : 'Inactive'}</span>
-                                                     </div>
-                                                     <div className="flex gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                                         <button onClick={() => { setEditingAnnouncement(ann); setIsAnnouncementModalOpen(true); }} className="hover:text-white text-gray-400"><Edit2 className="w-3 h-3" /></button>
-                                                         <button onClick={() => handleDeleteAnnouncement(ann.id)} className="hover:text-red-500 text-gray-400"><Trash2 className="w-3 h-3" /></button>
-                                                     </div>
-                                                 </div>
-                                                 <div className="p-3 rounded-lg text-xs font-bold uppercase tracking-widest text-center shadow-inner" style={{ background: ann.background_color, color: ann.text_color }}>
-                                                     {ann.message}
-                                                 </div>
-                                             </div>
-                                         ))}
+                                     <div className="p-4">
+                                         <h3 className="font-bold text-white text-sm truncate">{product.name}</h3>
+                                         <p className="text-gray-500 text-xs mb-2">{product.category}</p>
+                                         <div className="flex justify-between items-center">
+                                             <span className="text-yellow-400 font-mono font-bold">{product.price.toFixed(2)} DH</span>
+                                             <span className="text-gray-600 text-xs">Stock: {product.stock}</span>
+                                         </div>
                                      </div>
                                  </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                             ))}
+                         </div>
+                     </div>
+                 )}
 
-                {activeSection === 'pointsShop' && (
-                    <div className="animate-slide-up">
-                        <div className="flex justify-between items-center mb-8 gap-4">
-                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Points Shop</h2>
-                            <button onClick={() => { setEditingPointProduct(null); setIsPointProductModalOpen(true); }} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
-                                <PlusCircle className="w-4 h-4" /> Add Reward
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {filteredPointProducts.map(p => (
-                                <div key={p.id} className="bg-[#1e232e] p-4 rounded-2xl border border-gray-800">
-                                    <img src={p.image_url} className="w-full h-32 object-cover rounded-xl mb-4 bg-black" alt="" />
-                                    <h4 className="text-white font-bold mb-1">{p.name}</h4>
-                                    <p className="text-purple-400 text-xs font-black italic mb-4">{p.cost} PTS</p>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => { setEditingPointProduct(p); setIsPointProductModalOpen(true); }} className="flex-1 bg-gray-800 text-gray-400 hover:text-white py-2 rounded-lg text-[10px] font-black uppercase">Edit</button>
-                                        <button onClick={() => handleDeletePointProduct(p.id)} className="px-3 bg-red-900/20 text-red-500 hover:bg-red-600 hover:text-white rounded-lg"><Trash2 className="w-4 h-4"/></button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                 {/* USERS */}
+                 {activeSection === 'users' && (
+                     <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden">
+                         <table className="w-full text-left">
+                             <thead className="bg-[#151a23] text-gray-500 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
+                                 <tr>
+                                     <th className="p-4">User</th>
+                                     <th className="p-4">Balance</th>
+                                     <th className="p-4">Points</th>
+                                     <th className="p-4">Referrals</th>
+                                     <th className="p-4 text-right">Actions</th>
+                                 </tr>
+                             </thead>
+                             <tbody className="divide-y divide-gray-800">
+                                 {profiles.filter(u => u.username?.toLowerCase().includes(searchTerm.toLowerCase()) || u.email?.toLowerCase().includes(searchTerm.toLowerCase())).map(user => (
+                                     <tr key={user.id} className="hover:bg-white/5">
+                                         <td className="p-4">
+                                             <div className="flex items-center gap-3">
+                                                 <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white">{user.username?.charAt(0)}</div>
+                                                 <div>
+                                                     <p className="text-white font-bold text-xs">{user.username}</p>
+                                                     <p className="text-gray-500 text-[10px]">{user.email}</p>
+                                                 </div>
+                                             </div>
+                                         </td>
+                                         <td className="p-4 font-mono text-green-400 text-sm font-bold">{user.wallet_balance.toFixed(2)}</td>
+                                         <td className="p-4 font-mono text-purple-400 text-sm font-bold">{user.discord_points}</td>
+                                         <td className="p-4 font-mono text-gray-400 text-sm">{user.referral_code || '-'}</td>
+                                         <td className="p-4 text-right flex justify-end gap-2">
+                                             <button onClick={() => { setSelectedProfile(user); setIsBalanceModalOpen(true); }} className="p-2 bg-gray-800 rounded-lg text-blue-400 hover:bg-blue-600 hover:text-white transition"><Wallet className="w-4 h-4" /></button>
+                                             <button onClick={() => { setSelectedProfile(user); setIsReferralModalOpen(true); }} className="p-2 bg-gray-800 rounded-lg text-green-400 hover:bg-green-600 hover:text-white transition"><Users className="w-4 h-4" /></button>
+                                         </td>
+                                     </tr>
+                                 ))}
+                             </tbody>
+                         </table>
+                     </div>
+                 )}
 
-                {activeSection === 'tournaments' && (
-                    <div className="animate-slide-up">
-                        <div className="flex justify-between items-center mb-8 gap-4">
-                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Tournaments</h2>
-                            <button onClick={() => { setEditingTournament(null); setIsTournamentModalOpen(true); }} className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
-                                <PlusCircle className="w-4 h-4" /> Create
-                            </button>
-                        </div>
-                        <div className="space-y-4">
-                            {filteredTournaments.map(t => (
-                                <div key={t.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center">
-                                    <div>
-                                        <h4 className="text-white font-bold text-lg">{t.title}</h4>
-                                        <p className="text-gray-500 text-xs">{t.game_name} • {t.status}</p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => { setEditingTournament(t); setIsTournamentModalOpen(true); }} className="bg-gray-800 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Edit</button>
-                                        <button onClick={() => handleDeleteTournament(t.id)} className="bg-red-900/20 text-red-500 px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-red-600 hover:text-white">Delete</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                 {/* ORDERS */}
+                 {activeSection === 'orders' && (
+                     <div className="space-y-4">
+                         {orders.map(order => (
+                             <div key={order.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center">
+                                 <div>
+                                     <p className="text-white font-bold text-sm mb-1">Order #{order.id.slice(0, 8)}</p>
+                                     <p className="text-gray-500 text-xs mb-2">{new Date(order.created_at).toLocaleString()} • {order.profile?.email}</p>
+                                     <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border ${order.status === 'completed' ? 'bg-green-500/10 text-green-500 border-green-500/20' : order.status === 'canceled' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'}`}>
+                                         {order.status}
+                                     </span>
+                                 </div>
+                                 <div className="text-right">
+                                     <p className="text-white font-black italic text-xl mb-3">{order.total_amount.toFixed(2)} DH</p>
+                                     <button onClick={() => setSelectedOrder(order)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition">View Details</button>
+                                 </div>
+                             </div>
+                         ))}
+                     </div>
+                 )}
 
-                {activeSection === 'coupons' && role === 'full' && (
-                    <div className="animate-slide-up">
-                        <div className="flex justify-between items-center mb-8 gap-4">
-                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Coupons</h2>
-                            <button onClick={() => { setEditingCoupon(null); setIsCouponModalOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
-                                <PlusCircle className="w-4 h-4" /> Add Code
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {filteredCoupons.map(c => (
-                                <div key={c.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 relative group">
-                                    <div className="absolute top-4 right-4 text-xs font-black uppercase tracking-widest text-gray-500">{c.is_active ? 'Active' : 'Inactive'}</div>
-                                    <h4 className="text-white font-mono text-xl font-black tracking-widest mb-2">{c.code}</h4>
-                                    <p className="text-indigo-400 font-bold text-sm mb-4">{c.discount_type === 'percent' ? `${c.discount_value}% OFF` : `-${c.discount_value} DH`}</p>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => { setEditingCoupon(c); setIsCouponModalOpen(true); }} className="flex-1 bg-gray-800 text-white py-2 rounded-lg text-xs font-bold">Edit</button>
-                                        <button onClick={() => handleDeleteCoupon(c.id)} className="px-3 bg-red-900/20 text-red-500 hover:text-white hover:bg-red-600 rounded-lg"><Trash2 className="w-4 h-4"/></button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                 {/* COUPONS */}
+                 {activeSection === 'coupons' && (
+                     <div className="space-y-6">
+                         <button onClick={() => { setSelectedCoupon(null); setIsCouponModalOpen(true); }} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg">
+                             <PlusCircle className="w-4 h-4" /> Create Coupon
+                         </button>
+                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                             {coupons.map(coupon => (
+                                 <div key={coupon.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 relative group hover:border-purple-500/50 transition">
+                                     <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                                         <button onClick={() => { setSelectedCoupon(coupon); setIsCouponModalOpen(true); }} className="p-2 bg-gray-800 rounded-lg hover:text-white"><Edit2 className="w-3 h-3"/></button>
+                                         <button onClick={() => handleDelete('coupons', coupon.id, coupon.code)} className="p-2 bg-gray-800 rounded-lg hover:text-red-500"><Trash2 className="w-3 h-3"/></button>
+                                     </div>
+                                     <h3 className="text-2xl font-mono font-black text-white tracking-widest mb-1">{coupon.code}</h3>
+                                     <p className="text-purple-400 font-bold text-sm mb-4">
+                                         {coupon.discount_type === 'percent' ? `${coupon.discount_value}% OFF` : `-${coupon.discount_value} DH`}
+                                     </p>
+                                     <div className="flex justify-between text-xs text-gray-500">
+                                         <span>Uses: {coupon.usage_count} / {coupon.max_uses || '∞'}</span>
+                                         <span className={coupon.is_active ? 'text-green-500' : 'text-red-500'}>{coupon.is_active ? 'Active' : 'Inactive'}</span>
+                                     </div>
+                                 </div>
+                             ))}
+                         </div>
+                     </div>
+                 )}
 
-                {activeSection === 'redemptions' && (
-                    <div className="animate-slide-up">
-                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Redemption Requests</h2>
-                        <div className="space-y-4">
-                            {filteredRedemptions.map(r => (
-                                <div key={r.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center">
-                                    <div className="flex items-center gap-4">
-                                        <img src={r.point_product?.image_url} className="w-12 h-12 rounded-lg bg-black object-cover" alt="" />
-                                        <div>
-                                            <h4 className="text-white font-bold">{r.profile?.username}</h4>
-                                            <p className="text-gray-500 text-xs">Redeemed: {r.point_product?.name}</p>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => setSelectedRedemption(r)} className="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold text-xs uppercase hover:bg-purple-700">Manage</button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                 {/* OTHER SECTIONS (Basic Table/List Implementations) */}
+                 {activeSection === 'pointsShop' && (
+                     <div className="space-y-6">
+                         <button onClick={() => { setSelectedPointProduct(null); setIsPointProductModalOpen(true); }} className="bg-purple-600 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2">Add Reward</button>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                             {pointProducts.map(p => (
+                                 <div key={p.id} className="bg-[#1e232e] p-4 rounded-2xl border border-gray-800 flex gap-4 items-center group">
+                                     <img src={p.image_url} className="w-16 h-16 rounded-lg object-cover bg-black" alt="" />
+                                     <div className="flex-1 min-w-0">
+                                         <p className="text-white font-bold truncate">{p.name}</p>
+                                         <p className="text-purple-400 font-black italic">{p.cost} PTS</p>
+                                     </div>
+                                     <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition">
+                                         <button onClick={() => { setSelectedPointProduct(p); setIsPointProductModalOpen(true); }}><Edit2 className="w-4 h-4 text-gray-400 hover:text-white"/></button>
+                                         <button onClick={() => handleDelete('point_products', p.id, p.name)}><Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500"/></button>
+                                     </div>
+                                 </div>
+                             ))}
+                         </div>
+                     </div>
+                 )}
 
-                {activeSection === 'donations' && (
-                    <div className="animate-slide-up">
-                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Donation Log</h2>
-                        <div className="space-y-4">
-                            {filteredDonations.map(d => (
-                                <div key={d.id} className="bg-[#1e232e] p-4 rounded-2xl border border-gray-800 flex justify-between items-center">
-                                    <div>
-                                        <p className="text-white font-bold text-sm">{d.profile?.username || 'Guest'}</p>
-                                        <p className="text-gray-500 text-[10px]">{new Date(d.created_at).toLocaleDateString()}</p>
-                                    </div>
-                                    <p className="text-yellow-400 font-black italic text-lg">{d.amount.toFixed(2)} DH</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                 {activeSection === 'redemptions' && (
+                     <div className="space-y-4">
+                         {pointRedemptions.map(r => (
+                             <div key={r.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center">
+                                 <div>
+                                     <p className="text-white font-bold text-sm mb-1">{r.point_product?.name}</p>
+                                     <p className="text-gray-500 text-xs mb-2">User: {r.profile?.email} • {new Date(r.created_at).toLocaleDateString()}</p>
+                                     <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border ${r.status === 'delivered' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'}`}>{r.status}</span>
+                                 </div>
+                                 <button onClick={() => setSelectedRedemption(r)} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition">Manage</button>
+                             </div>
+                         ))}
+                     </div>
+                 )}
 
-                {activeSection === 'affiliates' && role === 'full' && (
-                    <div className="animate-slide-up">
-                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Affiliate Partners</h2>
-                        <div className="space-y-4">
-                            {affiliateProfiles.map(p => (
-                                <div key={p.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center">
-                                    <div>
-                                        <h4 className="text-white font-bold">{p.username}</h4>
-                                        <p className="text-green-400 text-xs font-mono">Code: {p.referral_code}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-gray-500 text-[10px] font-black uppercase">Earnings</p>
-                                        <p className="text-white font-bold">{p.referral_earnings} DH</p>
-                                        <button onClick={() => setEditingReferral(p)} className="text-blue-500 text-xs hover:text-white mt-1">Edit</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                 {activeSection === 'tournaments' && (
+                     <div className="space-y-6">
+                         <button onClick={() => { setSelectedTournament(null); setIsTournamentModalOpen(true); }} className="bg-blue-600 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2">Create Tournament</button>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             {tournaments.map(t => (
+                                 <div key={t.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 relative group">
+                                     <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                                         <button onClick={() => { setSelectedTournament(t); setIsTournamentModalOpen(true); }} className="p-2 bg-black/50 rounded-lg hover:text-white"><Edit2 className="w-4 h-4"/></button>
+                                         <button onClick={() => handleDelete('tournaments', t.id, t.title)} className="p-2 bg-black/50 rounded-lg hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
+                                     </div>
+                                     <h3 className="text-xl font-black text-white italic uppercase">{t.title}</h3>
+                                     <p className="text-gray-500 text-xs mb-4">{new Date(t.start_date).toLocaleDateString()} • {t.status}</p>
+                                     <div className="flex gap-4 text-xs font-bold text-gray-400">
+                                         <span>Players: {t.current_participants}/{t.max_participants}</span>
+                                         <span>Prize: {t.prize_pool}</span>
+                                     </div>
+                                 </div>
+                             ))}
+                         </div>
+                     </div>
+                 )}
+                 
+                 {activeSection === 'announcements' && (
+                     <div className="space-y-6">
+                         <button onClick={() => { setSelectedAnnouncement(null); setIsAnnouncementModalOpen(true); }} className="bg-blue-600 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2">New Announcement</button>
+                         <div className="space-y-4">
+                             {announcements.map(a => (
+                                 <div key={a.id} className="bg-[#1e232e] p-4 rounded-2xl border border-gray-800 flex justify-between items-center group">
+                                     <div className="flex-1">
+                                         <p className="text-white font-medium text-sm mb-1">{a.message}</p>
+                                         <p className="text-[10px] text-gray-500 uppercase font-bold">{a.is_active ? 'Active' : 'Inactive'}</p>
+                                     </div>
+                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                                         <button onClick={() => { setSelectedAnnouncement(a); setIsAnnouncementModalOpen(true); }}><Edit2 className="w-4 h-4 text-gray-400 hover:text-white"/></button>
+                                         <button onClick={() => handleDelete('announcements', a.id, 'Announcement')}><Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500"/></button>
+                                     </div>
+                                 </div>
+                             ))}
+                         </div>
+                     </div>
+                 )}
+                 
+                 {activeSection === 'lootBoxes' && (
+                     <div className="space-y-6">
+                         <button onClick={() => { setSelectedLootBox(null); setIsLootBoxModalOpen(true); }} className="bg-yellow-600 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2">New Loot Box</button>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                             {lootBoxes.map(box => (
+                                 <div key={box.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 text-center relative group">
+                                     <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                                         <button onClick={() => { setSelectedLootBox(box); setIsLootBoxModalOpen(true); }}><Edit2 className="w-4 h-4 text-gray-400 hover:text-white"/></button>
+                                         <button onClick={() => handleDelete('loot_boxes', box.id, box.name)}><Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500"/></button>
+                                     </div>
+                                     <Package className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                                     <h3 className="font-black text-white uppercase italic">{box.name}</h3>
+                                     <p className="text-yellow-400 font-bold mb-2">{box.price} DH</p>
+                                     <p className="text-[10px] text-gray-500 uppercase font-bold">{box.potential_rewards}</p>
+                                 </div>
+                             ))}
+                         </div>
+                     </div>
+                 )}
 
-            </div>
-        </main>
+                 {activeSection === 'wheel' && (
+                     <div className="space-y-6">
+                         <button onClick={() => { setSelectedWheelItem(null); setIsWheelItemModalOpen(true); }} className="bg-pink-600 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2">New Segment</button>
+                         <div className="space-y-3">
+                             {wheelItems.map(item => (
+                                 <div key={item.id} className="bg-[#1e232e] p-4 rounded-2xl border border-gray-800 flex items-center gap-4 group">
+                                     <div className="w-4 h-4 rounded-full" style={{ background: item.color }}></div>
+                                     <div className="flex-1">
+                                         <p className="text-white font-bold text-sm">{item.text}</p>
+                                         <p className="text-[10px] text-gray-500 uppercase font-bold">{item.probability}% Chance • {item.type} {item.value > 0 ? `(${item.value})` : ''}</p>
+                                     </div>
+                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                                         <button onClick={() => { setSelectedWheelItem(item); setIsWheelItemModalOpen(true); }}><Edit2 className="w-4 h-4 text-gray-400 hover:text-white"/></button>
+                                         <button onClick={() => handleDelete('spin_wheel_items', item.id, item.text)}><Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500"/></button>
+                                     </div>
+                                 </div>
+                             ))}
+                         </div>
+                     </div>
+                 )}
+
+                 {activeSection === 'donations' && (
+                     <div className="space-y-4">
+                         {donations.map(d => (
+                             <div key={d.id} className="bg-[#1e232e] p-4 rounded-2xl border border-gray-800 flex justify-between items-center">
+                                 <div>
+                                     <p className="text-white font-bold">{d.profile?.username || 'Guest'}</p>
+                                     <p className="text-[10px] text-gray-500">{new Date(d.created_at).toLocaleString()}</p>
+                                 </div>
+                                 <p className="text-yellow-400 font-black italic text-lg">{d.amount.toFixed(2)} DH</p>
+                             </div>
+                         ))}
+                     </div>
+                 )}
+
+             </div>
+        </div>
 
         {/* Modals */}
-        {isProductModalOpen && <ProductFormModal product={editingProduct} onClose={() => setIsProductModalOpen(false)} onSave={handleSaveProduct} />}
-        {isPointProductModalOpen && <PointProductFormModal product={editingPointProduct} onClose={() => setIsPointProductModalOpen(false)} onSave={handleSavePointProduct} />}
-        {isCouponModalOpen && <CouponFormModal coupon={editingCoupon} onClose={() => setIsCouponModalOpen(false)} onSave={handleSaveCoupon} />}
-        {isTournamentModalOpen && <TournamentFormModal tournament={editingTournament} onClose={() => setIsTournamentModalOpen(false)} onSave={handleSaveTournament} />}
-        {isAnnouncementModalOpen && <AnnouncementFormModal announcement={editingAnnouncement} onClose={() => setIsAnnouncementModalOpen(false)} onSave={handleSaveAnnouncement} />}
-        {isLootBoxModalOpen && <LootBoxFormModal lootBox={editingLootBox} onClose={() => setIsLootBoxModalOpen(false)} onSave={handleSaveLootBox} />}
-        {isSpinWheelModalOpen && <SpinWheelItemFormModal item={editingSpinWheelItem} onClose={() => setIsSpinWheelModalOpen(false)} onSave={handleSaveSpinWheelItem} />}
-        {isVisitsModalOpen && <VisitHistoryModal logs={logs} onClose={() => setIsVisitsModalOpen(false)} />}
+        {visitHistoryOpen && <VisitHistoryModal logs={logs} onClose={() => setVisitHistoryOpen(false)} />}
+        {selectedOrder && currentUserProfile && <AdminOrderModal order={selectedOrder} currentUser={currentUserProfile} onClose={() => setSelectedOrder(null)} />}
+        {selectedRedemption && currentUserProfile && <AdminRedemptionModal redemption={selectedRedemption} currentUser={currentUserProfile} onClose={() => setSelectedRedemption(null)} />}
         
-        {editingUser && (
-            <BalanceEditorModal 
-                user={editingUser} 
-                onClose={() => setEditingUser(null)} 
-                onSave={handleUpdateBalance} 
-            />
-        )}
-
-        {editingReferral && (
-            <ReferralEditorModal
-                user={editingReferral}
-                onClose={() => setEditingReferral(null)}
-                onSave={handleUpdateReferral}
-            />
-        )}
-        
-        {selectedOrder && adminProfile && (
-            <AdminOrderModal 
-                order={selectedOrder} 
-                currentUser={adminProfile}
-                onClose={() => setSelectedOrder(null)} 
-            />
-        )}
-        
-        {selectedRedemption && adminProfile && (
-            <AdminRedemptionModal
-                redemption={selectedRedemption}
-                currentUser={adminProfile}
-                onClose={() => setSelectedRedemption(null)}
-            />
-        )}
+        {isProductModalOpen && <ProductFormModal product={selectedProduct} onClose={() => setIsProductModalOpen(false)} onSave={handleSaveProduct} />}
+        {isBalanceModalOpen && selectedProfile && <BalanceEditorModal user={selectedProfile} onClose={() => setIsBalanceModalOpen(false)} onSave={handleSaveUserBalance} />}
+        {isReferralModalOpen && selectedProfile && <ReferralEditorModal user={selectedProfile} onClose={() => setIsReferralModalOpen(false)} onSave={handleSaveReferral} />}
+        {isCouponModalOpen && <CouponFormModal coupon={selectedCoupon} onClose={() => setIsCouponModalOpen(false)} onSave={handleSaveCoupon} />}
+        {isPointProductModalOpen && <PointProductFormModal product={selectedPointProduct} onClose={() => setIsPointProductModalOpen(false)} onSave={handleSavePointProduct} />}
+        {isTournamentModalOpen && <TournamentFormModal tournament={selectedTournament} onClose={() => setIsTournamentModalOpen(false)} onSave={handleSaveTournament} />}
+        {isAnnouncementModalOpen && <AnnouncementFormModal announcement={selectedAnnouncement} onClose={() => setIsAnnouncementModalOpen(false)} onSave={handleSaveAnnouncement} />}
+        {isLootBoxModalOpen && <LootBoxFormModal lootBox={selectedLootBox} onClose={() => setIsLootBoxModalOpen(false)} onSave={handleSaveLootBox} />}
+        {isWheelItemModalOpen && <SpinWheelItemFormModal item={selectedWheelItem} onClose={() => setIsWheelItemModalOpen(false)} onSave={handleSaveWheelItem} />}
     </div>
   );
 };
