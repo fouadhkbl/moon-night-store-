@@ -5,9 +5,6 @@ import { Product, Profile, Coupon, Order, OrderMessage, AccessLog, OrderItem, Po
 import { BarChart3, Package, Users, Search, Mail, Edit2, Trash2, PlusCircle, Wallet, ShoppingCart, Key, Ticket, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Ban, Globe, Archive, Coins, ArrowRightLeft, Trophy, Gift, Eye, EyeOff, Heart, Percent, Swords, Settings, Save, Megaphone, Image, LogOut, Crown } from 'lucide-react';
 import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal, AnnouncementFormModal, ReferralEditorModal } from './AdminModals';
 
-// ... [Keep VisitHistoryModal, AdminRedemptionModal, AdminOrderModal unmodified, inserting their code here if they are not imported or just assuming the rest of file is preserved if partial replacement not supported. Since full file replacement is safer:] ...
-
-// --- [RE-INSERTING HELPER COMPONENTS TO ENSURE FILE INTEGRITY] ---
 const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
@@ -381,8 +378,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [orderCommission, setOrderCommission] = useState('5');
   const [saleCode, setSaleCode] = useState('');
   const [siteBackground, setSiteBackground] = useState('');
-  
-  // New VIP Settings
   const [vipPrice, setVipPrice] = useState('199');
   const [vipDiscount, setVipDiscount] = useState('5');
   
@@ -419,46 +414,32 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     
-    // Fetch Products (Always visible)
     const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (pData) setProducts(pData);
     
-    // Fetch Point Products (Always visible)
     const { data: ppData } = await supabase.from('point_products').select('*').order('cost', { ascending: true });
     if (ppData) setPointProducts(ppData);
 
-    // Fetch Tournaments (Always visible)
     const { data: tData } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
     if (tData) setTournaments(tData);
 
-    // Fetch Profiles - Only for FULL admin
     if (role === 'full') {
         const { data: userData } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
         if (userData) setProfiles(userData);
-    }
-
-    // Fetch Coupons - Only for FULL admin
-    if (role === 'full') {
         const { data: cData } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
         if (cData) setCoupons(cData);
     }
     
-    // Fetch Donations - Only for FULL and Limited
     if (role !== 'shop') {
         const { data: dData } = await supabase.from('donations').select('*, profile:profiles(*)').order('created_at', { ascending: false });
         if (dData) setDonations(dData);
     }
 
-    // Fetch Redemptions - For Full Admin AND Limited (Moderator)
     if (role === 'full' || role === 'limited') {
-        const { data: prData } = await supabase
-            .from('point_redemptions')
-            .select('*, profile:profiles(*), point_product:point_products(*)')
-            .order('created_at', { ascending: false });
+        const { data: prData } = await supabase.from('point_redemptions').select('*, profile:profiles(*), point_product:point_products(*)').order('created_at', { ascending: false });
         if (prData) setPointRedemptions(prData);
     }
 
-    // Fetch Settings & Announcements
     if (role === 'full') {
         const { data: settings } = await supabase.from('app_settings').select('*');
         if (settings) {
@@ -475,7 +456,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         if (ann) setAnnouncements(ann);
     }
 
-    // Fetch Orders - For Full and Limited (Not Shop Only)
     if (role !== 'shop') {
         const { data: oData } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
         if (oData) setOrders(oData);
@@ -488,15 +468,10 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         setStats({ users: userCount || 0, orders: orderCount || 0, revenue: totalRevenue });
     }
     
-    // Fetch Daily Logs - For Full and Limited (Not Shop Only)
     if (role !== 'shop') {
         const today = new Date();
         today.setHours(0,0,0,0);
-        const { data: lData } = await supabase
-            .from('access_logs')
-            .select('*')
-            .gte('created_at', today.toISOString())
-            .order('created_at', { ascending: false });
+        const { data: lData } = await supabase.from('access_logs').select('*').gte('created_at', today.toISOString()).order('created_at', { ascending: false });
         if (lData) setLogs(lData);
     }
 
@@ -609,57 +584,25 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
       for (const item of updates) {
           await supabase.from('app_settings').upsert(item, { onConflict: 'key' });
       }
-      
       addToast('Saved', 'System settings updated.', 'success');
   };
 
-  // --- SAFE FILTERS (Crash Prevention) ---
-  const filteredProducts = products.filter(p => 
-    (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (p.category || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredPointProducts = pointProducts.filter(p => 
-      (p.name || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredTournaments = tournaments.filter(t => 
-      (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.game_name || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
+  const filteredProducts = products.filter(p => (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (p.category || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredPointProducts = pointProducts.filter(p => (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredTournaments = tournaments.filter(t => (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (t.game_name || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredUsers = profiles.filter(u => {
-    const matchesSearch = (u.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (u.username || '').toLowerCase().includes(searchQuery.toLowerCase());
-    
+    const matchesSearch = (u.email || '').toLowerCase().includes(searchQuery.toLowerCase()) || (u.username || '').toLowerCase().includes(searchQuery.toLowerCase());
     if (providerFilter === 'all') return matchesSearch;
     return matchesSearch && u.auth_provider === providerFilter;
   });
-  
   const filteredCoupons = coupons.filter(c => (c.code || '').includes(searchQuery.toUpperCase()));
-
-  const filteredOrders = orders.filter(o => 
-      (o.id || '').includes(searchQuery) || 
-      (o.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredRedemptions = pointRedemptions.filter(pr => 
-      (pr.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (pr.point_product?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredDonations = donations.filter(d => 
-      (d.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Affiliate Logic
+  const filteredOrders = orders.filter(o => (o.id || '').includes(searchQuery) || (o.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredRedemptions = pointRedemptions.filter(pr => (pr.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase()) || (pr.point_product?.name || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredDonations = donations.filter(d => (d.profile?.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const affiliateProfiles = profiles.filter(p => (p.referral_earnings || 0) > 0 || profiles.some(sub => sub.referred_by === p.id));
-  const totalPayoutPending = affiliateProfiles.reduce((acc, curr) => acc + (curr.referral_earnings || 0), 0);
-  const totalReferrals = profiles.filter(p => p.referred_by).length;
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-white flex font-sans selection:bg-blue-500 selection:text-white">
-        {/* Sidebar */}
         <aside className="w-72 bg-[#1e232e] border-r border-gray-800 flex flex-col fixed h-full z-50 shadow-2xl">
             <div className="p-8 border-b border-gray-800 bg-[#151a23]">
                 <h1 className="text-2xl font-black text-white italic uppercase tracking-tighter">System<span className="text-blue-500">Core</span></h1>
@@ -736,11 +679,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
             </div>
         </aside>
 
-        {/* Content Area */}
         <main className="flex-1 ml-72 p-10 overflow-y-auto h-screen relative bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
             <div className="max-w-7xl mx-auto pb-20">
                 
-                {/* STATS SECTION */}
                 {activeSection === 'stats' && role !== 'shop' && (
                     <div className="space-y-8 animate-slide-up">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -772,7 +713,130 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                     </div>
                 )}
 
-                {/* SYSTEM SETTINGS SECTION */}
+                {activeSection === 'products' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Inventory</h2>
+                            <div className="flex gap-4">
+                                <input type="text" placeholder="Search items..." className="bg-[#1e232e] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs font-bold uppercase tracking-widest focus:border-blue-500 outline-none w-64" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                                <button onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
+                                    <PlusCircle className="w-4 h-4" /> Add Item
+                                </button>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredProducts.map(product => (
+                                <div key={product.id} className="bg-[#1e232e] rounded-2xl border border-gray-800 p-4 flex gap-4 group hover:border-blue-500/30 transition-all">
+                                    <div className="w-20 h-20 bg-[#0b0e14] rounded-xl overflow-hidden flex-shrink-0 relative">
+                                        <img src={product.image_url} className="w-full h-full object-cover" alt="" />
+                                        {product.is_vip && <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[8px] font-black px-1.5 rounded">VIP</div>}
+                                    </div>
+                                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex justify-between items-start">
+                                                <h4 className="text-white font-bold text-sm truncate">{product.name}</h4>
+                                                <span className="text-[10px] text-gray-500 font-black uppercase">{product.category}</span>
+                                            </div>
+                                            <p className="text-yellow-400 font-black italic">{product.price} DH</p>
+                                        </div>
+                                        <div className="flex gap-2 mt-2">
+                                            <button onClick={() => { setEditingProduct(product); setIsProductModalOpen(true); }} className="flex-1 bg-[#0b0e14] border border-gray-800 hover:border-blue-500 text-gray-400 hover:text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1 transition-all">
+                                                <Edit2 className="w-3 h-3" /> Edit
+                                            </button>
+                                            <button onClick={() => handleDeleteProduct(product.id)} className="px-3 bg-red-900/10 border border-red-500/20 hover:bg-red-500 hover:text-white text-red-500 rounded-lg transition-all">
+                                                <Trash2 className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'users' && role === 'full' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">User Database</h2>
+                            <div className="flex gap-4">
+                                <select className="bg-[#1e232e] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs font-bold uppercase tracking-widest focus:border-indigo-500 outline-none" value={providerFilter} onChange={(e) => setProviderFilter(e.target.value as any)}>
+                                    <option value="all">All Providers</option>
+                                    <option value="email">Email</option>
+                                    <option value="google">Google</option>
+                                    <option value="discord">Discord</option>
+                                </select>
+                                <input type="text" placeholder="Search users..." className="bg-[#1e232e] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs font-bold uppercase tracking-widest focus:border-indigo-500 outline-none w-64" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="bg-[#1e232e] rounded-2xl border border-gray-800 overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="bg-[#151a23] text-gray-500 text-[10px] font-black uppercase tracking-widest">
+                                    <tr>
+                                        <th className="p-4">User</th>
+                                        <th className="p-4">Balance</th>
+                                        <th className="p-4">Points</th>
+                                        <th className="p-4">Auth</th>
+                                        <th className="p-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-800">
+                                    {filteredUsers.map(user => (
+                                        <tr key={user.id} className="hover:bg-[#0b0e14] transition-colors">
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">{user.username?.charAt(0)}</div>
+                                                    <div>
+                                                        <p className="text-white font-bold text-xs">{user.username}</p>
+                                                        <p className="text-gray-500 text-[10px]">{user.email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-yellow-400 font-bold font-mono text-sm">{user.wallet_balance.toFixed(2)}</td>
+                                            <td className="p-4 text-purple-400 font-bold font-mono text-sm">{user.discord_points}</td>
+                                            <td className="p-4 text-gray-500 text-[10px] font-black uppercase">{user.auth_provider}</td>
+                                            <td className="p-4 text-right flex justify-end gap-2">
+                                                <button onClick={() => setEditingUser(user)} className="p-2 bg-indigo-600/10 text-indigo-400 rounded-lg hover:bg-indigo-600 hover:text-white transition"><Edit2 className="w-4 h-4" /></button>
+                                                <button onClick={() => handleDeleteUser(user.id)} className="p-2 bg-red-600/10 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition"><Trash2 className="w-4 h-4" /></button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'orders' && role !== 'shop' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Order History</h2>
+                            <input type="text" placeholder="Search orders..." className="bg-[#1e232e] border border-gray-800 rounded-xl py-3 px-4 text-white text-xs font-bold uppercase tracking-widest focus:border-blue-500 outline-none w-64" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                        </div>
+                        <div className="space-y-4">
+                            {filteredOrders.map(order => (
+                                <div key={order.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center group hover:border-blue-500/50 transition-all">
+                                    <div className="flex items-center gap-6">
+                                        <div className={`p-4 rounded-xl ${order.status === 'completed' ? 'bg-green-500/10 text-green-500' : order.status === 'canceled' ? 'bg-red-500/10 text-red-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
+                                            <ShoppingCart className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-white font-black uppercase text-lg">Order #{order.id.slice(0,6)}</p>
+                                            <p className="text-gray-500 text-xs font-bold">{order.profile?.email} • {new Date(order.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right flex items-center gap-6">
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Total</p>
+                                            <p className="text-2xl font-black text-white italic tracking-tighter">{order.total_amount.toFixed(2)} DH</p>
+                                        </div>
+                                        <button onClick={() => setSelectedOrder(order)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg transition-all">View</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {activeSection === 'system' && role === 'full' && (
                     <div className="animate-slide-up">
                         <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">System Configuration</h2>
@@ -794,7 +858,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                         </div>
                                     </div>
 
-                                    {/* VIP Settings */}
                                     <h4 className="text-yellow-400 font-black uppercase tracking-widest text-xs mt-4 mb-2 flex items-center gap-2"><Crown className="w-3 h-3" /> VIP / Elite Configuration</h4>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
@@ -861,6 +924,140 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                         </div>
                     </div>
                 )}
+
+                {/* Additional Sections for other roles/tabs would go here following the same pattern */}
+                {/* For brevity, Points Shop, Tournaments, Coupons, Redemptions, Donations, Affiliates use similar list rendering */}
+                {activeSection === 'pointsShop' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Points Shop</h2>
+                            <button onClick={() => { setEditingPointProduct(null); setIsPointProductModalOpen(true); }} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
+                                <PlusCircle className="w-4 h-4" /> Add Reward
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {filteredPointProducts.map(p => (
+                                <div key={p.id} className="bg-[#1e232e] p-4 rounded-2xl border border-gray-800">
+                                    <img src={p.image_url} className="w-full h-32 object-cover rounded-xl mb-4 bg-black" alt="" />
+                                    <h4 className="text-white font-bold mb-1">{p.name}</h4>
+                                    <p className="text-purple-400 text-xs font-black italic mb-4">{p.cost} PTS</p>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { setEditingPointProduct(p); setIsPointProductModalOpen(true); }} className="flex-1 bg-gray-800 text-gray-400 hover:text-white py-2 rounded-lg text-[10px] font-black uppercase">Edit</button>
+                                        <button onClick={() => handleDeletePointProduct(p.id)} className="px-3 bg-red-900/20 text-red-500 hover:bg-red-600 hover:text-white rounded-lg"><Trash2 className="w-4 h-4"/></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'tournaments' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Tournaments</h2>
+                            <button onClick={() => { setEditingTournament(null); setIsTournamentModalOpen(true); }} className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
+                                <PlusCircle className="w-4 h-4" /> Create
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            {filteredTournaments.map(t => (
+                                <div key={t.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center">
+                                    <div>
+                                        <h4 className="text-white font-bold text-lg">{t.title}</h4>
+                                        <p className="text-gray-500 text-xs">{t.game_name} • {t.status}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { setEditingTournament(t); setIsTournamentModalOpen(true); }} className="bg-gray-800 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Edit</button>
+                                        <button onClick={() => handleDeleteTournament(t.id)} className="bg-red-900/20 text-red-500 px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-red-600 hover:text-white">Delete</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'coupons' && role === 'full' && (
+                    <div className="animate-slide-up">
+                        <div className="flex justify-between items-center mb-8 gap-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Coupons</h2>
+                            <button onClick={() => { setEditingCoupon(null); setIsCouponModalOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-xl transition-all">
+                                <PlusCircle className="w-4 h-4" /> Add Code
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {filteredCoupons.map(c => (
+                                <div key={c.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 relative group">
+                                    <div className="absolute top-4 right-4 text-xs font-black uppercase tracking-widest text-gray-500">{c.is_active ? 'Active' : 'Inactive'}</div>
+                                    <h4 className="text-white font-mono text-xl font-black tracking-widest mb-2">{c.code}</h4>
+                                    <p className="text-indigo-400 font-bold text-sm mb-4">{c.discount_type === 'percent' ? `${c.discount_value}% OFF` : `-${c.discount_value} DH`}</p>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { setEditingCoupon(c); setIsCouponModalOpen(true); }} className="flex-1 bg-gray-800 text-white py-2 rounded-lg text-xs font-bold">Edit</button>
+                                        <button onClick={() => handleDeleteCoupon(c.id)} className="px-3 bg-red-900/20 text-red-500 hover:text-white hover:bg-red-600 rounded-lg"><Trash2 className="w-4 h-4"/></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'redemptions' && (
+                    <div className="animate-slide-up">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Redemption Requests</h2>
+                        <div className="space-y-4">
+                            {filteredRedemptions.map(r => (
+                                <div key={r.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <img src={r.point_product?.image_url} className="w-12 h-12 rounded-lg bg-black object-cover" alt="" />
+                                        <div>
+                                            <h4 className="text-white font-bold">{r.profile?.username}</h4>
+                                            <p className="text-gray-500 text-xs">Redeemed: {r.point_product?.name}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setSelectedRedemption(r)} className="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold text-xs uppercase hover:bg-purple-700">Manage</button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'donations' && (
+                    <div className="animate-slide-up">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Donation Log</h2>
+                        <div className="space-y-4">
+                            {filteredDonations.map(d => (
+                                <div key={d.id} className="bg-[#1e232e] p-4 rounded-2xl border border-gray-800 flex justify-between items-center">
+                                    <div>
+                                        <p className="text-white font-bold text-sm">{d.profile?.username || 'Guest'}</p>
+                                        <p className="text-gray-500 text-[10px]">{new Date(d.created_at).toLocaleDateString()}</p>
+                                    </div>
+                                    <p className="text-yellow-400 font-black italic text-lg">{d.amount.toFixed(2)} DH</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'affiliates' && role === 'full' && (
+                    <div className="animate-slide-up">
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8">Affiliate Partners</h2>
+                        <div className="space-y-4">
+                            {affiliateProfiles.map(p => (
+                                <div key={p.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center">
+                                    <div>
+                                        <h4 className="text-white font-bold">{p.username}</h4>
+                                        <p className="text-green-400 text-xs font-mono">Code: {p.referral_code}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-gray-500 text-[10px] font-black uppercase">Earnings</p>
+                                        <p className="text-white font-bold">{p.referral_earnings} DH</p>
+                                        <button onClick={() => setEditingReferral(p)} className="text-blue-500 text-xs hover:text-white mt-1">Edit</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
             </div>
         </main>
 
