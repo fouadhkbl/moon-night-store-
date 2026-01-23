@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home, Swords, LogOut, Crown, Package, Zap } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home, Swords, LogOut, Crown, Package, Zap, Sparkles } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Profile } from '../types';
 
@@ -121,6 +121,9 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                       </button>
                       <button onClick={() => handleMenuClick('shop')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
                           <ShoppingBag className="w-4 h-4 text-cyan-500" /> Shop
+                      </button>
+                      <button onClick={() => handleMenuClick('spin')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white bg-gradient-to-r from-purple-600/20 to-pink-600/20 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all flex items-center gap-3 border border-purple-500/30">
+                          <Sparkles className="w-4 h-4 text-purple-400" /> Spin & Win
                       </button>
                       <button onClick={() => handleMenuClick('loot')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white bg-gradient-to-r from-yellow-600/20 to-yellow-900/20 hover:from-yellow-600 hover:to-yellow-700 rounded-xl transition-all flex items-center gap-3 border border-yellow-500/30">
                           <Package className="w-4 h-4 text-yellow-400" /> Moon Packs

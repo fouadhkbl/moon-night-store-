@@ -17,6 +17,7 @@ create table if not exists public.profiles (
   referred_by uuid references public.profiles(id) on delete set null,
   referral_earnings decimal(10,2) default 0.00,
   auth_provider text default 'email',
+  last_daily_claim timestamp with time zone,
   updated_at timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -42,6 +43,10 @@ begin
 
   if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'vip_level') then
     alter table public.profiles add column vip_level int default 0;
+  end if;
+
+  if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'last_daily_claim') then
+    alter table public.profiles add column last_daily_claim timestamp with time zone;
   end if;
 end $$;
 

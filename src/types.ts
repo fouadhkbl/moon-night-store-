@@ -30,6 +30,7 @@ export interface Profile {
   referred_by?: string;
   referral_earnings?: number;
   auth_provider?: string;
+  last_daily_claim?: string;
 }
 
 export interface AppSetting {

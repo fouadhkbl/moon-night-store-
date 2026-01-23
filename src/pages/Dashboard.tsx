@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, Order, OrderItem, OrderMessage, PointRedemption, RedemptionMessage } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
-import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar, LayoutDashboard, ClipboardList, Copy, Users, Link, Crown } from 'lucide-react';
+import { Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, Calendar, LayoutDashboard, ClipboardList, Copy, Users, Link, Crown, Sparkles, Timer } from 'lucide-react';
 
 // --- SHARED CHAT MODAL LOGIC (Order & Redemption) ---
 // Note: Created separate components for simplicity in state management types
@@ -348,6 +348,8 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedRedemption, setSelectedRedemption] = useState<PointRedemption | null>(null);
   const [referralCount, setReferralCount] = useState(0);
+  const [canClaimDaily, setCanClaimDaily] = useState(false);
+  const [timeUntilNextClaim, setTimeUntilNextClaim] = useState('');
   
   const isGuest = session?.user?.id === 'guest-user-123';
   const isVip = profile?.vip_level && profile.vip_level > 0;
@@ -356,6 +358,23 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
   useEffect(() => {
       if (initialTab) setActiveTab(initialTab);
   }, [initialTab]);
+
+  const calculateClaimStatus = (lastClaim: string | undefined) => {
+      if (!lastClaim) return { canClaim: true, timeLeft: '' };
+      
+      const last = new Date(lastClaim);
+      const next = new Date(last.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
+      const now = new Date();
+      
+      if (now >= next) {
+          return { canClaim: true, timeLeft: '' };
+      } else {
+          const diff = next.getTime() - now.getTime();
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          return { canClaim: false, timeLeft: `${hours}h ${minutes}m` };
+      }
+  };
 
   const fetchData = useCallback(async () => {
     if (session?.user) {
@@ -368,7 +387,12 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
             setOrders([]);
         } else {
             const { data: pData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-            if (pData) setProfile(pData);
+            if (pData) {
+                setProfile(pData);
+                const { canClaim, timeLeft } = calculateClaimStatus(pData.last_daily_claim);
+                setCanClaimDaily(canClaim);
+                setTimeUntilNextClaim(timeLeft);
+            }
             
             // Get Referral Count
             const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('referred_by', session.user.id);
@@ -397,6 +421,35 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
   }, [session, isGuest, initialOrderId, initialTab]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleClaimDaily = async () => {
+      if (!canClaimDaily || !profile) return;
+
+      const rewardPoints = Math.floor(Math.random() * 50) + 20; // 20-70 Points
+      const rewardMoney = 0.10; // Fixed small amount
+
+      try {
+          const newPoints = (profile.discord_points || 0) + rewardPoints;
+          const newBalance = (profile.wallet_balance || 0) + rewardMoney;
+          const now = new Date().toISOString();
+
+          const { error } = await supabase.from('profiles').update({
+              discord_points: newPoints,
+              wallet_balance: newBalance,
+              last_daily_claim: now
+          }).eq('id', profile.id);
+
+          if (error) throw error;
+
+          setProfile({ ...profile, discord_points: newPoints, wallet_balance: newBalance, last_daily_claim: now });
+          setCanClaimDaily(false);
+          setTimeUntilNextClaim('23h 59m');
+          addToast('Daily Claimed!', `You got ${rewardPoints} Points and ${rewardMoney} DH!`, 'success');
+
+      } catch (err) {
+          addToast('Error', 'Failed to claim daily reward.', 'error');
+      }
+  };
 
   const handleDeleteOrder = async (e: React.MouseEvent, orderId: string) => {
     e.stopPropagation(); 
@@ -482,7 +535,28 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                      : <span className="bg-blue-600/10 text-blue-400 text-[9px] font-black px-3 py-1 rounded-lg uppercase mt-3 inline-block border border-blue-600/30 tracking-widest shadow-lg">Verified System Player</span>
                  )}
               </div>
+               
+               {/* Daily Claim & Actions */}
                <div className="flex flex-col items-center md:items-end gap-3 pb-2 w-full md:w-auto">
+                 
+                 {!isGuest && (
+                     <button 
+                        onClick={handleClaimDaily}
+                        disabled={!canClaimDaily}
+                        className={`bg-[#0b0e14]/80 backdrop-blur-xl px-6 py-3 rounded-[1.5rem] border flex items-center gap-3 shadow-xl transition-all w-full md:w-auto justify-center ${canClaimDaily ? 'border-green-500/30 hover:border-green-500 hover:bg-green-900/10 cursor-pointer' : 'border-gray-800 opacity-70 cursor-not-allowed'}`}
+                     >
+                        <div className={`p-2 rounded-full ${canClaimDaily ? 'bg-green-500 text-white animate-pulse' : 'bg-gray-800 text-gray-500'}`}>
+                            {canClaimDaily ? <Gift className="w-4 h-4" /> : <Timer className="w-4 h-4" />}
+                        </div>
+                        <div className="text-left">
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest leading-none mb-1">Daily Reward</p>
+                            <p className={`text-sm font-black italic tracking-tighter leading-none ${canClaimDaily ? 'text-green-400' : 'text-gray-400'}`}>
+                                {canClaimDaily ? 'CLAIM NOW' : timeUntilNextClaim}
+                            </p>
+                        </div>
+                     </button>
+                 )}
+
                  <div className="bg-[#0b0e14]/80 backdrop-blur-xl px-8 py-4 rounded-[2rem] border border-blue-500/30 flex items-center gap-4 shadow-2xl w-full md:w-auto justify-between md:justify-end">
                     <div className="text-right">
                         <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest leading-none mb-1">Solde Balance</p>
@@ -736,7 +810,11 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                             </div>
                             <p className="text-purple-200 font-black uppercase text-xs tracking-[0.3em] mb-2">Available Balance</p>
                             <h3 className="text-7xl md:text-8xl font-black italic tracking-tighter leading-none mb-2 drop-shadow-2xl">{profile?.discord_points || 0}</h3>
-                            <p className="text-sm font-bold text-purple-200 uppercase tracking-widest">Discord Points</p>
+                            <p className="text-sm font-bold text-purple-200 uppercase tracking-widest mb-6">Discord Points</p>
+                            
+                            <button onClick={() => onNavigate('spin')} className="bg-white text-purple-900 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 hover:scale-105 transition-transform shadow-lg">
+                                <Sparkles className="w-4 h-4" /> Spin & Win
+                            </button>
                         </div>
                     </div>
 

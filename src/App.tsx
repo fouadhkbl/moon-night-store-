@@ -21,6 +21,7 @@ import { TournamentsPage } from './pages/TournamentsPage';
 import { TournamentDetailsPage } from './pages/TournamentDetailsPage';
 import { LootBoxPage } from './pages/LootBoxPage';
 import { ElitePage } from './pages/ElitePage';
+import { SpinWheelPage } from './pages/SpinWheelPage';
 import { Loader2, ShoppingBag, X, Megaphone } from 'lucide-react';
 
 // New Component: Dynamic Announcement Bar
@@ -465,6 +466,14 @@ const App: React.FC = () => {
 
         {currentPage === 'elite' && (
             <ElitePage 
+                session={session}
+                onNavigate={handleNavigate}
+                addToast={addToast}
+            />
+        )}
+
+        {currentPage === 'spin' && (
+            <SpinWheelPage 
                 session={session}
                 onNavigate={handleNavigate}
                 addToast={addToast}
