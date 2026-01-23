@@ -1,6 +1,6 @@
 
 import React, { useRef } from 'react';
-import { ChevronRight, ChevronLeft, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar, Crown } from 'lucide-react';
 import { GameCategory } from '../types';
 
 export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void, onSearch: (q: string) => void, language: 'en' | 'fr' }) => {
@@ -104,10 +104,10 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
               </button>
               
               <button 
-                onClick={() => onNavigate('pointsShop')}
-                className="h-[50px] md:h-[60px] bg-[#1e232e] border border-gray-800 hover:border-purple-500 text-white px-8 md:px-10 rounded-xl font-black text-xs md:text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl"
+                onClick={() => onNavigate('elite')}
+                className="h-[50px] md:h-[60px] bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-yellow-500 hover:to-yellow-700 text-white px-8 md:px-10 rounded-xl font-black text-xs md:text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl shadow-yellow-600/20 active:scale-95 border border-yellow-500/30"
               >
-                <Trophy className="w-4 h-4 text-purple-500" /> Points Shop
+                <Crown className="w-4 h-4 text-yellow-200" /> Join Elite
               </button>
 
               <button 

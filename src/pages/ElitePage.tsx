@@ -1,23 +1,30 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Crown, Check, Shield, Zap, Star, AlertCircle, Loader2 } from 'lucide-react';
+import { Crown, Check, Shield, Zap, Star, AlertCircle, Loader2, MicOff, Move, Armchair, Heart } from 'lucide-react';
 import { Profile } from '../types';
 
 export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onNavigate: (p: string) => void, addToast: any }) => {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
-
-    const ELITE_PRICE = 199.00;
+    const [elitePrice, setElitePrice] = useState(199.00);
+    const [loadingPrice, setLoadingPrice] = useState(true);
 
     useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchSettingsAndProfile = async () => {
+            // Fetch Price Config
+            const { data: settings } = await supabase.from('app_settings').select('*').eq('key', 'vip_membership_price').single();
+            if (settings) {
+                setElitePrice(parseFloat(settings.value));
+            }
+            setLoadingPrice(false);
+
             if (session?.user?.id && session.user.id !== 'guest-user-123') {
                 const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
                 setProfile(data);
             }
         };
-        fetchProfile();
+        fetchSettingsAndProfile();
     }, [session]);
 
     const handleUpgrade = async () => {
@@ -31,7 +38,7 @@ export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onN
             return;
         }
 
-        if (profile.wallet_balance < ELITE_PRICE) {
+        if (profile.wallet_balance < elitePrice) {
             addToast('Insufficient Funds', 'Please top up your wallet to purchase Elite status.', 'error');
             onNavigate('topup');
             return;
@@ -41,7 +48,7 @@ export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onN
 
         try {
             // 1. Deduct Balance
-            const newBalance = profile.wallet_balance - ELITE_PRICE;
+            const newBalance = profile.wallet_balance - elitePrice;
             const newPoints = profile.discord_points + 5000; // Bonus points
 
             // 2. Update Profile (Set VIP Level to 1)
@@ -56,7 +63,7 @@ export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onN
             // 3. Log Transaction
             await supabase.from('orders').insert({
                 user_id: profile.id,
-                total_amount: ELITE_PRICE,
+                total_amount: elitePrice,
                 status: 'completed',
                 payment_method: 'Wallet (Elite Upgrade)',
                 transaction_id: `ELITE-${Date.now()}`
@@ -106,11 +113,15 @@ export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onN
                     <div className="p-8">
                         <div className="space-y-6 mb-8">
                             {[
-                                { text: "5% Discount on Everything", icon: <Zap className="w-5 h-5 text-yellow-500" /> },
+                                { text: "Exclusive Discount on Everything", icon: <Zap className="w-5 h-5 text-yellow-500" /> },
                                 { text: "Access to VIP Products", icon: <Shield className="w-5 h-5 text-yellow-500" /> },
                                 { text: "Gold Profile Badge", icon: <Star className="w-5 h-5 text-yellow-500" /> },
                                 { text: "5,000 Bonus Points", icon: <Check className="w-5 h-5 text-yellow-500" /> },
                                 { text: "Priority Support", icon: <Check className="w-5 h-5 text-yellow-500" /> },
+                                { text: "Move Members Power (Discord)", icon: <Move className="w-5 h-5 text-yellow-500" /> },
+                                { text: "Mute Members Power (Discord)", icon: <MicOff className="w-5 h-5 text-yellow-500" /> },
+                                { text: "Access Luxury Voice Room", icon: <Armchair className="w-5 h-5 text-yellow-500" /> },
+                                { text: "Exclusive Supporter Role", icon: <Heart className="w-5 h-5 text-yellow-500" /> },
                             ].map((benefit, idx) => (
                                 <div key={idx} className="flex items-center gap-4">
                                     <div className="p-2 bg-yellow-900/20 rounded-lg">{benefit.icon}</div>
@@ -121,7 +132,10 @@ export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onN
 
                         <div className="text-center mb-8">
                             <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">One-time payment</p>
-                            <p className="text-5xl font-black text-white italic tracking-tighter">{ELITE_PRICE} <span className="text-xl text-gray-500">DH</span></p>
+                            <p className="text-5xl font-black text-white italic tracking-tighter">
+                                {loadingPrice ? <Loader2 className="animate-spin w-6 h-6 inline" /> : elitePrice.toFixed(2)} 
+                                <span className="text-xl text-gray-500 ml-2">DH</span>
+                            </p>
                         </div>
 
                         {profile?.vip_level && profile.vip_level > 0 ? (
@@ -131,7 +145,7 @@ export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onN
                         ) : (
                             <button 
                                 onClick={handleUpgrade}
-                                disabled={isProcessing}
+                                disabled={isProcessing || loadingPrice}
                                 className="w-full bg-gradient-to-r from-yellow-500 to-yellow-700 hover:from-yellow-400 hover:to-yellow-600 text-black font-black py-5 rounded-2xl uppercase tracking-widest text-xs shadow-xl transition-all transform active:scale-95 flex items-center justify-center gap-2"
                             >
                                 {isProcessing ? <Loader2 className="animate-spin w-5 h-5" /> : 'Join Elite Now'}

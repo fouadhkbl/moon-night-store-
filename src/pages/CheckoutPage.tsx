@@ -24,10 +24,11 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'paypal'>('paypal');
+  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'paypal'>('wallet');
   const [paypalLoaded, setPaypalLoaded] = useState(false);
   const [earnedPoints, setEarnedPoints] = useState(0);
   const [vipLevel, setVipLevel] = useState(0);
+  const [vipDiscountPercent, setVipDiscountPercent] = useState(5);
   
   // Coupon State
   const [couponCode, setCouponCode] = useState('');
@@ -37,15 +38,24 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
   const isGuest = session?.user?.id === 'guest-user-123';
   const subtotal = useMemo(() => cart.reduce((acc, item) => acc + (item.product?.price || 0) * item.quantity, 0), [cart]);
 
-  // VIP Discount Logic (5% for VIP Level >= 1)
+  // Fetch VIP Discount Setting
+  useEffect(() => {
+      const fetchSettings = async () => {
+          const { data } = await supabase.from('app_settings').select('value').eq('key', 'vip_discount_percent').single();
+          if(data) setVipDiscountPercent(parseFloat(data.value));
+      };
+      fetchSettings();
+  }, []);
+
+  // VIP Discount Logic
   const vipDiscountAmount = useMemo(() => {
       if (vipLevel > 0) {
-          return subtotal * 0.05;
+          return subtotal * (vipDiscountPercent / 100);
       }
       return 0;
-  }, [subtotal, vipLevel]);
+  }, [subtotal, vipLevel, vipDiscountPercent]);
 
-  // Calculate Coupon Discount (Applied AFTER VIP discount usually, or on subtotal? Let's apply on subtotal but cap it)
+  // Calculate Coupon Discount
   const couponDiscountAmount = useMemo(() => {
     if (!appliedCoupon) return 0;
     if (appliedCoupon.discount_type === 'fixed') {
@@ -57,6 +67,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
 
   const totalAfterDiscounts = Math.max(0, subtotal - vipDiscountAmount - couponDiscountAmount);
   
+  // Processing Fee only for PayPal direct payments
   const processingFee = paymentMethod === 'wallet' 
     ? 0 
     : 3 + (totalAfterDiscounts * 0.005);
@@ -71,13 +82,17 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
         if (data) {
             setWalletBalance(data.wallet_balance);
             setVipLevel(data.vip_level || 0);
+            
+            // Auto switch to PayPal if balance low
+            if (data.wallet_balance < finalTotal) {
+                setPaymentMethod('paypal');
+            }
         }
       }
     };
     fetchProfile();
   }, [session, isGuest]);
 
-  // ... (PayPal Effect remains same, just ensuring variables are updated)
   useEffect(() => {
       if (window.paypal) {
           setPaypalLoaded(true);
@@ -92,6 +107,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       }
   }, []);
 
+  // PayPal Button Render Logic
   useEffect(() => {
       let isCancelled = false;
 
@@ -107,12 +123,13 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
                         createOrder: (data: any, actions: any) => {
                             const usdAmount = (finalTotal * MAD_TO_USD_RATE).toFixed(2);
                             return actions.order.create({
-                                purchase_units: [{ amount: { value: usdAmount, currency_code: 'USD' }, description: `Moon Night Order (incl. fees)` }]
+                                purchase_units: [{ amount: { value: usdAmount, currency_code: 'USD' }, description: `Order Payment` }]
                             });
                         },
                         onApprove: async (data: any, actions: any) => {
                             const details = await actions.order.capture();
-                            await processOrder('PayPal', details.id);
+                            // Process order with PayPal as direct payment method
+                            await processOrder('PayPal / Card', details.id);
                         },
                         onError: (err: any) => { console.error("PayPal Error:", err); addToast('Payment Failed', 'Transaction could not be completed.', 'error'); }
                     }).render('#paypal-checkout-container');
@@ -160,13 +177,18 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       const currentBalance = profileData.wallet_balance;
       const currentPoints = profileData.discord_points || 0;
 
+      // Only check balance if paying via Wallet
       if (method === 'Wallet' && currentBalance < finalTotal) throw new Error("Insufficient wallet funds.");
 
       const points = Math.floor(finalTotal * 10);
       setEarnedPoints(points);
 
       const profileUpdates: any = { discord_points: currentPoints + points };
-      if (method === 'Wallet') profileUpdates.wallet_balance = currentBalance - finalTotal;
+      
+      // Deduct balance ONLY if paying via Wallet
+      if (method === 'Wallet') {
+          profileUpdates.wallet_balance = currentBalance - finalTotal;
+      }
 
       const { error: balanceError } = await supabase.from('profiles').update(profileUpdates).eq('id', session.user.id);
       if (balanceError) throw balanceError;
@@ -177,7 +199,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
       const { data: order, error: orderError } = await supabase.from('orders').insert({
           user_id: session.user.id,
           total_amount: finalTotal,
-          status: 'pending',
+          status: method === 'Wallet' || method.includes('PayPal') ? 'completed' : 'pending',
           payment_method: method,
           transaction_id: paymentDetailsId || null
         }).select().single();
@@ -198,6 +220,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
           await supabase.from('point_transactions').insert({ user_id: session.user.id, points_amount: points, money_equivalent: finalTotal, status: 'completed' });
       }
 
+      // Affiliate Logic
       if (profileData.referred_by) {
           const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'affiliate_order_reward_percentage').single();
           const commissionPercentage = setting ? parseFloat(setting.value) : 5.00;
@@ -271,7 +294,7 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
                        {/* VIP Discount Line */}
                        {vipLevel > 0 && (
                            <div className="flex justify-between text-yellow-400 text-xs font-black uppercase tracking-widest">
-                               <span className="flex items-center gap-1"><Crown className="w-3 h-3" /> Elite Discount (5%)</span>
+                               <span className="flex items-center gap-1"><Crown className="w-3 h-3" /> Elite Discount ({vipDiscountPercent}%)</span>
                                <span>- {vipDiscountAmount.toFixed(2)} DH</span>
                            </div>
                        )}
@@ -329,16 +352,21 @@ export const CheckoutPage = ({ cart, session, onNavigate, onViewOrder, onClearCa
                                 <CreditCard className={`w-8 h-8 ${paymentMethod === 'paypal' ? 'text-blue-900' : 'text-gray-500'}`} />
                                 <span className={`text-[10px] font-black uppercase tracking-widest ${paymentMethod === 'paypal' ? 'text-blue-900' : 'text-gray-500'}`}>PayPal / Card</span>
                             </button>
-                            <button onClick={() => setPaymentMethod('wallet')} disabled={walletBalance < finalTotal} className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${paymentMethod === 'wallet' ? 'bg-blue-600 border-blue-600' : 'bg-[#0b0e14] border-gray-800 hover:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed'}`}>
+                            <button onClick={() => setPaymentMethod('wallet')} className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${paymentMethod === 'wallet' ? 'bg-blue-600 border-blue-600' : 'bg-[#0b0e14] border-gray-800 hover:border-gray-600'}`}>
                                 <Wallet className={`w-8 h-8 ${paymentMethod === 'wallet' ? 'text-white' : 'text-gray-500'}`} />
                                 <span className={`text-[10px] font-black uppercase tracking-widest ${paymentMethod === 'wallet' ? 'text-white' : 'text-gray-500'}`}>My Wallet</span>
                             </button>
                         </div>
 
-                        {paymentMethod === 'wallet' && walletBalance < finalTotal && (
-                            <div className="bg-red-900/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3 mb-6">
-                                <AlertCircle className="w-5 h-5 text-red-500" />
-                                <span className="text-red-400 text-xs font-bold uppercase tracking-widest">Insufficient Funds ({walletBalance.toFixed(2)} DH)</span>
+                        {paymentMethod === 'wallet' && (
+                            <div className="mb-6">
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Current Balance: <span className="text-white">{walletBalance.toFixed(2)} DH</span></p>
+                                {walletBalance < finalTotal && (
+                                    <div className="bg-red-900/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3">
+                                        <AlertCircle className="w-5 h-5 text-red-500" />
+                                        <span className="text-red-400 text-xs font-bold uppercase tracking-widest">Insufficient Funds. Switch to PayPal/Card to pay directly.</span>
+                                    </div>
+                                )}
                             </div>
                         )}
 
