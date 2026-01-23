@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Wallet, ArrowLeft, Check, AlertCircle, TrendingUp, ShieldCheck, CreditCard } from 'lucide-react';
+import { Wallet, ArrowLeft, Check, AlertCircle, TrendingUp, ShieldCheck, CreditCard, Info } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -9,13 +10,18 @@ declare global {
 }
 
 // Approximate conversion rate from MAD to USD for PayPal processing
-const MAD_TO_USD_RATE = 0.1; 
+const MAD_TO_USD_RATE = 0.1;
+const FEE_PERCENTAGE = 0.03; // 3% Fee
 
 export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onNavigate: (p: string) => void, addToast: any }) => {
   const [amount, setAmount] = useState<number>(100);
   const [currentBalance, setCurrentBalance] = useState(0);
   const [paypalLoaded, setPaypalLoaded] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // Calculate Fee and Total
+  const fee = amount * FEE_PERCENTAGE;
+  const totalCharge = amount + fee;
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -68,8 +74,8 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
                             height: 48
                         },
                         createOrder: (data: any, actions: any) => {
-                            // Convert DH amount to USD for PayPal gateway
-                            const usdAmount = (amount * MAD_TO_USD_RATE).toFixed(2);
+                            // Convert Total Charge (Amount + Fee) to USD for PayPal gateway
+                            const usdAmount = (totalCharge * MAD_TO_USD_RATE).toFixed(2);
 
                             return actions.order.create({
                                 purchase_units: [{
@@ -77,13 +83,13 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
                                         value: usdAmount,
                                         currency_code: 'USD'
                                     },
-                                    description: `Moon Night Wallet Top Up`
+                                    description: `Wallet Top Up (${amount} DH + Fees)`
                                 }]
                             });
                         },
                         onApprove: async (data: any, actions: any) => {
                             const details = await actions.order.capture();
-                            // Process as DH (amount) in database
+                            // Process success with the Transaction ID
                             await handleTopUpSuccess(details.id);
                         },
                         onError: (err: any) => {
@@ -101,20 +107,21 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
           if (container) container.innerHTML = '';
       }
       return () => { isCancelled = true; };
-  }, [paypalLoaded, isSuccess, amount]);
+  }, [paypalLoaded, isSuccess, amount, totalCharge]);
 
   const handleTopUpSuccess = async (txnId: string) => {
       try {
-          // Update profile balance (in DH)
+          // Update profile balance (add the Net Amount, excluding fee)
           const newBalance = currentBalance + amount;
           const { error } = await supabase.from('profiles').update({ wallet_balance: newBalance }).eq('id', session.user.id);
           
           if (error) throw error;
 
-          // Record transaction in orders table with Transaction ID
+          // Record transaction in orders table 
+          // We store total_amount as what the user PAID (including fees) for record keeping
           await supabase.from('orders').insert({
               user_id: session.user.id,
-              total_amount: amount,
+              total_amount: totalCharge, 
               status: 'completed',
               payment_method: 'PayPal TopUp',
               transaction_id: txnId
@@ -169,14 +176,15 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
                 </div>
            </div>
 
-           <div className="w-full md:w-2/3 bg-[#1e232e] p-8 md:p-10 rounded-[2.5rem] border border-gray-800 shadow-2xl">
+           <div className="w-full md:w-2/3 bg-[#1e232e] p-6 md:p-10 rounded-[2.5rem] border border-gray-800 shadow-2xl">
                <h1 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-8 flex items-center gap-3">
                    <TrendingUp className="w-8 h-8 text-green-400" /> Add Funds
                </h1>
 
                <div className="mb-10">
                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">Select Amount (DH)</label>
-                   <div className="grid grid-cols-4 gap-3 mb-6">
+                   {/* Mobile: grid-cols-2, Desktop: grid-cols-4 */}
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                        {[50, 100, 200, 500].map(val => (
                            <button 
                              key={val} 
@@ -215,9 +223,19 @@ export const TopUpPage = ({ session, onNavigate, addToast }: { session: any, onN
                </div>
 
                <div className="border-t border-gray-800 pt-8">
-                   <div className="flex justify-between items-center mb-6">
-                       <span className="text-gray-400 font-black uppercase tracking-widest text-xs">Total Charge</span>
-                       <span className="text-3xl font-black text-yellow-400 italic tracking-tighter">{amount.toFixed(2)} DH</span>
+                   <div className="space-y-2 mb-6">
+                       <div className="flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-widest">
+                           <span>Deposit Amount</span>
+                           <span className="text-white">{amount.toFixed(2)} DH</span>
+                       </div>
+                       <div className="flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-widest">
+                           <span className="flex items-center gap-1">Fees (3%) <Info className="w-3 h-3 cursor-help" /></span>
+                           <span className="text-red-400">+ {fee.toFixed(2)} DH</span>
+                       </div>
+                       <div className="flex justify-between items-center pt-2 border-t border-gray-800/50">
+                           <span className="text-white font-black uppercase tracking-widest text-sm">Total To Pay</span>
+                           <span className="text-3xl font-black text-yellow-400 italic tracking-tighter">{totalCharge.toFixed(2)} DH</span>
+                       </div>
                    </div>
                    
                    <div className="relative z-0 min-h-[150px]">

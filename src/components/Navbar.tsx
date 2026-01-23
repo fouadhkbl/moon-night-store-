@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, Languages, ShoppingBag, Trophy, Heart, Medal, Home, Swords, LogOut, Crown } from 'lucide-react';
 import { supabase } from '../supabaseClient';
@@ -97,13 +98,13 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
       setIsMenuOpen(false);
   };
 
-  const placeholder = language === 'en' ? "Search Game, Item, or Category..." : "Rechercher un jeu...";
+  const placeholder = language === 'en' ? "Search Game..." : "Rechercher...";
 
   return (
     <nav className="sticky top-0 z-50 bg-[#0b0e14] border-b border-gray-800 h-20 flex items-center shadow-2xl">
       <div className="container mx-auto px-4 flex justify-between items-center relative h-full">
         {/* Left: Menu & Logo */}
-        <div className="flex items-center gap-6 relative z-10">
+        <div className="flex items-center gap-4 md:gap-6 relative z-10">
           <div className="relative">
               <button 
                 ref={buttonRef}
@@ -131,11 +132,9 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                       <button onClick={() => handleMenuClick('donate')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
                           <Heart className="w-4 h-4 text-red-500" /> Donate
                       </button>
-                      {/* Renamed Leaderboard to Best Donators */}
                       <button onClick={() => handleMenuClick('leaderboard')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
                           <Medal className="w-4 h-4 text-yellow-500" /> Best Donators
                       </button>
-                      {/* Points Leaderboard Button */}
                       <button onClick={() => handleMenuClick('leaderboard-points')} className="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-[#0b0e14] hover:text-white rounded-xl transition-all flex items-center gap-3">
                           <Crown className="w-4 h-4 text-purple-500" /> Points Leaderboard
                       </button>
@@ -151,15 +150,15 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg shadow-lg flex items-center justify-center group-hover:scale-105 transition-transform">
                  <span className="text-white font-black italic text-lg">M</span>
              </div>
-             {/* Text hidden on mobile */}
-             <span className="hidden md:block text-xl font-black text-white italic tracking-tighter uppercase group-hover:text-blue-400 transition-colors">
+             {/* Text visible on mobile but smaller */}
+             <span className="hidden sm:block text-lg md:text-xl font-black text-white italic tracking-tighter uppercase group-hover:text-blue-400 transition-colors">
                 Moon Night
              </span>
           </div>
         </div>
 
         {/* Center: Search Bar (Desktop) */}
-        <form onSubmit={handleSearchSubmit} className="hidden lg:flex absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl z-0">
+        <form onSubmit={handleSearchSubmit} className="hidden lg:flex absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-xl z-0">
           <div className="relative w-full group">
             <input
               type="text"
@@ -175,7 +174,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
         </form>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-4 relative z-10">
+        <div className="flex items-center gap-2 md:gap-4 relative z-10">
           {/* Mobile Search Toggle */}
           <button 
             onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
@@ -190,7 +189,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
             className="p-2 text-gray-400 hover:text-white transition flex items-center gap-2 bg-[#151a23] rounded-lg border border-gray-800 hover:border-gray-600"
           >
             <Languages className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase">{language.toUpperCase()}</span>
+            <span className="text-[10px] font-black uppercase hidden md:block">{language.toUpperCase()}</span>
           </button>
 
           <button 
@@ -209,7 +208,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
           <div className="relative group z-50">
             <button 
                 onClick={() => onNavigate('dashboard')}
-                className="flex items-center gap-3 bg-[#151a23] border border-gray-800 text-white p-1.5 pr-4 rounded-full hover:border-blue-500 transition shadow-lg"
+                className="flex items-center gap-3 bg-[#151a23] border border-gray-800 text-white p-1.5 pr-1.5 md:pr-4 rounded-full hover:border-blue-500 transition shadow-lg"
             >
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 border border-gray-700">
                     {profile?.avatar_url ? (
@@ -250,7 +249,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
 
       {/* Mobile Search Overlay */}
       {isMobileSearchOpen && (
-          <div className="absolute top-20 left-0 w-full bg-[#0b0e14] p-4 border-b border-gray-800 lg:hidden animate-slide-up z-40">
+          <div className="absolute top-20 left-0 w-full bg-[#0b0e14] p-4 border-b border-gray-800 lg:hidden animate-slide-up z-40 shadow-2xl">
               <form onSubmit={handleSearchSubmit} className="relative">
                   <input
                     type="text"

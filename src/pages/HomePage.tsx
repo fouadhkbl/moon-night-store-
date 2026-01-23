@@ -1,3 +1,4 @@
+
 import React, { useRef } from 'react';
 import { ChevronRight, ChevronLeft, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar } from 'lucide-react';
 import { GameCategory } from '../types';
@@ -83,34 +84,35 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
             </div>
             
             {/* Main Title - Stacked Typography matching screenshot */}
-            <h1 className="text-7xl md:text-9xl font-black italic tracking-tighter leading-[0.85] mb-8 uppercase drop-shadow-2xl">
+            {/* Adjusted font size for mobile (text-5xl) to prevent clipping */}
+            <h1 className="text-5xl md:text-7xl lg:text-9xl font-black italic tracking-tighter leading-[0.9] mb-8 uppercase drop-shadow-2xl">
               <span className="text-gray-600">MOON</span><br />
               <span className="text-blue-900">NIGHT</span><br />
               <span className="text-cyan-500">STORE</span>
             </h1>
             
-            <p className="text-sm md:text-base text-gray-400 mb-12 leading-relaxed font-bold uppercase tracking-[0.25em] max-w-xl opacity-80 border-l-2 border-blue-600 pl-6">
+            <p className="text-xs md:text-base text-gray-400 mb-12 leading-relaxed font-bold uppercase tracking-[0.25em] max-w-xl opacity-80 border-l-2 border-blue-600 pl-6">
               {text.desc}
             </p>
             
             <div className="flex flex-wrap gap-4 items-center">
               <button 
                 onClick={() => onNavigate('shop')}
-                className="h-[60px] bg-blue-600 hover:bg-blue-700 text-white px-10 rounded-xl font-black text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-2xl shadow-blue-600/20 group"
+                className="h-[50px] md:h-[60px] bg-blue-600 hover:bg-blue-700 text-white px-8 md:px-10 rounded-xl font-black text-xs md:text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-2xl shadow-blue-600/20 group"
               >
                 {text.browse} <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
               
               <button 
                 onClick={() => onNavigate('pointsShop')}
-                className="h-[60px] bg-[#1e232e] border border-gray-800 hover:border-purple-500 text-white px-10 rounded-xl font-black text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl"
+                className="h-[50px] md:h-[60px] bg-[#1e232e] border border-gray-800 hover:border-purple-500 text-white px-8 md:px-10 rounded-xl font-black text-xs md:text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl"
               >
                 <Trophy className="w-4 h-4 text-purple-500" /> Points Shop
               </button>
 
               <button 
                 onClick={() => onNavigate('tournaments')}
-                className="h-[60px] bg-[#1e232e] border border-gray-800 hover:border-pink-500 text-white px-10 rounded-xl font-black text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl"
+                className="h-[50px] md:h-[60px] bg-[#1e232e] border border-gray-800 hover:border-pink-500 text-white px-8 md:px-10 rounded-xl font-black text-xs md:text-sm transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl"
               >
                 <Swords className="w-4 h-4 text-pink-500" /> {text.compete}
               </button>
@@ -124,7 +126,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
           <div className="mb-16 text-center md:text-left flex flex-col md:flex-row justify-between items-end gap-6">
             <div>
                 <p className="text-blue-600 font-black uppercase text-[10px] tracking-[0.4em] mb-2">{text.depts}</p>
-                <h2 className="text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter leading-none">{text.products}</h2>
+                <h2 className="text-4xl md:text-7xl font-black text-white italic uppercase tracking-tighter leading-none">{text.products}</h2>
             </div>
             
             {/* Scroll Controls */}
