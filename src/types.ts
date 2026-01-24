@@ -40,15 +40,6 @@ export interface AppSetting {
   value: string;
 }
 
-export interface Announcement {
-  id: string;
-  message: string;
-  background_color: string;
-  text_color: string;
-  is_active: boolean;
-  created_at: string;
-}
-
 export interface LootBox {
   id: string;
   name: string;

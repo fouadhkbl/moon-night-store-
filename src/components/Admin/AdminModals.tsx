@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { DollarSign, Loader2, Save, X, Check, Ticket, Globe, Monitor, Smartphone, Gamepad2, Layers, Coins, Trophy, Clock, Zap, Crown, Eye, EyeOff, Swords, Megaphone, Palette, Type, Package, RotateCw, PieChart, Image } from 'lucide-react';
-import { Profile, Product, GameCategory, Coupon, PointProduct, Tournament, Announcement, LootBox, SpinWheelItem } from '../../types';
+import { DollarSign, Loader2, Save, X, Ticket, Zap, Coins, RotateCw, Package, ChevronRight } from 'lucide-react';
+import { Profile, Product, GameCategory, Coupon, PointProduct, Tournament, LootBox, SpinWheelItem } from '../../types';
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number, points: number, spins: number) => void }) => {
   const [amount, setAmount] = useState<string>(user.wallet_balance.toString());
@@ -27,29 +27,11 @@ export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, o
            <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Edit User Assets</h2>
            <p className="text-gray-500 text-[10px] font-black uppercase mt-1">Updating {user.username}</p>
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 text-center">Wallet Balance (DH)</label>
-            <input required type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-2xl font-black text-yellow-400 italic outline-none focus:border-yellow-500 transition-all shadow-inner" value={amount} onChange={e => setAmount(e.target.value)} />
-          </div>
-          
-          <div>
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 text-center flex items-center justify-center gap-2"><Coins className="w-3 h-3 text-purple-400" /> Discord Points</label>
-            <input required type="number" step="1" className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-2xl font-black text-purple-400 italic outline-none focus:border-purple-500 transition-all shadow-inner" value={points} onChange={e => setPoints(e.target.value)} />
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 text-center flex items-center justify-center gap-2"><RotateCw className="w-3 h-3 text-pink-400" /> Bonus Spins</label>
-            <input required type="number" step="1" className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-2xl font-black text-pink-400 italic outline-none focus:border-pink-500 transition-all shadow-inner" value={spins} onChange={e => setSpins(e.target.value)} />
-          </div>
-
-          <div className="flex gap-3 pt-4">
-             <button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-4 rounded-xl uppercase text-xs">Cancel</button>
-             <button type="submit" disabled={isSaving} className="flex-1 bg-blue-600 text-white font-black py-4 rounded-xl transition flex items-center justify-center gap-2 uppercase text-xs shadow-xl shadow-blue-600/30">
-               {isSaving ? <Loader2 className="animate-spin" /> : <Save className="w-4 h-4" />} Update
-             </button>
-          </div>
+          <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 text-center">Wallet Balance (DH)</label><input required type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-2xl font-black text-yellow-400 italic outline-none focus:border-yellow-500 transition-all shadow-inner" value={amount} onChange={e => setAmount(e.target.value)} /></div>
+          <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 text-center flex items-center justify-center gap-2"><Coins className="w-3 h-3 text-purple-400" /> Discord Points</label><input required type="number" step="1" className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-2xl font-black text-purple-400 italic outline-none focus:border-purple-500 transition-all shadow-inner" value={points} onChange={e => setPoints(e.target.value)} /></div>
+          <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 text-center flex items-center justify-center gap-2"><RotateCw className="w-3 h-3 text-pink-400" /> Bonus Spins</label><input required type="number" step="1" className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-2xl font-black text-pink-400 italic outline-none focus:border-pink-500 transition-all shadow-inner" value={spins} onChange={e => setSpins(e.target.value)} /></div>
+          <div className="flex gap-3 pt-4"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-4 rounded-xl uppercase text-xs">Cancel</button><button type="submit" disabled={isSaving} className="flex-1 bg-blue-600 text-white font-black py-4 rounded-xl transition flex items-center justify-center gap-2 uppercase text-xs shadow-xl shadow-blue-600/30">{isSaving ? <Loader2 className="animate-spin" /> : <Save className="w-4 h-4" />} Update</button></div>
         </form>
       </div>
     </div>
@@ -60,38 +42,9 @@ export const ReferralEditorModal = ({ user, onClose, onSave }: { user: Profile, 
     const [code, setCode] = useState(user.referral_code || '');
     const [earnings, setEarnings] = useState<string>((user.referral_earnings || 0).toString());
     const [isSaving, setIsSaving] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsSaving(true);
-        const finalEarnings = parseFloat(earnings) || 0;
-        await onSave(user.id, code.toUpperCase(), finalEarnings);
-        setIsSaving(false);
-    };
-
+    const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); setIsSaving(true); await onSave(user.id, code.toUpperCase(), parseFloat(earnings) || 0); setIsSaving(false); };
     return (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-sm rounded-[2rem] border border-gray-800 shadow-3xl p-8 animate-slide-up">
-                <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-green-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-green-500 border border-green-500/20"><Ticket className="w-8 h-8" /></div>
-                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Edit Referral Info</h2>
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label className="block text-[10px] font-black text-gray-500 uppercase mb-2 text-center">Custom Referral Code</label>
-                        <input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-xl font-mono text-white uppercase outline-none focus:border-green-500" value={code} onChange={e => setCode(e.target.value)} />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-black text-gray-500 uppercase mb-2 text-center">Total Earnings (DH)</label>
-                        <input required type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-xl font-black text-green-400 italic outline-none focus:border-green-500" value={earnings} onChange={e => setEarnings(e.target.value)} />
-                    </div>
-                    <div className="flex gap-3 pt-4">
-                        <button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-4 rounded-xl uppercase text-xs">Cancel</button>
-                        <button type="submit" disabled={isSaving} className="flex-1 bg-green-600 text-white font-black py-4 rounded-xl uppercase text-xs">Save</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-fade-in"><div className="bg-[#1e232e] w-full max-w-sm rounded-[2rem] border border-gray-800 shadow-3xl p-8 animate-slide-up"><div className="text-center mb-8"><div className="w-16 h-16 bg-green-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-green-500 border border-green-500/20"><Ticket className="w-8 h-8" /></div><h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Edit Referral Info</h2></div><form onSubmit={handleSubmit} className="space-y-6"><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-2 text-center">Custom Referral Code</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-xl font-mono text-white uppercase outline-none focus:border-green-500" value={code} onChange={e => setCode(e.target.value)} /></div><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-2 text-center">Total Earnings (DH)</label><input required type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-2xl p-4 text-center text-xl font-black text-green-400 italic outline-none focus:border-green-500" value={earnings} onChange={e => setEarnings(e.target.value)} /></div><div className="flex gap-3 pt-4"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-4 rounded-xl uppercase text-xs">Cancel</button><button type="submit" disabled={isSaving} className="flex-1 bg-green-600 text-white font-black py-4 rounded-xl uppercase text-xs">Save</button></div></form></div></div>
     );
 };
 
@@ -100,26 +53,7 @@ export const ProductFormModal = ({ product, onClose, onSave }: { product: Partia
     const [isSaving, setIsSaving] = useState(false);
     const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); setIsSaving(true); await onSave(formData); setIsSaving(false); };
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-2xl rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col max-h-[85vh]">
-                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{product?.id ? 'Edit Product' : 'Add New Product'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Product Name</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Category</label><select className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value as any})}>{Object.values(GameCategory).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                        <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Price (DH)</label><input required type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} /></div>
-                    </div>
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Image URL</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} /></div>
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Description</label><textarea required className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white h-24" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}></textarea></div>
-                    <div className="grid grid-cols-3 gap-4">
-                        <label className="flex items-center gap-2 text-xs text-gray-400"><input type="checkbox" checked={formData.is_trending} onChange={e => setFormData({...formData, is_trending: e.target.checked})} /> Trending</label>
-                        <label className="flex items-center gap-2 text-xs text-gray-400"><input type="checkbox" checked={formData.is_vip} onChange={e => setFormData({...formData, is_vip: e.target.checked})} /> VIP</label>
-                        <label className="flex items-center gap-2 text-xs text-gray-400"><input type="checkbox" checked={formData.is_hidden} onChange={e => setFormData({...formData, is_hidden: e.target.checked})} /> Hidden</label>
-                    </div>
-                </form>
-                <div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-blue-600 text-white font-black py-3 rounded-xl">{isSaving ? <Loader2 className="animate-spin inline" /> : 'Save'}</button></div>
-            </div>
-        </div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in"><div className="bg-[#1e232e] w-full max-w-2xl rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col max-h-[85vh]"><div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{product?.id ? 'Edit Product' : 'Add New Product'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div><form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1"><div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Product Name</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div><div className="grid grid-cols-2 gap-4"><div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Category</label><select className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value as any})}>{Object.values(GameCategory).map(c => <option key={c} value={c}>{c}</option>)}</select></div><div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Price (DH)</label><input required type="number" step="0.01" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} /></div></div><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Image URL</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} /></div><div className="grid grid-cols-3 gap-4"><label className="flex items-center gap-2 text-xs text-gray-400"><input type="checkbox" checked={formData.is_trending} onChange={e => setFormData({...formData, is_trending: e.target.checked})} /> Trending</label><label className="flex items-center gap-2 text-xs text-gray-400"><input type="checkbox" checked={formData.is_vip} onChange={e => setFormData({...formData, is_vip: e.target.checked})} /> VIP</label><label className="flex items-center gap-2 text-xs text-gray-400"><input type="checkbox" checked={formData.is_hidden} onChange={e => setFormData({...formData, is_hidden: e.target.checked})} /> Hidden</label></div></form><div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-blue-600 text-white font-black py-3 rounded-xl">{isSaving ? <Loader2 className="animate-spin inline" /> : 'Save'}</button></div></div></div>
     );
 };
 
@@ -128,19 +62,7 @@ export const CouponFormModal = ({ coupon, onClose, onSave }: { coupon: Partial<C
     const [isSaving, setIsSaving] = useState(false);
     const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); setIsSaving(true); await onSave(formData); setIsSaving(false); };
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col">
-                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{coupon?.id ? 'Edit Coupon' : 'Create Coupon'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Code</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white uppercase" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} /></div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Type</label><select className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.discount_type} onChange={e => setFormData({...formData, discount_type: e.target.value as any})}><option value="percent">Percent</option><option value="fixed">Fixed</option></select></div>
-                        <div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Value</label><input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.discount_value} onChange={e => setFormData({...formData, discount_value: parseFloat(e.target.value)})} /></div>
-                    </div>
-                </form>
-                <div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-purple-600 text-white font-black py-3 rounded-xl">Save</button></div>
-            </div>
-        </div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in"><div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col"><div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{coupon?.id ? 'Edit Coupon' : 'Create Coupon'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div><form onSubmit={handleSubmit} className="p-6 space-y-4"><div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Code</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white uppercase" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} /></div><div className="grid grid-cols-2 gap-4"><div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Type</label><select className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.discount_type} onChange={e => setFormData({...formData, discount_type: e.target.value as any})}><option value="percent">Percent</option><option value="fixed">Fixed</option></select></div><div><label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Value</label><input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.discount_value} onChange={e => setFormData({...formData, discount_value: parseFloat(e.target.value)})} /></div></div></form><div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-purple-600 text-white font-black py-3 rounded-xl">Save</button></div></div></div>
     );
 };
 
@@ -149,17 +71,7 @@ export const PointProductFormModal = ({ product, onClose, onSave }: { product: P
     const [isSaving, setIsSaving] = useState(false);
     const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); setIsSaving(true); await onSave(formData); setIsSaving(false); };
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col">
-                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{product?.id ? 'Edit Reward' : 'Add Reward'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Name</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Cost (PTS)</label><input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.cost} onChange={e => setFormData({...formData, cost: parseInt(e.target.value)})} /></div>
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Image URL</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} /></div>
-                </form>
-                <div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-purple-600 text-white font-black py-3 rounded-xl">Save</button></div>
-            </div>
-        </div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in"><div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col"><div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{product?.id ? 'Edit Reward' : 'Add Reward'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div><form onSubmit={handleSubmit} className="p-6 space-y-4"><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Name</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Cost (PTS)</label><input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.cost} onChange={e => setFormData({...formData, cost: parseInt(e.target.value)})} /></div><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Image URL</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} /></div></form><div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-purple-600 text-white font-black py-3 rounded-xl">Save</button></div></div></div>
     );
 };
 
@@ -168,33 +80,7 @@ export const TournamentFormModal = ({ tournament, onClose, onSave }: { tournamen
     const [isSaving, setIsSaving] = useState(false);
     const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); setIsSaving(true); await onSave(formData); setIsSaving(false); };
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col">
-                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{tournament?.id ? 'Edit Tournament' : 'Create Tournament'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Title</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} /></div>
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Game</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.game_name} onChange={e => setFormData({...formData, game_name: e.target.value})} /></div>
-                </form>
-                <div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-blue-600 text-white font-black py-3 rounded-xl">Save</button></div>
-            </div>
-        </div>
-    );
-};
-
-export const AnnouncementFormModal = ({ announcement, onClose, onSave }: { announcement: Partial<Announcement> | null, onClose: () => void, onSave: (a: any) => void }) => {
-    const [formData, setFormData] = useState<Partial<Announcement>>(announcement || { message: '', background_color: '#1e232e', text_color: '#ffffff', is_active: true });
-    const [isSaving, setIsSaving] = useState(false);
-    const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); setIsSaving(true); await onSave(formData); setIsSaving(false); };
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col">
-                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{announcement?.id ? 'Edit Announcement' : 'New Announcement'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Message</label><textarea required className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white h-24" value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})}></textarea></div>
-                </form>
-                <div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-blue-600 text-white font-black py-3 rounded-xl">Save</button></div>
-            </div>
-        </div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in"><div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col"><div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{tournament?.id ? 'Edit Tournament' : 'Create Tournament'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div><form onSubmit={handleSubmit} className="p-6 space-y-4"><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Title</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} /></div><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Game</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.game_name} onChange={e => setFormData({...formData, game_name: e.target.value})} /></div></form><div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-blue-600 text-white font-black py-3 rounded-xl">Save</button></div></div></div>
     );
 };
 
@@ -203,16 +89,7 @@ export const LootBoxFormModal = ({ lootBox, onClose, onSave }: { lootBox: Partia
     const [isSaving, setIsSaving] = useState(false);
     const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); setIsSaving(true); await onSave(formData); setIsSaving(false); };
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col">
-                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{lootBox?.id ? 'Edit Loot Box' : 'New Loot Box'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Name</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Price (DH)</label><input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} /></div>
-                </form>
-                <div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-yellow-600 text-white font-black py-3 rounded-xl">Save</button></div>
-            </div>
-        </div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in"><div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col"><div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{lootBox?.id ? 'Edit Loot Box' : 'New Loot Box'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div><form onSubmit={handleSubmit} className="p-6 space-y-4"><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Name</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Price (DH)</label><input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} /></div></form><div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-yellow-600 text-white font-black py-3 rounded-xl">Save</button></div></div></div>
     );
 };
 
@@ -221,18 +98,6 @@ export const SpinWheelItemFormModal = ({ item, onClose, onSave }: { item: Partia
     const [isSaving, setIsSaving] = useState(false);
     const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); setIsSaving(true); await onSave(formData); setIsSaving(false); };
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col">
-                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{item?.id ? 'Edit Segment' : 'New Segment'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Text</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.text} onChange={e => setFormData({...formData, text: e.target.value})} /></div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Type</label><select className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as any})}><option value="money">Money</option><option value="points">Points</option><option value="none">None</option></select></div>
-                        <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Value</label><input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.value} onChange={e => setFormData({...formData, value: parseFloat(e.target.value)})} /></div>
-                    </div>
-                </form>
-                <div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-pink-600 text-white font-black py-3 rounded-xl">Save</button></div>
-            </div>
-        </div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in"><div className="bg-[#1e232e] w-full max-w-lg rounded-2xl overflow-hidden border border-gray-800 shadow-2xl animate-slide-up flex flex-col"><div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23]"><h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{item?.id ? 'Edit Segment' : 'New Segment'}</h2><button onClick={onClose} className="text-gray-400 hover:text-white"><X /></button></div><form onSubmit={handleSubmit} className="p-6 space-y-4"><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Text</label><input required type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.text} onChange={e => setFormData({...formData, text: e.target.value})} /></div><div className="grid grid-cols-2 gap-4"><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Type</label><select className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as any})}><option value="money">Money</option><option value="points">Points</option><option value="none">None</option></select></div><div><label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Value</label><input required type="number" className="w-full bg-[#0b0e14] border border-gray-800 rounded-lg p-3 text-white" value={formData.value} onChange={e => setFormData({...formData, value: parseFloat(e.target.value)})} /></div></div></form><div className="p-6 border-t border-gray-800 bg-[#151a23] flex gap-3"><button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl">Cancel</button><button onClick={handleSubmit} disabled={isSaving} className="flex-1 bg-pink-600 text-white font-black py-3 rounded-xl">Save</button></div></div></div>
     );
 };

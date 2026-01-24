@@ -4,12 +4,10 @@ import { supabase } from '../supabaseClient';
 import { Profile, Order, OrderItem, OrderMessage, PointRedemption, RedemptionMessage } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
 import { 
-  Gamepad2, Wallet, LogIn, LogOut, CreditCard, ArrowUpRight, 
-  ArrowDownLeft, History, Plus, ShieldCheck, MessageSquare, 
-  Send, X, Clock, Eye, Trash2, CheckCircle, Coins, Gift, 
-  Calendar, LayoutDashboard, ClipboardList, Copy, Users, 
-  Link, Crown, Sparkles, Timer, RotateCw, Loader2, Edit3, 
-  Settings, ChevronRight, Share2, Award, Zap
+  Wallet, LogIn, LogOut, CreditCard, History, Plus, ShieldCheck, MessageSquare, 
+  Send, X, Clock, Eye, CheckCircle, Coins, Gift, LayoutDashboard, 
+  ClipboardList, Copy, Users, Crown, Sparkles, Timer, Loader2, Edit3, 
+  ChevronRight, Award, Zap, Bell, Monitor, Smartphone, Globe, ShoppingCart, Activity
 } from 'lucide-react';
 
 const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
@@ -60,105 +58,91 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
     if (loading) return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80"><Loader2 className="w-10 h-10 animate-spin text-blue-500" /></div>;
 
     return (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-4xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
-                <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto">
-                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-4">Order #{order.id.slice(0,6)}</h3>
-                    <div className={`p-4 rounded-xl mb-6 border flex items-center gap-3 ${order.status === 'completed' ? 'bg-green-500/10 border-green-500/30 text-green-500' : order.status === 'canceled' ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500'}`}>
-                        {order.status === 'completed' && <CheckCircle className="w-6 h-6" />}
-                        {order.status === 'canceled' && <X className="w-6 h-6" />}
-                        {order.status === 'pending' && <Clock className="w-6 h-6 animate-pulse" />}
-                        <div><p className="text-[10px] font-black uppercase tracking-widest opacity-70">Status</p><p className="text-lg font-black uppercase">{order.status}</p></div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-5xl md:rounded-[2.5rem] border-white/5 shadow-3xl flex flex-col md:flex-row overflow-hidden h-full md:h-[85vh]">
+                <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-white/5 overflow-y-auto custom-scrollbar">
+                    <div className="flex justify-between items-center md:hidden mb-6">
+                         <h3 className="font-black text-white italic uppercase tracking-tighter">Order Info</h3>
+                         <button onClick={onClose} className="p-2 bg-white/5 rounded-full"><X className="w-5 h-5"/></button>
                     </div>
-                    <div className="space-y-4">
+                    <h3 className="hidden md:block text-xl font-black text-white italic uppercase tracking-tighter mb-6">Order Summary</h3>
+                    
+                    <div className={`p-5 rounded-2xl mb-8 border flex items-center gap-4 ${order.status === 'completed' ? 'bg-green-500/5 border-green-500/20 text-green-400' : order.status === 'canceled' ? 'bg-red-500/5 border-red-500/20 text-red-400' : 'bg-yellow-500/5 border-yellow-500/20 text-yellow-400'}`}>
+                        {order.status === 'completed' ? <CheckCircle className="w-6 h-6" /> : order.status === 'canceled' ? <X className="w-6 h-6" /> : <Clock className="w-6 h-6 animate-pulse" />}
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Status</p>
+                            <p className="text-sm font-black uppercase tracking-tighter italic">{order.status}</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Inventory Data</p>
                         {items.map(item => (
-                            <div key={item.id} className="flex gap-3 bg-[#0b0e14] p-3 rounded-xl border border-gray-800">
-                                <img src={item.product?.image_url} className="w-12 h-12 rounded-lg object-cover" alt="" />
-                                <div><p className="text-sm font-bold text-white truncate max-w-[150px]">{item.product?.name}</p><p className="text-[10px] text-gray-500">Qty: {item.quantity}</p></div>
+                            <div key={item.id} className="flex gap-4 bg-[#0b0e14]/50 p-3 rounded-2xl border border-white/5 group hover:border-blue-500/30 transition-all">
+                                <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-900 border border-white/5">
+                                    <img src={item.product?.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-black text-white truncate uppercase italic">{item.product?.name}</p>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase">Qty: {item.quantity} • {item.price_at_purchase.toFixed(2)} DH</p>
+                                </div>
                             </div>
                         ))}
                     </div>
-                    <div className="mt-8 pt-6 border-t border-gray-800">
-                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Total</p>
-                        <p className="text-2xl font-black text-yellow-400 italic tracking-tighter">{order.total_amount.toFixed(2)} DH</p>
+
+                    <div className="mt-8 pt-6 border-t border-white/5">
+                        <div className="flex justify-between items-end">
+                            <div>
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Total Amount</p>
+                                <p className="text-3xl font-black text-yellow-400 italic tracking-tighter">{order.total_amount.toFixed(2)} DH</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Method</p>
+                                <p className="text-white font-bold text-xs uppercase">{order.payment_method || 'System'}</p>
+                            </div>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="mt-8 w-full py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white transition uppercase text-xs font-black">Close</button>
+                    <button onClick={onClose} className="hidden md:block mt-10 w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition uppercase text-[10px] font-black tracking-[0.2em]">Close Access</button>
                 </div>
+
                 <div className="w-full md:w-7/12 flex flex-col h-full bg-[#1e232e]">
-                    <div className="p-4 border-b border-gray-800 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-500"/><span className="text-sm font-black text-white uppercase">Support Chat</span></div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0b0e14]/50 custom-scrollbar">
+                    <div className="p-4 md:p-6 border-b border-white/5 flex items-center justify-between bg-[#1e232e]">
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            <span className="text-xs font-black text-white uppercase tracking-widest">Support Core Channel</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Order ID: {order.id.slice(0,8)}</p>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-[#0b0e14]/40 custom-scrollbar">
+                         {messages.length === 0 && (
+                             <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
+                                 <MessageSquare className="w-12 h-12 mb-4" />
+                                 <p className="text-[10px] font-black uppercase tracking-widest">Awaiting Transmission...</p>
+                             </div>
+                         )}
                          {messages.map(msg => (
                              <div key={msg.id} className={`flex ${msg.sender_id === currentUser.id ? 'justify-end' : 'justify-start'}`}>
-                                 <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.sender_id === currentUser.id ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-[#1e232e] text-gray-200 border border-gray-700 rounded-tl-none'}`}>{msg.message}</div>
+                                 <div className={`max-w-[85%] p-4 rounded-3xl text-sm leading-relaxed shadow-xl ${msg.sender_id === currentUser.id ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-[#151a23] text-gray-200 border border-white/5 rounded-tl-none'}`}>
+                                     {msg.message}
+                                     <p className={`text-[7px] mt-2 font-black uppercase tracking-widest ${msg.sender_id === currentUser.id ? 'text-blue-200' : 'text-gray-500'}`}>
+                                         {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                     </p>
+                                 </div>
                              </div>
                          ))}
                          <div ref={messagesEndRef} />
                     </div>
-                    <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-800 flex gap-2">
-                        <input type="text" className="flex-1 bg-[#0b0e14] border border-gray-800 rounded-xl px-4 py-3 text-white text-sm" placeholder="Type a message..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
-                        <button type="submit" className="bg-blue-600 p-3 rounded-xl text-white" disabled={!newMessage.trim()}><Send className="w-5 h-5" /></button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const RedemptionDetailsModal = ({ redemption, currentUser, onClose }: { redemption: PointRedemption, currentUser: Profile, onClose: () => void }) => {
-    const [messages, setMessages] = useState<RedemptionMessage[]>([]);
-    const [newMessage, setNewMessage] = useState('');
-    const messagesEndRef = useRef<null | HTMLDivElement>(null);
-    const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
-
-    useEffect(() => {
-        const fetchDetails = async () => {
-            const { data } = await supabase.from('redemption_messages').select('*').eq('redemption_id', redemption.id).order('created_at', { ascending: true });
-            if (data) setMessages(data);
-            scrollToBottom();
-        };
-        fetchDetails();
-        const channel = supabase.channel(`red_chat:${redemption.id}`)
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'redemption_messages', filter: `redemption_id=eq.${redemption.id}` }, (payload) => {
-                const newMsg = payload.new as RedemptionMessage;
-                setMessages(prev => prev.some(m => m.id === newMsg.id) ? prev : [...prev, newMsg]);
-                scrollToBottom();
-            }).subscribe();
-        return () => { supabase.removeChannel(channel); };
-    }, [redemption.id]);
-
-    const handleSendMessage = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newMessage.trim()) return;
-        const msgText = newMessage.trim();
-        setNewMessage(''); 
-        const { data } = await supabase.from('redemption_messages').insert({ redemption_id: redemption.id, sender_id: currentUser.id, message: msgText }).select().single();
-        if (data) setMessages(prev => [...prev, data]);
-    };
-
-    return (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-[#1e232e] w-full max-w-4xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
-                <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto">
-                    <h3 className="text-lg font-black text-white italic uppercase tracking-tighter mb-6">Reward Claim</h3>
-                    <div className="flex gap-4 bg-[#0b0e14] p-4 rounded-2xl border border-gray-800 mb-6">
-                        <img src={redemption.point_product?.image_url} className="w-16 h-16 rounded-xl object-cover" alt="" />
-                        <div><p className="text-sm font-bold text-white">{redemption.point_product?.name}</p><p className="text-xs text-purple-400 font-black italic">{redemption.cost_at_redemption} PTS</p></div>
-                    </div>
-                    <button onClick={onClose} className="w-full py-3 rounded-xl border border-gray-700 text-gray-400 font-black">Close</button>
-                </div>
-                <div className="w-full md:w-7/12 flex flex-col h-full bg-[#1e232e]">
-                    <div className="p-4 border-b border-gray-800 font-black text-white uppercase">Redemption Support</div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0b0e14]/50 custom-scrollbar">
-                         {messages.map(msg => (
-                             <div key={msg.id} className={`flex ${msg.sender_id === currentUser.id ? 'justify-end' : 'justify-start'}`}>
-                                 <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.sender_id === currentUser.id ? 'bg-purple-600 text-white' : 'bg-[#1e232e] text-gray-200'}`}>{msg.message}</div>
-                             </div>
-                         ))}
-                         <div ref={messagesEndRef} />
-                    </div>
-                    <form onSubmit={handleSendMessage} className="p-4 bg-[#1e232e] border-t border-gray-800 flex gap-2">
-                        <input type="text" className="flex-1 bg-[#0b0e14] border border-gray-800 rounded-xl px-4 py-3 text-white" placeholder="Message admin..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
-                        <button type="submit" className="bg-purple-600 p-3 rounded-xl text-white"><Send className="w-5 h-5" /></button>
+                    <form onSubmit={handleSendMessage} className="p-4 md:p-6 border-t border-white/5 bg-[#1e232e] flex gap-3">
+                        <input 
+                            type="text" 
+                            className="flex-1 bg-[#0b0e14] border border-white/5 rounded-2xl px-6 py-4 text-white text-sm focus:border-blue-500 outline-none placeholder:text-gray-700" 
+                            placeholder="Type command or message..." 
+                            value={newMessage} 
+                            onChange={(e) => setNewMessage(e.target.value)} 
+                        />
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl shadow-xl transition-all active:scale-95 disabled:opacity-50" disabled={!newMessage.trim()}>
+                            <Send className="w-5 h-5" />
+                        </button>
                     </form>
                 </div>
             </div>
@@ -171,19 +155,16 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
 }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [pointRedemptions, setPointRedemptions] = useState<PointRedemption[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wallet' | 'points' | 'referrals'>(initialTab || 'overview');
   const [authMode, setAuthMode] = useState<'none' | 'login' | 'signup'>('none');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [selectedRedemption, setSelectedRedemption] = useState<PointRedemption | null>(null);
   const [referralCount, setReferralCount] = useState(0);
   const [canClaimDaily, setCanClaimDaily] = useState(false);
   const [timeUntilNextClaim, setTimeUntilNextClaim] = useState('');
+  const [loading, setLoading] = useState(true);
   
   const isGuest = session?.user?.id === 'guest-user-123';
   const isVip = profile?.vip_level && profile.vip_level > 0;
-
-  useEffect(() => { if (initialTab) setActiveTab(initialTab); }, [initialTab]);
 
   const calculateClaimStatus = (lastClaim: string | undefined) => {
       if (!lastClaim) return { canClaim: true, timeLeft: '' };
@@ -196,6 +177,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
   };
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     if (session?.user) {
         if (isGuest) {
             setProfile({ id: 'guest-user-123', email: 'guest@moonnight.com', username: 'Guest Player', avatar_url: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=200&q=80', wallet_balance: 0.00, vip_level: 0, vip_points: 0, discord_points: 0, total_donated: 0, spins_count: 0 });
@@ -214,14 +196,13 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                 setOrders(oData);
                 if (initialOrderId) {
                     const target = oData.find(o => o.id === initialOrderId);
-                    if (target) { setSelectedOrder(target); if (!initialTab) setActiveTab('orders'); }
+                    if (target) { setSelectedOrder(target); setActiveTab('orders'); }
                 }
             }
-            const { data: prData } = await supabase.from('point_redemptions').select('*, point_product:point_products(*)').eq('user_id', session.user.id).order('created_at', { ascending: false });
-            if (prData) setPointRedemptions(prData);
         }
     }
-  }, [session, isGuest, initialOrderId, initialTab]);
+    setLoading(false);
+  }, [session, isGuest, initialOrderId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -247,329 +228,425 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
           if (error) throw error;
           setProfile({ ...profile, discord_points: newPoints, wallet_balance: newBalance, spins_count: newSpins, last_daily_claim: now });
           setCanClaimDaily(false);
-          addToast('Daily Claimed!', `Received ${rewardPoints} PTS, ${rewardMoney} DH${getSpin ? ' & 1 FREE SPIN!' : '!'}`, 'success');
-      } catch (err) { addToast('Error', 'Failed to claim rewards.', 'error'); }
+          addToast('Neural Drop Acquired!', `Matrix synced: +${rewardPoints} PTS, +${rewardMoney} DH${getSpin ? ' & 1 FREE SPIN!' : '!'}`, 'success');
+      } catch (err) { addToast('Error', 'Link failed.', 'error'); }
   };
 
   const copyToClipboard = (text: string) => {
       navigator.clipboard.writeText(text);
-      addToast('Copied!', 'Link copied to clipboard.', 'success');
+      addToast('System Link Copied', 'Encrypted URL ready for distribution.', 'success');
   };
 
   const vipProgress = profile ? Math.min(100, (profile.vip_points / 5000) * 100) : 0;
 
-  if (isGuest && authMode === 'login') return <div className="py-20 container mx-auto px-4"><LoginForm onAuthSuccess={s => { setSession(s); setAuthMode('none'); onNavigate('dashboard'); }} onToggle={() => setAuthMode('signup')} /></div>;
-  if (isGuest && authMode === 'signup') return <div className="py-20 container mx-auto px-4"><SignupForm addToast={addToast} onAuthSuccess={s => { if(s) setSession(s); setAuthMode('none'); onNavigate('dashboard'); }} onToggle={() => setAuthMode('login')} /></div>;
+  if (isGuest && authMode === 'login') return <div className="py-20 container mx-auto px-4"><LoginForm onAuthSuccess={s => { setSession(s); setAuthMode('none'); }} onToggle={() => setAuthMode('signup')} /></div>;
+  if (isGuest && authMode === 'signup') return <div className="py-20 container mx-auto px-4"><SignupForm addToast={addToast} onAuthSuccess={s => { if(s) setSession(s); setAuthMode('none'); }} onToggle={() => setAuthMode('login')} /></div>;
+
+  if (loading && !profile) return <div className="min-h-[70vh] flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-blue-500" /></div>;
 
   return (
-    <div className="container mx-auto px-4 py-8 animate-fade-in pb-20 max-w-7xl">
-       {/* HERO PROFILE SECTION */}
-       <div className={`relative rounded-[3rem] overflow-hidden mb-12 shadow-[0_20px_60px_rgba(0,0,0,0.5)] bg-[#1e232e] border border-white/5 transition-all duration-500`}>
-          {/* Banner */}
-          <div className={`h-60 w-full relative overflow-hidden`}>
-              <div className={`absolute inset-0 ${isVip ? 'bg-gradient-to-br from-yellow-700 via-amber-600 to-yellow-900' : 'bg-gradient-to-br from-blue-700 via-indigo-800 to-slate-900'}`}>
-                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30"></div>
-                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-[#1e232e] via-transparent to-transparent"></div>
-              </div>
-          </div>
-
-          <div className="px-6 md:px-12 pb-12 flex flex-col md:flex-row items-center md:items-end -mt-24 gap-8 text-center md:text-left relative z-10">
-              {/* Avatar */}
-              <div className="relative group">
-                  <div className={`w-40 h-40 md:w-52 md:h-52 rounded-[2.5rem] border-[12px] border-[#1e232e] bg-[#1e232e] overflow-hidden shadow-2xl transition-transform duration-500 group-hover:scale-[1.02] ${isVip ? 'ring-4 ring-yellow-500/50' : 'ring-4 ring-blue-500/20'}`}>
-                    <img src={profile?.avatar_url} className="w-full h-full object-cover" alt="" />
-                    <button className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Edit3 className="w-8 h-8 text-white" />
-                    </button>
-                  </div>
-                  {isVip && (
-                      <div className="absolute -bottom-2 -right-2 bg-yellow-500 text-black px-4 py-1.5 rounded-2xl font-black text-[10px] uppercase italic tracking-widest shadow-xl flex items-center gap-1.5 border-4 border-[#1e232e]">
-                          <Crown className="w-3.5 h-3.5 fill-black" /> ELITE
-                      </div>
-                  )}
-              </div>
-
-              {/* Identity & Rank */}
-              <div className="flex-1 mb-2">
-                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-3">
-                    <h1 className={`text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-none ${isVip ? 'text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,0.3)]' : 'text-white'}`}>
-                        {profile?.username}
-                    </h1>
-                 </div>
-
-                 {/* XP Progress Bar */}
-                 <div className="max-w-md">
-                    <div className="flex justify-between items-center mb-2">
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                            Loyalty Progress 
-                            <span className="text-white ml-1">{profile?.vip_points || 0}/5000 XP</span>
-                        </p>
-                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">LVL {Math.floor((profile?.vip_points || 0) / 1000) + 1}</p>
+    <div className="container mx-auto px-4 py-6 md:py-12 animate-fade-in max-w-7xl pb-24">
+       <style>{`
+         .gold-metallic {
+           background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 45%, #b38728 70%, #fbf5b7 100%);
+           -webkit-background-clip: text;
+           -webkit-text-fill-color: transparent;
+         }
+         .gold-progress {
+           background: linear-gradient(90deg, #bf953f 0%, #fcf6ba 45%, #b38728 100%);
+           box-shadow: 0 0 10px rgba(184, 134, 11, 0.5);
+         }
+       `}</style>
+       
+       <div className="flex lg:grid lg:grid-cols-12 gap-6 mb-12">
+            
+            {/* LEFT SIDEBAR: PROFILE & NAVIGATION */}
+            <div className="hidden lg:block lg:col-span-4 space-y-6 sticky top-24 h-fit">
+                <div className="bg-[#1e232e] rounded-[3rem] border border-white/5 p-8 shadow-3xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-1000">
+                        {isVip ? <Crown className="w-32 h-32 text-yellow-500" /> : <ShieldCheck className="w-32 h-32 text-blue-500" />}
                     </div>
-                    <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 p-0.5">
-                       <div 
-                        className={`h-full rounded-full transition-all duration-1000 ${isVip ? 'bg-gradient-to-r from-yellow-600 to-amber-400' : 'bg-gradient-to-r from-blue-600 to-cyan-400'}`} 
-                        style={{ width: `${vipProgress}%` }}
-                       ></div>
-                    </div>
-                 </div>
-              </div>
-               
-               {/* Action Center */}
-               <div className="flex flex-col items-center md:items-end gap-4 w-full md:w-auto">
-                 {isGuest ? (
-                     <div className="flex flex-col gap-3 w-full sm:w-[280px]">
-                        <button onClick={() => setAuthMode('login')} className="w-full bg-blue-600 hover:bg-blue-500 text-white h-14 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-blue-600/20 flex items-center justify-center gap-3">
-                            <LogIn className="w-5 h-5" /> Login
-                        </button>
-                        <button onClick={() => setAuthMode('signup')} className="w-full bg-white/5 hover:bg-white/10 text-white h-14 rounded-2xl font-black uppercase tracking-widest text-xs border border-white/10 transition-all flex items-center justify-center gap-3">
-                            <Plus className="w-5 h-5" /> Sign Up
-                        </button>
-                     </div>
-                 ) : (
-                    <div className="flex flex-col gap-4 w-full md:w-auto items-center md:items-end">
-                        <div className="flex gap-3">
-                            <button onClick={handleClaimDaily} disabled={!canClaimDaily} className={`flex-1 min-w-[140px] bg-[#0b0e14]/80 backdrop-blur-xl px-5 py-3 rounded-2xl border flex items-center gap-3 shadow-xl transition-all ${canClaimDaily ? 'border-green-500/40 hover:border-green-500 animate-pulse' : 'border-gray-800 opacity-60 cursor-not-allowed'}`}>
-                                <div className={`p-2 rounded-xl ${canClaimDaily ? 'bg-green-500 text-white' : 'bg-gray-800 text-gray-500'}`}>{canClaimDaily ? <Gift className="w-4 h-4" /> : <Timer className="w-4 h-4" />}</div>
-                                <div className="text-left">
-                                    <p className="text-[8px] text-gray-500 uppercase font-black tracking-widest mb-0.5">Daily Drop</p>
-                                    <p className={`text-[11px] font-black italic tracking-tighter ${canClaimDaily ? 'text-green-400' : 'text-gray-400'}`}>{canClaimDaily ? 'COLLECT' : timeUntilNextClaim}</p>
+                    
+                    <div className="relative z-10 flex flex-col items-center text-center">
+                        <div className="relative mb-6">
+                            <div className={`w-32 h-32 rounded-[2.5rem] border-[8px] border-[#0b0e14] bg-[#1e232e] overflow-hidden shadow-2xl transition-all duration-500 group-hover:scale-[1.05] ${isVip ? 'ring-4 ring-yellow-500/30' : 'ring-4 ring-blue-500/10'}`}>
+                                <img src={profile?.avatar_url} className="w-full h-full object-cover" alt="" />
+                                <button className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Edit3 className="w-6 h-6 text-white" />
+                                </button>
+                            </div>
+                            {isVip && (
+                                <div className="absolute -bottom-2 -right-2 bg-gradient-to-br from-[#bf953f] to-[#b38728] text-black px-3 py-1 rounded-xl font-black text-[8px] uppercase italic tracking-widest shadow-xl flex items-center gap-1 border-4 border-[#0b0e14]">
+                                    <Crown className="w-3 h-3 fill-black" /> ELITE
                                 </div>
-                            </button>
-                            <button onClick={() => onNavigate('spin')} className="flex-1 min-w-[140px] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-5 py-3 rounded-2xl flex items-center gap-3 shadow-xl shadow-purple-600/20 hover:scale-105 active:scale-95 transition-all">
-                                <div className="p-2 rounded-xl bg-white/20"><Sparkles className="w-4 h-4" /></div>
-                                <div className="text-left">
-                                    <p className="text-[8px] text-purple-200 uppercase font-black mb-0.5">Minigame</p>
-                                    <p className="text-[11px] font-black italic tracking-tighter">SPIN & WIN</p>
-                                </div>
-                            </button>
-                        </div>
-                        <button onClick={onSignOut} className="text-gray-500 hover:text-red-500 font-black uppercase text-[10px] tracking-[0.25em] flex items-center gap-2 transition-colors">
-                            <LogOut className="w-4 h-4" /> Logout
-                        </button>
-                    </div>
-                 )}
-              </div>
-          </div>
-       </div>
-
-       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Navigation Sidebar */}
-          <div className="lg:col-span-3 space-y-6">
-              <div className="bg-[#1e232e] rounded-[2.5rem] border border-white/5 shadow-2xl p-4 flex flex-row lg:flex-col overflow-x-auto scrollbar-hide lg:overflow-visible gap-2">
-                 {[
-                    { id: 'overview', icon: LayoutDashboard, label: 'Overview', color: 'blue' },
-                    { id: 'orders', icon: ClipboardList, label: 'Order History', color: 'blue' },
-                    { id: 'wallet', icon: Wallet, label: 'My Wallet', color: 'blue' },
-                    { id: 'points', icon: Coins, label: 'Points Hub', color: 'purple' },
-                    { id: 'referrals', icon: Users, label: 'Affiliates', color: 'green' }
-                 ].map(item => (
-                    <button 
-                        key={item.id}
-                        onClick={() => setActiveTab(item.id as any)} 
-                        className={`flex-none lg:w-full p-4 rounded-2xl flex items-center gap-4 transition-all group ${
-                            activeTab === item.id 
-                            ? (item.id === 'points' ? 'bg-purple-600 text-white shadow-xl shadow-purple-600/20' : 
-                               item.id === 'referrals' ? 'bg-green-600 text-white shadow-xl shadow-green-600/20' : 
-                               'bg-blue-600 text-white shadow-xl shadow-blue-600/20')
-                            : 'text-gray-500 hover:bg-white/5 hover:text-white'
-                        }`}
-                    >
-                        <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-white' : 'group-hover:scale-110 transition-transform'}`} />
-                        <span className="uppercase text-[10px] font-black tracking-widest hidden lg:block">{item.label}</span>
-                    </button>
-                 ))}
-              </div>
-          </div>
-
-          {/* Content Area */}
-          <div className="lg:col-span-9">
-             {activeTab === 'overview' && (
-                <div className="space-y-8 animate-fade-in">
-                    <div className="bg-gradient-to-br from-blue-600 to-indigo-900 rounded-[3rem] p-10 md:p-14 text-white shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-12 opacity-10"><LayoutDashboard className="w-60 h-60" /></div>
-                        <div className="relative z-10">
-                            <p className="text-blue-200 font-black uppercase text-[10px] tracking-[0.3em] mb-4">Command Center Online</p>
-                            <h2 className="text-5xl md:text-7xl font-black italic uppercase leading-[0.85] tracking-tighter mb-6">
-                                Welcome back,<br/>
-                                <span className="text-cyan-300">{profile?.username}</span>
-                            </h2>
-                            <p className="text-blue-100 font-medium text-sm md:text-base max-w-lg mb-8 opacity-80">
-                                {isGuest ? "You are currently in guest mode. Login to unlock your account and save your progress." : "Your account matrix is synchronized. Access authorized."}
-                            </p>
-                            {!isGuest ? (
-                                <button onClick={() => onNavigate('shop')} className="bg-white text-blue-900 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl">Go to Shop</button>
-                            ) : (
-                                <button onClick={() => setAuthMode('login')} className="bg-white text-blue-900 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl">Login to Account</button>
                             )}
                         </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-white/5 shadow-xl relative group overflow-hidden">
-                           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity"><ClipboardList className="w-16 h-16" /></div>
-                           <p className="text-gray-500 text-[10px] uppercase font-black mb-4 tracking-widest">Active Orders</p>
-                           <h3 className="text-5xl font-black text-white italic mb-1 tracking-tighter">{orders.length}</h3>
-                           <p className="text-[10px] text-green-500 font-bold uppercase">Success Rate: 100%</p>
-                        </div>
-                        <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-white/5 shadow-xl relative group overflow-hidden">
-                           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity"><Wallet className="w-16 h-16" /></div>
-                           <p className="text-gray-500 text-[10px] uppercase font-black mb-4 tracking-widest">Wallet Balance</p>
-                           <h3 className="text-5xl font-black text-yellow-400 italic mb-1 tracking-tighter">{profile?.wallet_balance?.toFixed(2)} <span className="text-xl">DH</span></h3>
-                           <button onClick={() => onNavigate('topup')} className="text-[10px] text-blue-400 font-black uppercase tracking-widest hover:text-blue-300 flex items-center gap-1 mt-2">Add Funds <ChevronRight className="w-3 h-3"/></button>
-                        </div>
-                        <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-white/5 shadow-xl relative group overflow-hidden sm:col-span-2 lg:col-span-1">
-                           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity"><Coins className="w-16 h-16" /></div>
-                           <p className="text-gray-500 text-[10px] uppercase font-black mb-4 tracking-widest">Loyalty Points</p>
-                           <h3 className="text-5xl font-black text-purple-400 italic mb-1 tracking-tighter">{profile?.discord_points?.toLocaleString()} <span className="text-xl">PTS</span></h3>
-                           <p className="text-[10px] text-gray-500 font-bold uppercase">Ready to Spend</p>
-                        </div>
-                    </div>
-                </div>
-             )}
+                        <h2 className={`text-3xl font-black italic uppercase tracking-tighter mb-1 ${isVip ? 'gold-metallic' : 'text-white'}`}>{profile?.username}</h2>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-6">Verified Gaming ID</p>
 
-             {activeTab === 'orders' && (
-                <div className="bg-[#1e232e] p-8 md:p-12 rounded-[3rem] border border-white/5 shadow-2xl space-y-6 animate-fade-in">
-                   <div className="flex justify-between items-center mb-8">
-                       <h3 className="font-black text-white text-3xl italic uppercase tracking-tighter">Order History</h3>
-                       <div className="bg-blue-600/10 px-4 py-2 rounded-xl border border-blue-500/20 flex items-center gap-2">
-                           <Clock className="w-4 h-4 text-blue-400" />
-                           <span className="text-blue-400 text-[10px] font-black uppercase tracking-widest">System Log</span>
-                       </div>
-                   </div>
-                   
-                   {orders.length === 0 ? (
-                       <div className="py-24 text-center border-2 border-dashed border-white/5 rounded-[2rem]">
-                           <ClipboardList className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-                           <p className="text-gray-500 font-black uppercase tracking-widest text-xs">No orders detected yet.</p>
-                           <button onClick={() => onNavigate('shop')} className="mt-6 text-blue-500 font-black uppercase text-[10px] tracking-widest hover:underline">Browse Market</button>
-                       </div>
-                   ) : (
-                       <div className="space-y-4">
-                           {orders.map(o => (
-                               <div key={o.id} onClick={() => setSelectedOrder(o)} className="group p-6 bg-[#0b0e14]/50 rounded-[2rem] flex flex-col sm:flex-row justify-between items-center gap-6 border border-white/5 hover:border-blue-500/40 cursor-pointer transition-all shadow-xl hover:-translate-y-1">
-                                   <div className="flex items-center gap-6 w-full sm:w-auto">
-                                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border ${
-                                           o.status === 'completed' ? 'bg-green-500/10 border-green-500/20 text-green-500' : 
-                                           o.status === 'pending' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500' : 
-                                           'bg-red-500/10 border-red-500/20 text-red-500'
-                                       }`}>
-                                           <Zap className="w-6 h-6" />
-                                       </div>
-                                       <div>
-                                           <p className="font-black text-white uppercase text-lg italic tracking-tighter leading-none mb-1 group-hover:text-blue-400 transition-colors">Order #{o.id.slice(0,8)}</p>
-                                           <div className="flex items-center gap-3">
-                                                <span className="text-[10px] text-gray-500 font-bold uppercase">{new Date(o.created_at).toLocaleDateString()}</span>
-                                                <span className="w-1 h-1 rounded-full bg-gray-700"></span>
-                                                <span className={`text-[9px] font-black uppercase tracking-widest ${o.status === 'completed' ? 'text-green-500' : 'text-yellow-500'}`}>{o.status}</span>
-                                           </div>
-                                       </div>
-                                   </div>
-                                   <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
-                                       <div className="text-right">
-                                           <p className="font-black text-yellow-400 italic text-2xl tracking-tighter">{o.total_amount.toFixed(2)} DH</p>
-                                           <p className="text-[9px] text-gray-500 uppercase font-black">{o.items?.length || 'Digital Item'}</p>
-                                       </div>
-                                       <div className="p-4 bg-[#1e232e] rounded-2xl text-gray-500 group-hover:text-white group-hover:bg-blue-600 transition-all shadow-xl">
-                                           <Eye className="w-5 h-5" />
-                                       </div>
-                                   </div>
-                               </div>
-                           ))}
-                       </div>
-                   )}
-                </div>
-             )}
-
-             {activeTab === 'points' && (
-                 <div className="space-y-8 animate-fade-in">
-                    <div className="bg-gradient-to-br from-purple-700 to-indigo-900 p-12 md:p-16 rounded-[3rem] text-white shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
-                        <div className="relative z-10">
-                            <div className="w-20 h-20 bg-white/10 rounded-[2rem] border border-white/20 flex items-center justify-center mx-auto mb-6 shadow-2xl">
-                                <Coins className="w-10 h-10 text-purple-200" />
+                        <div className="w-full space-y-4 mb-8">
+                            <div className="flex justify-between items-center px-4 py-2 rounded-xl bg-[#0b0e14]/50 border border-white/5">
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Current Rank</span>
+                                <span className={`text-xs font-black italic ${isVip ? 'text-yellow-500' : 'text-white'}`}>LVL {Math.floor((profile?.vip_points || 0) / 1000) + 1}</span>
                             </div>
-                            <p className="text-purple-200 font-black uppercase text-xs tracking-[0.3em] mb-4">Total Balance</p>
-                            <h3 className="text-7xl md:text-9xl font-black italic tracking-tighter leading-none mb-10 drop-shadow-2xl">{profile?.discord_points?.toLocaleString() || 0}</h3>
-                            <div className="flex flex-wrap justify-center gap-4">
-                                <button onClick={() => onNavigate('pointsShop')} className="bg-white text-purple-900 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:scale-105 transition-all shadow-2xl">
-                                    <Gift className="w-5 h-5" /> Spend Points
-                                </button>
-                                <button onClick={() => onNavigate('spin')} className="bg-purple-500/20 backdrop-blur-md border border-purple-400/30 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-purple-500/40 transition-all">
-                                    <RotateCw className="w-5 h-5" /> Spin to Win
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                 </div>
-             )}
-             
-             {activeTab === 'wallet' && (
-                <div className="space-y-8 animate-fade-in">
-                   <div className="bg-[#1e232e] p-8 md:p-12 rounded-[3rem] border border-white/5 shadow-2xl">
-                       <div className="flex justify-between items-center mb-10">
-                           <h3 className="font-black text-white text-3xl italic uppercase tracking-tighter">My Wallet</h3>
-                           <button onClick={() => onNavigate('topup')} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl flex items-center gap-2">
-                               <Plus className="w-4 h-4" /> Top Up
-                           </button>
-                       </div>
-                       
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                           <div className="bg-gradient-to-br from-gray-800 to-black p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
-                               <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4 relative z-10">Available Solde</p>
-                               <div className="flex items-end gap-3 mb-8 relative z-10">
-                                   <h4 className="text-6xl font-black text-white italic tracking-tighter leading-none">{profile?.wallet_balance?.toFixed(2)}</h4>
-                                   <span className="text-2xl font-black text-blue-500 italic mb-1">DH</span>
-                               </div>
-                               <div className="flex items-center gap-2 relative z-10">
-                                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                   <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">Ready to use</span>
-                               </div>
-                           </div>
-                           <div className="bg-[#0b0e14] p-8 rounded-[2.5rem] border border-white/5 shadow-xl flex flex-col justify-center">
-                               <div className="flex items-center gap-4 mb-6">
-                                   <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
-                                       <ShieldCheck className="w-6 h-6 text-blue-400" />
-                                   </div>
-                                   <div>
-                                       <p className="text-white font-black text-sm uppercase italic">Secured Funds</p>
-                                       <p className="text-gray-500 text-[10px] font-bold uppercase">SSL Encryption Active</p>
-                                   </div>
-                               </div>
-                               <p className="text-gray-500 text-[10px] leading-relaxed font-medium">Your funds are protected by our secure vault system. Use your balance for instant delivery on all digital products.</p>
-                           </div>
-                       </div>
-                   </div>
-                </div>
-             )}
-
-             {activeTab === 'referrals' && (
-                 <div className="space-y-8 animate-fade-in">
-                    <div className="bg-gradient-to-br from-green-600 to-teal-900 p-12 md:p-16 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-12 opacity-10"><Users className="w-48 h-48" /></div>
-                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
-                            <div className="flex-1 text-center md:text-left">
-                                <p className="text-green-200 font-black uppercase text-[10px] tracking-[0.3em] mb-4">Affiliate Program</p>
-                                <h3 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none mb-6">Invite &<br/><span className="text-emerald-300">Earn</span></h3>
-                                <p className="text-green-100 font-medium mb-8 max-w-sm opacity-80">Share your link and get <span className="text-white font-black">5.00 DH</span> per signup and <span className="text-white font-black">5% commission</span>.</p>
-                                
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <div className="flex-1 bg-[#0b0e14]/50 backdrop-blur-xl border border-white/10 px-6 py-4 rounded-2xl flex items-center justify-between gap-4">
-                                        <span className="text-[10px] font-mono text-white truncate max-w-[150px] uppercase tracking-widest">{profile?.referral_code || 'LINKING...'}</span>
-                                        <button onClick={() => profile && copyToClipboard(`${window.location.origin}/#ref=${profile.referral_code}`)} className="text-green-400 hover:text-white transition-colors"><Copy className="w-5 h-5"/></button>
-                                    </div>
-                                    <button onClick={() => profile && copyToClipboard(`${window.location.origin}/#ref=${profile.referral_code}`)} className="bg-white text-green-900 px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all shadow-xl">Copy Link</button>
+                            <div className="space-y-1.5 px-1">
+                                <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-gray-500">
+                                    <span>XP PROGRESS</span>
+                                    <span className="text-white">{profile?.vip_points || 0} / 5000</span>
+                                </div>
+                                <div className="h-2 w-full bg-[#0b0e14] rounded-full overflow-hidden p-0.5 border border-white/5">
+                                    <div className={`h-full rounded-full transition-all duration-1000 ${isVip ? 'gold-progress' : 'bg-blue-500'}`} style={{ width: `${vipProgress}%` }}></div>
                                 </div>
                             </div>
                         </div>
+
+                        {!isGuest && (
+                            <button onClick={onSignOut} className="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors text-[9px] font-black uppercase tracking-[0.3em]">
+                                <LogOut className="w-3 h-3" /> Terminate Session
+                            </button>
+                        )}
                     </div>
-                 </div>
-             )}
-          </div>
+                </div>
+
+                <div className="bg-[#1e232e] rounded-[2.5rem] border border-white/5 p-4 shadow-2xl space-y-2">
+                    {[
+                        { id: 'overview', icon: LayoutDashboard, label: 'Control Center', color: 'blue' },
+                        { id: 'orders', icon: ClipboardList, label: 'Trade History', color: 'blue' },
+                        { id: 'wallet', icon: Wallet, label: 'Digital Vault', color: 'blue' },
+                        { id: 'points', icon: Coins, label: 'Loyalty Matrix', color: 'purple' },
+                        { id: 'referrals', icon: Users, label: 'Affiliates', color: 'green' }
+                    ].map(item => (
+                        <button 
+                            key={item.id}
+                            onClick={() => setActiveTab(item.id as any)} 
+                            className={`w-full p-4 rounded-2xl flex items-center justify-between transition-all group ${
+                                activeTab === item.id 
+                                ? 'bg-[#0b0e14] border border-white/5 text-white shadow-xl translate-x-1'
+                                : 'text-gray-500 hover:bg-white/5 hover:text-white'
+                            }`}
+                        >
+                            <div className="flex items-center gap-4">
+                                <item.icon className={`w-4 h-4 ${activeTab === item.id ? (item.color === 'purple' ? 'text-purple-400' : item.color === 'green' ? 'text-green-400' : 'text-blue-400') : ''}`} />
+                                <span className="uppercase text-[9px] font-black tracking-[0.2em]">{item.label}</span>
+                            </div>
+                            <ChevronRight className={`w-3 h-3 transition-transform ${activeTab === item.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`} />
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* MAIN CONTENT AREA */}
+            <div className="flex-1 lg:col-span-8 space-y-6">
+                
+                {/* Mobile Identity Card - Professional Redesign */}
+                <div className="lg:hidden bg-[#1e232e] rounded-[2.5rem] border border-white/5 p-6 flex items-center justify-between shadow-2xl">
+                    <div className="flex items-center gap-4">
+                        <div className={`w-16 h-16 rounded-[1.5rem] overflow-hidden border-2 ${isVip ? 'border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]' : 'border-blue-500/20'}`}>
+                            <img src={profile?.avatar_url} className="w-full h-full object-cover" alt="" />
+                        </div>
+                        <div>
+                            <h2 className={`font-black italic uppercase tracking-tighter text-lg ${isVip ? 'text-yellow-400' : 'text-white'}`}>{profile?.username}</h2>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[8px] font-black bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded uppercase tracking-widest border border-blue-500/20">LVL {Math.floor((profile?.vip_points || 0) / 1000) + 1}</span>
+                                {isVip && <Crown className="w-3 h-3 text-yellow-500 animate-bounce-slow" />}
+                            </div>
+                        </div>
+                    </div>
+                    <button onClick={onSignOut} className="p-3 bg-red-500/10 text-red-500 rounded-2xl border border-red-500/20 active:scale-90 transition-transform"><LogOut className="w-4 h-4" /></button>
+                </div>
+
+                {/* Mobile Tab Scroll - Premium feel */}
+                <div className="lg:hidden flex overflow-x-auto gap-3 pb-2 no-scrollbar">
+                    {[
+                        { id: 'overview', icon: LayoutDashboard, label: 'OVERVIEW' },
+                        { id: 'orders', icon: ClipboardList, label: 'ORDERS' },
+                        { id: 'wallet', icon: Wallet, label: 'VAULT' },
+                        { id: 'points', icon: Coins, label: 'LOYALTY' },
+                        { id: 'referrals', icon: Users, label: 'PARTNERS' }
+                    ].map(tab => (
+                        <button 
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={`flex-none px-6 py-4 rounded-2xl border transition-all flex items-center gap-3 ${
+                                activeTab === tab.id ? 'bg-blue-600 text-white border-blue-500 shadow-xl shadow-blue-600/30' : 'bg-[#1e232e] text-gray-500 border-white/5'
+                            }`}
+                        >
+                            <tab.icon className="w-4 h-4" />
+                            <span className="text-[10px] font-black tracking-[0.1em]">{tab.label}</span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* SHARED STAT BAR */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-[#1e232e] p-6 rounded-[2rem] border border-white/5 shadow-xl relative overflow-hidden group">
+                            <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:rotate-12 transition-transform"><Wallet className="w-14 h-14" /></div>
+                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Internal Solde</p>
+                            <h4 className="text-2xl font-black text-yellow-400 italic tracking-tighter leading-none">{profile?.wallet_balance?.toFixed(2)} <span className="text-xs">DH</span></h4>
+                    </div>
+                    <div className="bg-[#1e232e] p-6 rounded-[2rem] border border-white/5 shadow-xl relative overflow-hidden group">
+                            <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:rotate-12 transition-transform"><Coins className="w-14 h-14" /></div>
+                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Neural Points</p>
+                            <h4 className="text-2xl font-black text-purple-400 italic tracking-tighter leading-none">{profile?.discord_points?.toLocaleString()} <span className="text-xs">PTS</span></h4>
+                    </div>
+                    <div className="bg-[#1e232e] p-6 rounded-[2rem] border border-white/5 shadow-xl relative overflow-hidden group">
+                            <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:rotate-12 transition-transform"><ClipboardList className="w-14 h-14" /></div>
+                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Active Trades</p>
+                            <h4 className="text-2xl font-black text-blue-400 italic tracking-tighter leading-none">{orders.length}</h4>
+                    </div>
+                    <div className="bg-[#1e232e] p-6 rounded-[2rem] border border-white/5 shadow-xl relative overflow-hidden group">
+                            <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:rotate-12 transition-transform"><Users className="w-14 h-14" /></div>
+                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Affiliates</p>
+                            <h4 className="text-2xl font-black text-green-400 italic tracking-tighter leading-none">{referralCount}</h4>
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    {activeTab === 'overview' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="bg-gradient-to-br from-blue-700 to-indigo-900 rounded-[3.5rem] p-10 md:p-14 text-white shadow-3xl relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_rgba(34,211,234,1)]"></div>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-200">System Link Active</span>
+                                    </div>
+                                    <h2 className="text-5xl md:text-7xl font-black italic uppercase leading-none tracking-tighter mb-6">
+                                        Hello,<br/><span className={`drop-shadow-lg ${isVip ? 'gold-metallic' : 'text-white'}`}>{profile?.username}</span>
+                                    </h2>
+                                    <p className="text-blue-100 font-bold text-xs md:text-sm max-w-sm mb-10 opacity-80 leading-relaxed uppercase tracking-widest">
+                                        {isGuest ? "Access restricted to guest mode. Please sync identity." : "Welcome back to the Moon Night Control Center. All services optimal."}
+                                    </p>
+                                    <div className="flex flex-wrap gap-4">
+                                        <button onClick={() => onNavigate('shop')} className="bg-white text-blue-900 px-10 py-4 rounded-[1.5rem] font-black uppercase tracking-widest text-[11px] hover:scale-105 active:scale-95 transition-all shadow-2xl flex items-center gap-2">
+                                            <ShoppingCart className="w-4 h-4" /> Market
+                                        </button>
+                                        <button onClick={handleClaimDaily} disabled={!canClaimDaily} className={`flex items-center gap-3 px-8 py-4 rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest transition-all ${canClaimDaily ? 'bg-cyan-400 text-blue-900 animate-pulse shadow-[0_0_25px_rgba(34,211,234,0.5)]' : 'bg-white/10 text-white/40 cursor-not-allowed border border-white/10'}`}>
+                                            {canClaimDaily ? <Zap className="w-4 h-4 fill-current" /> : <Timer className="w-4 h-4" />}
+                                            {canClaimDaily ? 'Sync Daily Drop' : timeUntilNextClaim}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="absolute top-1/2 right-12 -translate-y-1/2 hidden lg:block opacity-10">
+                                     <LayoutDashboard className="w-80 h-80 text-white" />
+                                </div>
+                            </div>
+
+                            {/* DISCORD SYNC STATUS - Professional Placeholder */}
+                            <div className="bg-[#1e232e] p-8 rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div className="flex items-center gap-6">
+                                    <div className="w-16 h-16 bg-[#5865F2] rounded-2xl flex items-center justify-center text-white shadow-xl shadow-[#5865F2]/20">
+                                        <Users className="w-8 h-8" />
+                                    </div>
+                                    <div className="text-center md:text-left">
+                                        <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Discord Activity Sync</h3>
+                                        <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Earn Points while you stay active on our server</p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-center md:items-end">
+                                    <span className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                        <Activity className="w-3 h-3" /> Tracking Active
+                                    </span>
+                                    <p className="text-xs text-gray-400 italic">Connected as <span className="text-white font-bold">{profile?.username}#0000</span></p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="bg-[#1e232e] p-8 rounded-[3rem] border border-white/5 shadow-xl group hover:border-purple-500/30 transition-all cursor-pointer" onClick={() => onNavigate('spin')}>
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className="p-4 bg-purple-600/10 rounded-2xl text-purple-400 border border-purple-500/20 group-hover:bg-purple-600 group-hover:text-white transition-all">
+                                            <Sparkles className="w-8 h-8" />
+                                        </div>
+                                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest bg-white/5 px-4 py-1.5 rounded-full">Win Hub</span>
+                                    </div>
+                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">Neural Win Wheel</h3>
+                                    <p className="text-xs text-gray-500 font-bold mb-8 uppercase tracking-wide leading-relaxed">Trade loyalty points for matrix rewards. Jackpots refreshed every 24h.</p>
+                                    <div className="flex items-center gap-2 text-purple-400 text-[10px] font-black uppercase tracking-widest group-hover:translate-x-3 transition-transform">
+                                        Initialize Spin <ChevronRight className="w-5 h-5" />
+                                    </div>
+                                </div>
+                                <div className="bg-[#1e232e] p-8 rounded-[3rem] border border-white/5 shadow-xl group hover:border-yellow-500/30 transition-all cursor-pointer" onClick={() => onNavigate('loot')}>
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className="p-4 bg-yellow-600/10 rounded-2xl text-yellow-500 border border-yellow-500/20 group-hover:bg-yellow-500 group-hover:text-black transition-all">
+                                            <Award className="w-8 h-8" />
+                                        </div>
+                                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest bg-white/5 px-4 py-1.5 rounded-full">Rarity</span>
+                                    </div>
+                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">Lunar Packs</h3>
+                                    <p className="text-xs text-gray-500 font-bold mb-8 uppercase tracking-wide leading-relaxed">Unbox digital asset crates for high-yield balance drops. High rarity odds.</p>
+                                    <div className="flex items-center gap-2 text-yellow-500 text-[10px] font-black uppercase tracking-widest group-hover:translate-x-3 transition-transform">
+                                        Browse Inventory <ChevronRight className="w-5 h-5" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'orders' && (
+                        <div className="bg-[#1e232e] p-8 md:p-12 rounded-[3.5rem] border border-white/5 shadow-2xl animate-fade-in min-h-[600px]">
+                            <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
+                                <div className="flex items-center gap-5">
+                                    <div className="p-4 bg-blue-600/10 rounded-2xl text-blue-400 border border-blue-500/20"><History className="w-8 h-8" /></div>
+                                    <h3 className="font-black text-white text-3xl italic uppercase tracking-tighter leading-none">Trade Archive</h3>
+                                </div>
+                                <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest bg-[#0b0e14] px-6 py-3 rounded-full border border-white/5">Synced: {orders.length} Records</div>
+                            </div>
+
+                            {orders.length === 0 ? (
+                                <div className="py-32 flex flex-col items-center justify-center text-center opacity-40">
+                                    <ClipboardList className="w-20 h-20 mb-8" />
+                                    <p className="text-sm font-black uppercase tracking-[0.4em]">No historical data synced</p>
+                                    <button onClick={() => onNavigate('shop')} className="mt-10 text-blue-500 text-[11px] font-black uppercase underline tracking-[0.2em] hover:text-blue-400">Initialize First Trade</button>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {orders.map(o => (
+                                        <div key={o.id} onClick={() => setSelectedOrder(o)} className="group bg-[#0b0e14]/40 border border-white/5 hover:border-blue-500/40 p-6 rounded-[2.5rem] flex flex-col sm:flex-row justify-between items-center gap-6 cursor-pointer transition-all hover:-translate-y-1 shadow-xl hover:shadow-blue-500/5">
+                                            <div className="flex items-center gap-6 w-full sm:w-auto">
+                                                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center border transition-colors ${
+                                                    o.status === 'completed' ? 'bg-green-500/5 border-green-500/20 text-green-500' : 
+                                                    o.status === 'pending' ? 'bg-yellow-500/5 border-yellow-500/20 text-yellow-500' : 
+                                                    'bg-red-500/5 border-red-500/20 text-red-500'
+                                                }`}>
+                                                    <Zap className="w-7 h-7" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-black text-white uppercase text-xl italic tracking-tighter leading-none mb-1.5 group-hover:text-blue-400 transition-colors">TR-ID #{o.id.slice(0,8)}</p>
+                                                    <div className="flex items-center gap-4">
+                                                         <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{new Date(o.created_at).toLocaleDateString()}</span>
+                                                         <div className="w-1 h-1 rounded-full bg-gray-700"></div>
+                                                         <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
+                                                            o.status === 'completed' ? 'text-green-500 border-green-500/20 bg-green-500/5' : 'text-yellow-500 border-yellow-500/20 bg-yellow-500/5'
+                                                         }`}>{o.status}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-8 w-full sm:w-auto justify-between sm:justify-end">
+                                                <div className="text-left sm:text-right">
+                                                    <p className="font-black text-yellow-400 italic text-3xl tracking-tighter">{o.total_amount.toFixed(2)} <span className="text-sm">DH</span></p>
+                                                    <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest mt-1">Digital Distribution</p>
+                                                </div>
+                                                <div className="w-14 h-14 bg-[#1e232e] rounded-2xl flex items-center justify-center text-gray-600 group-hover:text-white group-hover:bg-blue-600 transition-all shadow-xl border border-white/5">
+                                                    <Eye className="w-6 h-6" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'wallet' && (
+                        <div className="bg-[#1e232e] p-8 md:p-12 rounded-[3.5rem] border border-white/5 shadow-2xl animate-fade-in">
+                            <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
+                                <h3 className="font-black text-white text-3xl italic uppercase tracking-tighter leading-none">Global Ledger</h3>
+                                <button onClick={() => onNavigate('topup')} className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-blue-600/20 flex items-center gap-3 active:scale-95 transition-all">
+                                    <Plus className="w-4 h-4" /> Expand Capacity
+                                </button>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                                <div className="bg-gradient-to-br from-blue-900 to-indigo-900 p-10 rounded-[3rem] border border-white/10 shadow-3xl relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30"></div>
+                                    <p className="text-blue-300 text-[10px] font-black uppercase tracking-[0.3em] mb-4 relative z-10">Available Solde (MAD)</p>
+                                    <div className="flex items-end gap-3 mb-12 relative z-10">
+                                        <h4 className="text-7xl md:text-8xl font-black text-white italic tracking-tighter leading-none drop-shadow-2xl">{profile?.wallet_balance?.toFixed(2)}</h4>
+                                        <span className="text-3xl font-black text-blue-400 italic mb-3">DH</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 relative z-10">
+                                        <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,1)]"></div>
+                                        <span className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Matrix Secured</span>
+                                    </div>
+                                </div>
+                                <div className="bg-[#0b0e14]/50 p-10 rounded-[3rem] border border-white/5 flex flex-col justify-center gap-8">
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-14 h-14 rounded-2xl bg-blue-600/10 flex items-center justify-center border border-blue-500/20">
+                                            <ShieldCheck className="w-8 h-8 text-blue-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-white font-black text-lg uppercase italic tracking-tighter">Protected Matrix</p>
+                                            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">End-to-End Ledger Sync</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-gray-400 text-sm font-medium leading-relaxed italic opacity-80">
+                                        "Your internal account solde is synchronized across all shop departments for instant, zero-delay fulfillment on digital accounts, currency, and premium keys."
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'points' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="bg-gradient-to-br from-purple-800 to-indigo-900 p-12 md:p-20 rounded-[4rem] text-white shadow-3xl text-center relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                                <div className="relative z-10 flex flex-col items-center">
+                                    <div className="w-24 h-24 bg-white/10 rounded-[3rem] border border-white/20 flex items-center justify-center mb-8 shadow-3xl backdrop-blur-md">
+                                        <Coins className="w-12 h-12 text-purple-200" />
+                                    </div>
+                                    <p className="text-purple-200 font-black uppercase text-sm tracking-[0.4em] mb-4">Neural Points Protocol</p>
+                                    <h3 className="text-7xl md:text-9xl font-black italic tracking-tighter leading-none mb-12 drop-shadow-2xl">{profile?.discord_points?.toLocaleString() || 0}</h3>
+                                    <div className="flex flex-wrap justify-center gap-6">
+                                        <button onClick={() => onNavigate('pointsShop')} className="bg-white text-purple-900 px-12 py-5 rounded-[2rem] font-black uppercase tracking-widest text-[11px] flex items-center gap-4 hover:scale-105 active:scale-95 transition-all shadow-3xl">
+                                            <Gift className="w-5 h-5" /> Redeem Matrix
+                                        </button>
+                                        <button onClick={() => onNavigate('spin')} className="bg-purple-500/20 backdrop-blur-md border border-purple-400/30 text-white px-12 py-5 rounded-[2rem] font-black uppercase tracking-widest text-[11px] flex items-center gap-4 hover:bg-purple-500/40 transition-all active:scale-95">
+                                            <Sparkles className="w-5 h-5" /> Mini-Game Core
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'referrals' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="bg-gradient-to-br from-green-600 to-emerald-900 p-12 md:p-20 rounded-[4rem] text-white shadow-3xl relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+                                <div className="relative z-10 flex flex-col md:flex-row items-center gap-16">
+                                    <div className="flex-1 text-center md:text-left">
+                                        <div className="inline-flex items-center gap-3 bg-white/10 px-6 py-2 rounded-full border border-white/20 mb-8">
+                                            <Bell className="w-5 h-5 text-emerald-300" />
+                                            <span className="text-emerald-100 font-black uppercase text-[10px] tracking-[0.25em]">Affiliate Node</span>
+                                        </div>
+                                        <h3 className="text-5xl md:text-8xl font-black italic uppercase tracking-tighter leading-[0.85] mb-8">SHARE &<br/><span className="text-emerald-300">EARN MAD</span></h3>
+                                        <p className="text-emerald-100 font-bold mb-12 max-w-sm opacity-80 text-sm leading-relaxed uppercase tracking-wider">Expand the Moon Night network. Get <span className="text-white font-black">5.00 DH</span> per sync and <span className="text-white font-black">5% royalty</span> on all trades.</p>
+                                        
+                                        <div className="flex flex-col sm:flex-row gap-4 max-w-xl">
+                                            <div className="flex-1 bg-[#0b0e14]/70 backdrop-blur-2xl border border-white/10 px-8 py-5 rounded-3xl flex items-center justify-between gap-6">
+                                                <span className="text-sm font-mono text-white truncate uppercase tracking-[0.2em]">{profile?.referral_code || 'SYNCING...'}</span>
+                                                <button onClick={() => profile && copyToClipboard(`${window.location.origin}/#ref=${profile.referral_code}`)} className="text-emerald-400 hover:text-white transition-colors active:scale-125"><Copy className="w-6 h-6"/></button>
+                                            </div>
+                                            <button onClick={() => profile && copyToClipboard(`${window.location.origin}/#ref=${profile.referral_code}`)} className="bg-white text-emerald-900 px-10 py-5 rounded-3xl font-black uppercase text-[11px] tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-3xl">Copy Link</button>
+                                        </div>
+                                    </div>
+                                    <div className="hidden lg:block opacity-10">
+                                         <Users className="w-80 h-80 text-white" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="bg-[#1e232e] p-10 rounded-[3rem] border border-white/5 shadow-xl text-center flex flex-col items-center justify-center">
+                                    <p className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-4">Network Node Count</p>
+                                    <h4 className="text-6xl font-black text-white italic tracking-tighter mb-2">{referralCount}</h4>
+                                    <p className="text-[10px] text-green-500 font-black uppercase tracking-[0.2em] bg-green-500/10 px-4 py-1.5 rounded-full">Nodes Operational</p>
+                                </div>
+                                <div className="bg-[#1e232e] p-10 rounded-[3rem] border border-white/5 shadow-xl text-center flex flex-col items-center justify-center">
+                                    <p className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-4">Aggregate Yield</p>
+                                    <h4 className="text-6xl font-black text-yellow-400 italic tracking-tighter mb-2">{profile?.referral_earnings?.toFixed(2)} <span className="text-2xl">DH</span></h4>
+                                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.2em] bg-white/5 px-4 py-1.5 rounded-full">Passive Revenue</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
        </div>
 
-       {/* MODALS */}
        {selectedOrder && profile && <OrderDetailsModal order={selectedOrder} currentUser={profile} onClose={() => setSelectedOrder(null)} />}
-       {selectedRedemption && profile && <RedemptionDetailsModal redemption={selectedRedemption} currentUser={profile} onClose={() => setSelectedRedemption(null)} />}
     </div>
   );
 };

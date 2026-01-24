@@ -12,8 +12,8 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
    useEffect(() => {
      const fetchProducts = async () => {
          setIsLoading(true);
-         // Visual delay for "scanning" effect
-         await new Promise(r => setTimeout(r, 600));
+         // Visual delay for polished feel
+         await new Promise(r => setTimeout(r, 400));
 
          let query = supabase.from('products').select('*').eq('is_hidden', false);
          
@@ -22,13 +22,13 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
          }
          
          if (searchQuery) {
-             query = query.or(`name.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
+             query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
          }
 
          const { data, error } = await query;
          
          if (error) {
-             console.error("Shop Query Error:", error);
+             console.error("Shop Error:", error);
              setProducts([]);
          } else if (data) {
              let sortedData = [...data];
@@ -62,13 +62,13 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                </div>
                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">No Items Found</h3>
                <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-8 max-w-xs leading-relaxed">
-                   {category ? `No products detected in the ${category} data hub.` : "The system scan returned zero matches for your query."}
+                   {category ? `No items found in the ${category} category.` : "No items matched your search query."}
                </p>
                <button 
                   onClick={() => window.location.reload()} 
                   className="flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl border border-blue-500/20 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-blue-600/20"
                >
-                  <RotateCcw className="w-4 h-4" /> Restart Scan
+                  <RotateCcw className="w-4 h-4" /> Reset Shop
                </button>
            </div>
        );
@@ -76,11 +76,11 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
 
    return (
       <div className="animate-slide-up relative">
-          {/* SCANNING OVERLAY */}
+          {/* LOADING OVERLAY */}
           {isLoading && (
               <div className="absolute inset-x-0 -top-8 flex justify-center z-20">
                   <div className="bg-blue-600 text-white px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.3em] flex items-center gap-2 shadow-2xl">
-                      <Loader2 className="w-3 h-3 animate-spin" /> Synchronizing Inventory
+                      <Loader2 className="w-3 h-3 animate-spin" /> Loading Shop...
                   </div>
               </div>
           )}
@@ -89,7 +89,7 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
               <div>
                   <p className="text-[9px] font-black text-blue-500 uppercase tracking-[0.3em] mb-1">Market Analysis</p>
                   <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest">
-                      {isLoading ? 'Scanning Secure Servers...' : `${products.length} Units Detected`}
+                      {isLoading ? 'Updating items...' : `${products.length} Items found`}
                   </span>
               </div>
               <div className="flex items-center gap-3">
@@ -102,9 +102,9 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                     onChange={(e) => setSortOption(e.target.value)} 
                     className="bg-[#151a23] border border-white/10 text-gray-400 text-[9px] font-black uppercase py-2.5 px-4 rounded-xl outline-none cursor-pointer hover:border-blue-500 transition-all shadow-xl"
                   >
-                      <option value="featured">Default Priority</option>
-                      <option value="price-asc">Price: Ascending</option>
-                      <option value="price-desc">Price: Descending</option>
+                      <option value="featured">Sort by Newest</option>
+                      <option value="price-asc">Price: Low to High</option>
+                      <option value="price-desc">Price: High to Low</option>
                   </select>
               </div>
           </div>
@@ -118,13 +118,11 @@ export const ShopGrid = ({ category, searchQuery, onProductClick, language }: { 
                           <div className="aspect-[2/3] relative overflow-hidden bg-black">
                               <img src={p.image_url} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-[0.8s]" alt="" />
                               
-                              {/* Badges */}
                               <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
                                 {p.is_vip && <div className="bg-yellow-500 text-black text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg">ELITE</div>}
                                 {p.is_trending && <div className="bg-red-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg flex items-center gap-1"><Zap className="w-2 h-2 fill-current" /> HOT</div>}
                               </div>
 
-                              {/* Glass Overlay Info */}
                               <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black via-black/40 to-transparent backdrop-blur-[2px] translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
                                   <p className="text-[7px] text-blue-400 font-bold uppercase tracking-widest mb-1 opacity-80">{p.category}</p>
                                   <h3 className="text-white font-black text-[11px] truncate uppercase leading-tight mb-2">{p.name}</h3>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, ShoppingBag, Trophy, Heart, Home, Swords, LogOut, Crown, Package, Zap, Sparkles, Command, RefreshCw, Loader2, Wallet, Coins, LogIn, UserPlus } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, ShoppingBag, Trophy, Heart, Home, Swords, LogOut, Crown, Package, Zap, Sparkles, Command, RefreshCw, Loader2, Wallet, Coins, LogIn, UserPlus, ArrowRight } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Product, Profile } from '../types';
 
@@ -32,6 +32,9 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
         e.preventDefault();
         setIsSearchModalOpen(true);
       }
+      if (e.key === 'Escape') {
+          setIsSearchModalOpen(false);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -44,7 +47,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                 id: 'guest-user-123', email: 'guest@moonnight.com', username: 'Guest',
                 avatar_url: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=200&q=80',
                 wallet_balance: 0.00, vip_level: 0, vip_points: 0, discord_points: 0, total_donated: 0, spins_count: 0
-          });
+          } as any);
           return;
       }
       const fetchProfile = async () => {
@@ -59,7 +62,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
       if (searchTerm.trim().length >= 2) {
           setIsSearching(true);
           const timer = setTimeout(async () => {
-              const { data } = await supabase.from('products').select('*').ilike('name', `%${searchTerm}%`).eq('is_hidden', false).limit(6);
+              const { data } = await supabase.from('products').select('*').ilike('name', `%${searchTerm}%`).eq('is_hidden', false).limit(5);
               if (data) setSearchResults(data);
               setIsSearching(false);
           }, 300);
@@ -68,6 +71,19 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
           setSearchResults([]);
       }
   }, [searchTerm]);
+
+  const handleGlobalSearchSubmit = (e?: React.FormEvent) => {
+      if (e) e.preventDefault();
+      if (searchTerm.trim()) {
+          onSearch(searchTerm);
+          setIsSearchModalOpen(false);
+      }
+  };
+
+  const handleResultClick = (product: Product) => {
+      if (onProductSelect) onProductSelect(product);
+      setIsSearchModalOpen(false);
+  };
 
   const vipProgress = profile ? Math.min(100, (profile.vip_points / 5000) * 100) : 0;
 
@@ -98,7 +114,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
         >
           <div className="flex items-center gap-2">
             <Search className="w-3 h-3 group-hover:text-blue-400 transition-colors" />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Search System...</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">Search Shop...</span>
           </div>
           <div className="hidden sm:flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
             <Command className="w-2.5 h-2.5" />
@@ -124,7 +140,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                <div className="absolute right-0 mt-2 w-64 bg-[#1e232e] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0 z-50">
                   <div className="p-4 bg-[#151a23] border-b border-gray-800">
                     <p className="text-[10px] text-gray-500 font-black uppercase mb-3 flex items-center justify-between">
-                      VIP Status <span>{profile.vip_level > 0 ? 'ELITE' : 'CITIZEN'}</span>
+                      VIP Status <span>{profile.vip_level > 0 ? 'ELITE' : 'MEMBER'}</span>
                     </p>
                     <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
                        <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-1000" style={{ width: `${vipProgress}%` }}></div>
@@ -146,7 +162,84 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
       </div>
     </nav>
 
-    {/* SIDE DRAWER (3-LINES MENU) */}
+    {/* SEARCH MODAL */}
+    {isSearchModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-start justify-center p-4 sm:p-20 bg-[#0b0e14]/95 backdrop-blur-xl animate-fade-in">
+            <div className="w-full max-w-2xl bg-[#1e232e] border border-white/5 rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.8)] overflow-hidden animate-slide-up">
+                <form onSubmit={handleGlobalSearchSubmit} className="p-6 border-b border-white/5 flex items-center gap-4">
+                    <Search className="w-6 h-6 text-blue-500" />
+                    <input 
+                        autoFocus
+                        type="text" 
+                        placeholder="Search for items, games, etc..."
+                        className="flex-1 bg-transparent text-xl font-black text-white italic placeholder:text-gray-700 outline-none uppercase tracking-tighter"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <button 
+                        type="button" 
+                        onClick={() => setIsSearchModalOpen(false)}
+                        className="p-2 bg-white/5 rounded-xl text-gray-500 hover:text-white transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </form>
+
+                <div className="p-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    {isSearching ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4 text-blue-500">
+                            <Loader2 className="w-10 h-10 animate-spin" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Searching Shop...</span>
+                        </div>
+                    ) : searchTerm.length < 2 ? (
+                        <div className="py-20 text-center text-gray-600">
+                            <Command className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em]">Enter at least 2 characters to begin</p>
+                        </div>
+                    ) : searchResults.length === 0 ? (
+                        <div className="py-20 text-center text-gray-600">
+                            <X className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em]">No items found</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-2">Matches found</p>
+                            {searchResults.map(p => (
+                                <button 
+                                    key={p.id}
+                                    onClick={() => handleResultClick(p)}
+                                    className="w-full p-4 rounded-2xl bg-[#0b0e14]/50 border border-white/5 hover:border-blue-500/30 hover:bg-[#1e232e] transition-all flex items-center gap-4 group"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-gray-900 overflow-hidden border border-white/5">
+                                        <img src={p.image_url} className="w-full h-full object-cover" alt="" />
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <h4 className="text-white font-black uppercase italic tracking-tighter group-hover:text-blue-400 transition-colors">{p.name}</h4>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase">{p.category} • {p.platform}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-yellow-400 font-black italic">{p.price.toFixed(2)} DH</p>
+                                        <div className="flex items-center justify-end gap-1 text-blue-500 group-hover:translate-x-1 transition-transform">
+                                            <span className="text-[8px] font-black uppercase tracking-widest">View</span>
+                                            <ArrowRight className="w-3 h-3" />
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
+                            <button 
+                                onClick={handleGlobalSearchSubmit}
+                                className="w-full p-4 mt-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-600/20"
+                            >
+                                <Search className="w-4 h-4" /> Show all results for "{searchTerm}"
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    )}
+
+    {/* SIDE DRAWER */}
     <div className={`fixed inset-0 z-[150] transition-opacity duration-300 ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
         <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
         <div className={`absolute top-0 left-0 h-full w-full max-w-[300px] bg-[#0b0e14] border-r border-white/5 shadow-3xl transition-transform duration-500 ease-out flex flex-col ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -161,15 +254,15 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] px-4 mb-2 mt-4">Main Navigation</p>
+                <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] px-4 mb-2 mt-4">Main Shop</p>
                 {[
                     { l: 'Home', i: Home, p: 'home' },
-                    { l: 'Marketplace', i: ShoppingBag, p: 'shop' },
-                    { l: 'Loot Packs', i: Package, p: 'loot' },
-                    { l: 'Spin Wheel', i: RefreshCw, p: 'spin' },
+                    { l: 'Market', i: ShoppingBag, p: 'shop' },
+                    { l: 'Luck Packs', i: Package, p: 'loot' },
+                    { l: 'Win Wheel', i: RefreshCw, p: 'spin' },
                     { l: 'Elite Tier', i: Crown, p: 'elite' },
                     { l: 'Tournaments', i: Swords, p: 'tournaments' },
-                    { l: 'Points Shop', i: Trophy, p: 'pointsShop' }
+                    { l: 'Points Rewards', i: Trophy, p: 'pointsShop' }
                 ].map(link => (
                     <button key={link.p} onClick={() => handleLinkClick(link.p)} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-blue-600/10 hover:text-blue-400 text-gray-400 font-black uppercase text-[10px] tracking-widest transition-all group">
                         <link.i className="w-5 h-5 group-hover:scale-110 transition-transform" /> {link.l}
@@ -177,12 +270,12 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                 ))}
 
                 <div className="h-px bg-white/5 my-6 mx-4" />
-                <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] px-4 mb-2">Personal</p>
+                <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] px-4 mb-2">Account</p>
                 <button onClick={() => handleLinkClick('dashboard')} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 text-gray-400 font-black uppercase text-[10px] tracking-widest">
                     <User className="w-5 h-5" /> My Profile
                 </button>
                 <button onClick={() => handleLinkClick('cart')} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 text-gray-400 font-black uppercase text-[10px] tracking-widest">
-                    <ShoppingCart className="w-5 h-5" /> Shopping Cart
+                    <ShoppingCart className="w-5 h-5" /> Cart
                 </button>
             </div>
 
@@ -194,7 +287,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                                 {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover rounded-xl" alt=""/> : <User className="w-5 h-5"/>}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="text-white font-black truncate text-xs uppercase italic">{profile?.username || 'Guest Player'}</p>
+                                <h4 className="text-white font-black truncate text-xs uppercase italic">{profile?.username || 'Member'}</h4>
                                 <p className="text-yellow-500 font-black text-[10px] italic">{profile?.wallet_balance?.toFixed(2) || '0.00'} DH</p>
                             </div>
                         </div>

@@ -1,4 +1,6 @@
+
 import React from 'react';
+import { ShieldCheck, FileText, HelpCircle, Instagram, MessageSquare, Twitter } from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (page: string) => void;
@@ -8,59 +10,79 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({ onNavigate, session, addToast }) => {
   
-  const handleFaqClick = () => {
-    // Restricted Access Logic
+  const handleFaqOrAdminAccess = () => {
     const allowedAdmins = ['grosafzemb@gmail.com', 'inzoka333@gmail.com', 'adamelalam82@gmail.com'];
-
     if (session?.user?.email && allowedAdmins.includes(session.user.email)) {
         onNavigate('admin');
     } else {
-        addToast('Restricted Access', 'The FAQ/Admin area is currently restricted to administrators.', 'error');
+        onNavigate('faq');
     }
   };
 
   return (
-    <footer className="bg-[#151a23] py-12 border-t border-gray-800 mt-auto">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
-            <h3 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300 italic mb-4">Moon Night</h3>
-            <p className="text-gray-400 text-sm">
-              We specialize in selling and buying MMORPG Game Gold, Items, and Top Ups. 10+ Years Shop Experience.
+    <footer className="bg-[#151a23] py-16 border-t border-white/5 mt-auto relative overflow-hidden">
+      <div className="absolute bottom-0 right-0 p-20 opacity-[0.02] pointer-events-none">
+          <ShieldCheck className="w-96 h-96 text-white" />
+      </div>
+
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+          {/* Brand */}
+          <div className="space-y-6">
+            <h3 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300 italic uppercase tracking-tighter">Moon Night</h3>
+            <p className="text-gray-500 text-xs font-medium leading-relaxed max-w-xs">
+              Moon Night is a premier digital gaming marketplace. We provide safe, fast, and reliable delivery for game accounts, currency, and items.
             </p>
-          </div>
-          <div>
-            <h4 className="text-white font-bold mb-4">Quick Links</h4>
-            <ul className="space-y-2 text-gray-400 text-sm">
-              <li><button onClick={() => onNavigate('home')} className="hover:text-blue-400 text-left">Home</button></li>
-              <li><button onClick={() => onNavigate('shop')} className="hover:text-blue-400 text-left">Shop</button></li>
-              <li><button onClick={() => onNavigate('donate')} className="hover:text-blue-400 text-left">Donate</button></li>
-              <li><a href="#" className="hover:text-blue-400">Sell to Us</a></li>
-              <li><a href="#" className="hover:text-blue-400">Contact</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white font-bold mb-4">Support</h4>
-            <ul className="space-y-2 text-gray-400 text-sm">
-              <li><button onClick={handleFaqClick} className="hover:text-blue-400 text-left">FAQ</button></li>
-              <li><a href="#" className="hover:text-blue-400">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-blue-400">Terms of Service</a></li>
-              <li><a href="#" className="hover:text-blue-400">Refund Policy</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white font-bold mb-4">Payment Methods</h4>
-            <div className="flex gap-2">
-               <div className="bg-white p-1 rounded w-10 h-6 flex items-center justify-center" title="Visa"><span className="text-blue-900 font-bold text-xs italic">VISA</span></div>
-               <div className="bg-white p-1 rounded w-10 h-6 flex items-center justify-center" title="Mastercard">
-                   <svg className="w-8 h-5" viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                       <circle cx="7" cy="8" r="7" fill="#EB001B"/>
-                       <circle cx="17" cy="8" r="7" fill="#F79E1B" fillOpacity="0.8"/>
-                   </svg>
-               </div>
-               <div className="bg-white p-1 rounded w-10 h-6 flex items-center justify-center" title="PayPal"><span className="text-blue-600 font-bold text-xs italic">Pay</span><span className="text-blue-400 font-bold text-xs italic">Pal</span></div>
+            <div className="flex gap-4">
+                {[MessageSquare, Instagram, Twitter].map((Icon, i) => (
+                    <a key={i} href="#" className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-gray-500 hover:bg-blue-600 hover:text-white transition-all">
+                        <Icon className="w-5 h-5" />
+                    </a>
+                ))}
             </div>
-            <p className="mt-4 text-gray-500 text-xs">© 2024 Moon Night Project. All rights reserved. Designed & Developed by Fouad.</p>
+          </div>
+
+          {/* Links */}
+          <div>
+            <h4 className="text-white font-black uppercase text-[10px] tracking-[0.3em] mb-6">Marketplace</h4>
+            <ul className="space-y-4 text-gray-500 text-[11px] font-bold uppercase tracking-widest">
+              <li><button onClick={() => onNavigate('home')} className="hover:text-blue-400 transition-colors">Home</button></li>
+              <li><button onClick={() => onNavigate('shop')} className="hover:text-blue-400 transition-colors">Digital Shop</button></li>
+              <li><button onClick={() => onNavigate('donate')} className="hover:text-blue-400 transition-colors">Support Us</button></li>
+              <li><button onClick={() => onNavigate('leaderboard')} className="hover:text-blue-400 transition-colors">Leaderboard</button></li>
+            </ul>
+          </div>
+
+          {/* Support */}
+          <div>
+            <h4 className="text-white font-black uppercase text-[10px] tracking-[0.3em] mb-6">Security & Help</h4>
+            <ul className="space-y-4 text-gray-500 text-[11px] font-bold uppercase tracking-widest">
+              <li className="flex items-center gap-2 group cursor-pointer" onClick={handleFaqOrAdminAccess}>
+                  <HelpCircle className="w-3.5 h-3.5 text-blue-500" />
+                  <button className="group-hover:text-blue-400 transition-colors">Help Center / FAQ</button>
+              </li>
+              <li className="flex items-center gap-2 group cursor-pointer" onClick={() => onNavigate('privacy')}>
+                  <ShieldCheck className="w-3.5 h-3.5 text-green-500" />
+                  <button className="group-hover:text-blue-400 transition-colors">Privacy Shield</button>
+              </li>
+              <li className="flex items-center gap-2 group cursor-pointer" onClick={() => onNavigate('terms')}>
+                  <FileText className="w-3.5 h-3.5 text-purple-500" />
+                  <button className="group-hover:text-blue-400 transition-colors">Operating Terms</button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Payments */}
+          <div>
+            <h4 className="text-white font-black uppercase text-[10px] tracking-[0.3em] mb-6">Secure Payments</h4>
+            <div className="flex flex-wrap gap-2 mb-6">
+               <div className="bg-white/5 border border-white/10 p-1 rounded-lg w-12 h-8 flex items-center justify-center grayscale hover:grayscale-0 transition-all"><span className="text-blue-500 font-black text-[10px] italic">VISA</span></div>
+               <div className="bg-white/5 border border-white/10 p-1 rounded-lg w-12 h-8 flex items-center justify-center grayscale hover:grayscale-0 transition-all">
+                   <svg className="w-8 h-5" viewBox="0 0 24 16" fill="none"><circle cx="7" cy="8" r="7" fill="#EB001B"/><circle cx="17" cy="8" r="7" fill="#F79E1B" fillOpacity="0.8"/></svg>
+               </div>
+               <div className="bg-white/5 border border-white/10 p-1 rounded-lg w-12 h-8 flex items-center justify-center grayscale hover:grayscale-0 transition-all"><span className="text-blue-600 font-bold text-[8px] italic">Pay</span><span className="text-blue-400 font-bold text-[8px] italic">Pal</span></div>
+            </div>
+            <p className="text-gray-600 text-[10px] font-black uppercase tracking-tighter">© 2026 MOON NIGHT PROJECT<br/>ALL SYSTEMS OPERATIONAL</p>
           </div>
         </div>
       </div>
