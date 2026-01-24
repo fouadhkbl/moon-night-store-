@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { Profile, Order, OrderItem, OrderMessage, PointRedemption, RedemptionMessage } from '../types';
+import { Profile, Order, OrderItem, OrderMessage } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
 import { 
-  Wallet, LogIn, LogOut, CreditCard, History, Plus, ShieldCheck, MessageSquare, 
-  Send, X, Clock, Eye, CheckCircle, Coins, Gift, LayoutDashboard, 
-  ClipboardList, Copy, Users, Crown, Sparkles, Timer, Loader2, Edit3, 
-  ChevronRight, Award, Zap, Bell, Monitor, Smartphone, Globe, ShoppingCart, Activity, ArrowRight, UserPlus, User
+  Wallet, LogIn, LogOut, MessageSquare, 
+  Send, X, Clock, CheckCircle, Coins, LayoutDashboard, 
+  ClipboardList, Copy, Users, Crown, Timer, Loader2, Edit3, 
+  ChevronRight, Zap, Activity, UserPlus, User, ShieldCheck,
+  Smartphone, Monitor, Globe, ShoppingCart, Plus
 } from 'lucide-react';
 
 const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
@@ -48,8 +49,8 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
         const msgText = newMessage.trim();
         setNewMessage(''); 
         const tempId = `temp-${Date.now()}`;
-        const optimisicMsg: OrderMessage = { id: tempId, order_id: order.id, sender_id: currentUser.id, message: msgText, created_at: new Date().toISOString() };
-        setMessages(prev => [...prev, optimisicMsg]);
+        const optimisticMsg: OrderMessage = { id: tempId, order_id: order.id, sender_id: currentUser.id, message: msgText, created_at: new Date().toISOString() };
+        setMessages(prev => [...prev, optimisticMsg]);
         const { data, error } = await supabase.from('order_messages').insert({ order_id: order.id, sender_id: currentUser.id, message: msgText }).select().single();
         if (error) setMessages(prev => prev.filter(m => m.id !== tempId));
         else if (data) setMessages(prev => prev.map(m => m.id === tempId ? data : m));
@@ -59,7 +60,7 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-5xl md:rounded-[2.5rem] border-white/5 shadow-3xl flex flex-col md:flex-row overflow-hidden h-full md:h-[85vh]">
+            <div className="bg-[#1e232e] w-full max-w-5xl md:rounded-[2.5rem] border border-white/5 shadow-3xl flex flex-col md:flex-row overflow-hidden h-full md:h-[85vh]">
                 <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-white/5 overflow-y-auto custom-scrollbar">
                     <div className="flex justify-between items-center md:hidden mb-6">
                          <h3 className="font-black text-white italic uppercase tracking-tighter">Order Info</h3>
@@ -180,7 +181,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
     setLoading(true);
     if (session?.user) {
         if (isGuest) {
-            setProfile({ id: 'guest-user-123', email: 'guest@moonnight.com', username: 'Guest Player', avatar_url: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=200&q=80', wallet_balance: 0.00, vip_level: 0, vip_points: 0, discord_points: 0, total_donated: 0, spins_count: 0 });
+            setProfile({ id: 'guest-user-123', email: 'guest@moonnight.com', username: 'Guest Player', avatar_url: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=200&q=80', wallet_balance: 0.00, vip_level: 0, vip_points: 0, discord_points: 0, total_donated: 0, spins_count: 0 } as any);
         } else {
             const { data: pData } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
             if (pData) {
@@ -415,7 +416,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                     <div className="bg-[#1e232e] p-5 md:p-6 rounded-[1.75rem] md:rounded-[2rem] border border-white/5 shadow-xl relative overflow-hidden group">
                             <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:rotate-12 transition-transform"><Wallet className="w-12 h-12 md:w-14 md:h-14" /></div>
                             <p className="text-[7px] md:text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1.5 md:mb-2">Balance</p>
-                            <h4 className="text-xl md:text-2xl font-black text-yellow-400 italic tracking-tighter leading-none">{profile?.wallet_balance?.toFixed(2)} <span className="text-xl md:text-2xl font-black text-yellow-400 italic tracking-tighter leading-none">{profile?.wallet_balance?.toFixed(2)} <span className="text-[10px]">DH</span></h4>
+                            <h4 className="text-xl md:text-2xl font-black text-yellow-400 italic tracking-tighter leading-none">{profile?.wallet_balance?.toFixed(2)} <span className="text-[10px]">DH</span></h4>
                     </div>
                     <div className="bg-[#1e232e] p-5 md:p-6 rounded-[1.75rem] md:rounded-[2rem] border border-white/5 shadow-xl relative overflow-hidden group">
                             <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:rotate-12 transition-transform"><Coins className="w-12 h-12 md:w-14 md:h-14" /></div>
@@ -452,7 +453,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                                     </p>
                                     <div className="flex flex-wrap gap-3 md:gap-4">
                                         <button onClick={() => onNavigate('shop')} className="bg-white text-blue-900 px-7 md:px-10 py-3.5 md:py-4 rounded-[1.25rem] md:rounded-[1.5rem] font-black uppercase tracking-widest text-[9px] md:text-[11px] hover:scale-105 active:scale-95 transition-all shadow-2xl flex items-center gap-2">
-                                            <ShoppingCart className="w-3.5 h-3.5 md:w-4 md:h-4" /> Market
+                                            <ShoppingCart className="w-3.5 h-3.5 md:w-4 h-4" /> Market
                                         </button>
                                         <button onClick={handleClaimDaily} disabled={!canClaimDaily} className={`flex items-center gap-3 px-6 md:px-8 py-3.5 md:py-4 rounded-[1.25rem] md:rounded-[1.5rem] font-black uppercase text-[9px] md:text-[11px] tracking-widest transition-all ${canClaimDaily ? 'bg-cyan-400 text-blue-900 animate-pulse shadow-[0_0_25px_rgba(34,211,234,0.5)]' : 'bg-white/10 text-white/40 cursor-not-allowed border border-white/10'}`}>
                                             {canClaimDaily ? <Zap className="w-3.5 h-3.5 md:w-4 md:h-4 fill-current" /> : <Timer className="w-3.5 h-3.5 md:w-4 md:h-4" />}
@@ -484,7 +485,82 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                             </div>
                         </div>
                     )}
-                    {/* ... other tabs ... */}
+
+                    {activeTab === 'orders' && (
+                        <div className="space-y-4 animate-fade-in">
+                            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Trade History</h3>
+                            {orders.length === 0 ? (
+                                <div className="p-12 border-2 border-dashed border-white/5 rounded-[2rem] text-center text-gray-600 uppercase text-[10px] font-black tracking-widest">No active or past trades detected.</div>
+                            ) : (
+                                orders.map(order => (
+                                    <div key={order.id} className="bg-[#1e232e] p-5 rounded-2xl border border-white/5 flex items-center justify-between shadow-xl hover:border-blue-500/30 transition-all group">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`p-3 rounded-xl ${order.status === 'completed' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'}`}><Zap className="w-5 h-5" /></div>
+                                            <div>
+                                                <p className="text-white font-black italic uppercase text-sm leading-none mb-1">Order #{order.id.slice(0, 8)}</p>
+                                                <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">{new Date(order.created_at).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right flex items-center gap-6">
+                                            <div>
+                                                <p className="text-yellow-400 font-black italic text-lg tracking-tighter">{order.total_amount.toFixed(2)} DH</p>
+                                                <p className={`text-[8px] font-black uppercase tracking-widest ${order.status === 'completed' ? 'text-green-500' : 'text-yellow-500'}`}>{order.status}</p>
+                                            </div>
+                                            <button onClick={() => setSelectedOrder(order)} className="p-3 bg-white/5 rounded-xl hover:bg-blue-600 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'wallet' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="bg-gradient-to-br from-blue-900 to-black p-10 rounded-[2.5rem] border border-blue-500/20 shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-8 opacity-10"><Wallet className="w-40 h-40" /></div>
+                                <p className="text-blue-400 font-black uppercase text-[10px] tracking-widest mb-2 relative z-10">Available Solde</p>
+                                <h3 className="text-6xl font-black text-white italic tracking-tighter relative z-10">{profile?.wallet_balance.toFixed(2)} DH</h3>
+                                <button onClick={() => onNavigate('topup')} className="mt-8 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 relative z-10 shadow-xl shadow-blue-600/30 transition-all">
+                                    <Plus className="w-4 h-4" /> Add Funds
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'points' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="bg-gradient-to-br from-purple-900 to-black p-10 rounded-[2.5rem] border border-purple-500/20 shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-8 opacity-10"><Coins className="w-40 h-40" /></div>
+                                <p className="text-purple-400 font-black uppercase text-[10px] tracking-widest mb-2 relative z-10">Discord Points Matrix</p>
+                                <h3 className="text-6xl font-black text-white italic tracking-tighter relative z-10">{profile?.discord_points.toLocaleString()} PTS</h3>
+                                <div className="flex gap-4 mt-8 relative z-10">
+                                    <button onClick={() => onNavigate('pointsShop')} className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 shadow-xl shadow-purple-600/30 transition-all">
+                                        <ShoppingCart className="w-3.5 h-3.5 md:w-4 h-4" /> Point Shop
+                                    </button>
+                                    <button onClick={() => onNavigate('spin')} className="bg-white/5 hover:bg-white/10 text-white px-8 py-3.5 rounded-xl border border-white/10 font-black uppercase text-[10px] tracking-widest flex items-center gap-2 transition-all">
+                                        <Timer className="w-3.5 h-3.5 md:w-4 h-4" /> Win Wheel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'referrals' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="bg-gradient-to-br from-green-900 to-black p-10 rounded-[2.5rem] border border-green-500/20 shadow-2xl relative overflow-hidden text-center">
+                                <div className="absolute top-0 right-0 p-8 opacity-10"><Users className="w-40 h-40" /></div>
+                                <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4 relative z-10">Affiliate Program</h3>
+                                <p className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-8 relative z-10">Invite friends and earn 5 DH per signup + commission on trades.</p>
+                                <div className="bg-[#0b0e14] p-6 rounded-2xl border border-white/5 inline-flex items-center gap-4 relative z-10">
+                                    <div className="text-left">
+                                        <p className="text-[10px] text-gray-500 font-black uppercase mb-1">Your Referral Code</p>
+                                        <p className="text-2xl font-black text-green-400 font-mono tracking-widest">{profile?.username?.toUpperCase().slice(0, 8) || 'MOON-USER'}</p>
+                                    </div>
+                                    <button onClick={() => copyToClipboard(`https://moon-night.store/signup?ref=${profile?.username}`)} className="p-4 bg-green-600 hover:bg-green-500 text-white rounded-xl shadow-lg transition-all"><Copy className="w-5 h-5" /></button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
        </div>
