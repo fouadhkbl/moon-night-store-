@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-// Added CheckCircle to the imports from lucide-react
-import { Crown, Check, Shield, Zap, Star, AlertCircle, Loader2, MicOff, Move, Armchair, Heart, Sparkles, ChevronRight, CheckCircle } from 'lucide-react';
+import { Crown, Check, Shield, Zap, Star, AlertCircle, Loader2, Sparkles, ChevronRight, CheckCircle } from 'lucide-react';
 import { Profile } from '../types';
 
 export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onNavigate: (p: string) => void, addToast: any }) => {
@@ -49,10 +48,21 @@ export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onN
         <div className="min-h-screen bg-[#0b0e14] animate-fade-in pb-24 relative overflow-hidden">
             <style>{`
               .gold-text-glow {
-                text-shadow: 0 0 20px rgba(234, 179, 8, 0.4);
+                text-shadow: 0 0 30px rgba(234, 179, 8, 0.5);
               }
               .gold-metallic-bg {
                 background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 45%, #b38728 70%, #fbf5b7 100%);
+                -webkit-background-clip: text;
+                background-clip: text;
+              }
+              .text-outline-moon {
+                -webkit-text-stroke: 1px rgba(255, 255, 255, 0.4);
+                color: transparent;
+              }
+              @media (min-width: 768px) {
+                .text-outline-moon {
+                  -webkit-text-stroke: 2px rgba(255, 255, 255, 0.5);
+                }
               }
             `}</style>
 
@@ -64,23 +74,30 @@ export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onN
                 <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 font-black uppercase text-[10px] tracking-[0.4em] mb-8 shadow-[0_0_30px_rgba(234,179,8,0.1)]">
                     <Sparkles className="w-4 h-4 animate-pulse" /> The Highest Tier
                 </div>
-                <h1 className="text-7xl md:text-9xl font-black text-white italic uppercase tracking-tighter mb-6 leading-[0.85]">
-                    MOON <br/>
-                    <span className="text-transparent bg-clip-text gold-metallic-bg gold-text-glow">ELITE</span>
+                
+                {/* Fixed MOON ELITE Header */}
+                <h1 className="flex flex-col items-center mb-12">
+                    <span className="text-7xl md:text-9xl font-black uppercase italic tracking-tighter leading-none text-outline-moon block drop-shadow-2xl">
+                        MOON
+                    </span>
+                    <span className="text-6xl md:text-9xl font-black uppercase italic tracking-tighter leading-none text-transparent gold-metallic-bg gold-text-glow block -mt-4 md:-mt-8">
+                        ELITE
+                    </span>
                 </h1>
-                <p className="text-gray-400 text-sm md:text-base font-bold uppercase tracking-[0.2em] max-w-2xl mx-auto mb-16 leading-relaxed opacity-80">
-                    ASCEND TO THE PINNACLE OF THE MARKETPLACE. <br/> UNLOCK UNRIVALED POWER, ACCESS, AND REWARDS.
+
+                <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-[0.3em] max-w-2xl mx-auto mb-16 leading-relaxed opacity-80">
+                    ASCEND TO THE PINNACLE OF THE MARKETPLACE. <br className="hidden md:block" /> UNLOCK UNRIVALED POWER, ACCESS, AND REWARDS.
                 </p>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto px-4">
                     {/* Benefits Card */}
                     <div className="bg-[#1e232e]/60 backdrop-blur-xl border border-white/5 rounded-[3.5rem] p-8 md:p-12 shadow-3xl text-left relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none"><Crown className="w-64 h-64 text-yellow-500" /></div>
+                        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none transition-transform group-hover:scale-110 duration-700"><Crown className="w-64 h-64 text-yellow-500" /></div>
                         <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-10 flex items-center gap-4">
-                            <div className="w-12 h-12 gold-metallic-bg rounded-2xl flex items-center justify-center text-black shadow-xl"><Zap className="w-6 h-6 fill-current" /></div>
+                            <div className="w-12 h-12 gold-metallic-bg !bg-clip-border rounded-2xl flex items-center justify-center text-black shadow-xl"><Zap className="w-6 h-6 fill-current" /></div>
                             Elite Matrix Access
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                             {[
                                 { t: "Permanent -5% Discount", d: "Applied automatically to all shop items." },
                                 { t: "VIP Only Products", d: "Access hidden account & item drops." },
@@ -106,9 +123,9 @@ export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onN
 
                     {/* Purchase Card */}
                     <div className="bg-[#1e232e] rounded-[3.5rem] border border-yellow-500/20 shadow-2xl shadow-yellow-500/5 p-10 flex flex-col items-center justify-center text-center relative group">
-                        <div className="absolute inset-0 bg-yellow-500/5 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div className="absolute inset-0 bg-yellow-500/5 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                         <div className="relative z-10 w-full">
-                            <div className="w-32 h-32 gold-metallic-bg rounded-[2.5rem] flex items-center justify-center text-black mx-auto mb-10 shadow-[0_0_60px_rgba(234,179,8,0.4)] border-4 border-[#0b0e14] group-hover:rotate-12 transition-transform duration-700">
+                            <div className="w-32 h-32 bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] rounded-[2.5rem] flex items-center justify-center text-black mx-auto mb-10 shadow-[0_0_60px_rgba(234,179,8,0.4)] border-4 border-[#0b0e14] group-hover:rotate-12 transition-transform duration-700">
                                 <Crown className="w-16 h-16 fill-current" />
                             </div>
                             <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-2">ELITE MEMBERSHIP</h2>
@@ -118,7 +135,7 @@ export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onN
                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border border-black">Limited Time Offer</div>
                                 <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total One-Time Price</p>
                                 <div className="flex items-center justify-center gap-3">
-                                    <h4 className="text-7xl font-black text-white italic tracking-tighter drop-shadow-lg">
+                                    <h4 className="text-6xl md:text-7xl font-black text-white italic tracking-tighter drop-shadow-lg">
                                         {loadingPrice ? <Loader2 className="animate-spin" /> : elitePrice.toFixed(2)}
                                     </h4>
                                     <span className="text-2xl font-black text-yellow-500 italic mb-2">DH</span>
@@ -133,7 +150,7 @@ export const ElitePage = ({ session, onNavigate, addToast }: { session: any, onN
                                 <button 
                                     onClick={handleUpgrade}
                                     disabled={isProcessing || loadingPrice}
-                                    className="w-full py-6 gold-metallic-bg hover:scale-[1.02] active:scale-95 text-black font-black rounded-2xl uppercase tracking-[0.2em] text-sm shadow-[0_20px_50px_rgba(184,134,11,0.4)] transition-all flex items-center justify-center gap-4 group"
+                                    className="w-full py-6 bg-gradient-to-r from-[#bf953f] via-[#fcf6ba] to-[#b38728] hover:scale-[1.02] active:scale-95 text-black font-black rounded-2xl uppercase tracking-[0.2em] text-sm shadow-[0_20px_50px_rgba(184,134,11,0.4)] transition-all flex items-center justify-center gap-4 group"
                                 >
                                     {isProcessing ? <Loader2 className="animate-spin w-6 h-6" /> : (
                                         <>BECOME ELITE <ChevronRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" /></>

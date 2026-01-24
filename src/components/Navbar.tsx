@@ -95,6 +95,14 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
   return (
     <>
     <nav className="sticky top-0 z-50 bg-[#0b0e14]/90 backdrop-blur-md border-b border-white/5 h-14 flex items-center shadow-2xl">
+        <style>{`
+            .gold-metallic-text {
+                background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 45%, #b38728 70%, #fbf5b7 100%);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+            }
+        `}</style>
       <div className="container mx-auto px-4 flex justify-between items-center relative">
         <div className="flex items-center gap-3">
           <button onClick={() => setIsMenuOpen(true)} className="text-gray-400 hover:text-white p-1.5 bg-white/5 rounded-lg border border-white/10 transition-all active:scale-95">
@@ -281,12 +289,17 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                     { l: 'Market', i: ShoppingBag, p: 'shop' },
                     { l: 'Luck Packs', i: Package, p: 'loot' },
                     { l: 'Win Wheel', i: RefreshCw, p: 'spin' },
-                    { l: 'Elite Tier', i: Crown, p: 'elite' },
+                    { l: 'Elite Tier', i: Crown, p: 'elite', isElite: true },
                     { l: 'Tournaments', i: Swords, p: 'tournaments' },
                     { l: 'Points Rewards', i: Trophy, p: 'pointsShop' }
                 ].map(link => (
-                    <button key={link.p} onClick={() => handleLinkClick(link.p)} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-blue-600/10 hover:text-blue-400 text-gray-400 font-black uppercase text-[10px] tracking-widest transition-all group">
-                        <link.i className="w-5 h-5 group-hover:scale-110 transition-transform" /> {link.l}
+                    <button 
+                        key={link.p} 
+                        onClick={() => handleLinkClick(link.p)} 
+                        className={`w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-blue-600/10 hover:text-blue-400 font-black uppercase text-[10px] tracking-widest transition-all group ${link.isElite ? 'border border-yellow-500/20 bg-yellow-500/5' : 'text-gray-400 hover:bg-white/5'}`}
+                    >
+                        <link.i className={`w-5 h-5 group-hover:scale-110 transition-transform ${link.isElite ? 'text-yellow-500 fill-yellow-500/20' : ''}`} /> 
+                        <span className={link.isElite ? 'gold-metallic-text' : ''}>{link.l}</span>
                     </button>
                 ))}
 
