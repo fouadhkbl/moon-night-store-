@@ -105,7 +105,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
         </div>
       </section>
 
-      {/* AI Picks */}
+      {/* AI Picks - Photos made "longer" (taller) */}
       <section className="py-8 container mx-auto px-4">
           <h2 className="text-lg font-black text-white italic uppercase tracking-tighter mb-4 flex items-center gap-2">
               <Cpu className="w-4 h-4 text-purple-400" /> {t.aiTitle}
@@ -113,7 +113,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {aiPicks.map(p => (
                   <div key={p.id} onClick={() => { onSearch(p.name); onNavigate('shop'); }} className="bg-[#151a23] rounded-2xl border border-gray-800 overflow-hidden cursor-pointer group transition-all">
-                      <div className="h-32 bg-black relative">
+                      <div className="h-56 bg-black relative"> {/* Increased height from h-32 to h-56 */}
                           <img src={p.image_url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt="" />
                       </div>
                       <div className="p-3">
