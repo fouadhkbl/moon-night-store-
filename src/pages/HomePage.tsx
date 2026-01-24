@@ -1,16 +1,17 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar, Crown, TrendingUp, Sparkles, ShoppingCart, Zap, ShieldCheck, Headphones, Cpu, Scan } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar, Crown, TrendingUp, Sparkles, ShoppingCart, Zap, ShieldCheck, Headphones, Cpu, Scan, Activity, MessageSquare } from 'lucide-react';
 import { GameCategory, Product } from '../types';
 import { supabase } from '../supabaseClient';
 
 export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: { onNavigate: (p: string) => void, onSelectCategory: (c: string) => void, onSearch: (q: string) => void, language: 'en' | 'fr' }) => {
   
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isVip, setIsVip] = useState(false);
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [aiPicks, setAiPicks] = useState<Product[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
+
+  const DISCORD_LOGO = "https://cdn.discordapp.com/attachments/1459639411728711914/1463587675897462795/moon-edite-png_1_1-ezgif.com-optimize.gif?ex=6975ab7e&is=697459fe&hm=fe3c5242f9e86f2692bfea6aece5c50b46ae757d80cc8d01c9a20ae4e6bf9e19";
 
   useEffect(() => {
       const fetchData = async () => {
@@ -33,62 +34,99 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
   }, []);
 
   const t = {
-     en: {
-         premium: "Premium Gaming Hub",
-         browse: "Explore Shop",
-         depts: "Elite Categories",
-         trending: "Hot Items",
-         aiTitle: "Moon AI Selection"
-     },
-     fr: {
-         premium: "Hub Gaming Premium",
-         browse: "Explorer la Boutique",
-         depts: "Catégories d'Élite",
-         trending: "Articles Chauds",
-         aiTitle: "Sélection Moon AI"
-     }
+     en: { premium: "Premium Gaming Hub", browse: "Explore Shop", depts: "Elite Categories", trending: "Hot Items", aiTitle: "Moon AI Selection", discord: "Discord Community" },
+     fr: { premium: "Hub Gaming Premium", browse: "Explorer la Boutique", depts: "Catégories d'Élite", trending: "Articles Chauds", aiTitle: "Sélection Moon AI", discord: "Communauté Discord" }
   }[language];
 
   return (
     <div className="animate-fade-in pb-12">
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .shimmer-btn:after {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; width: 50%; height: 100%;
+          background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+          transform: skewX(-20deg);
+          animation: shimmer 3s infinite;
+        }
+      `}</style>
+
       {/* Hero Section */}
-      <section className="relative min-h-[50vh] flex items-center z-30 bg-[#0b0e14] overflow-hidden">
+      <section className="relative min-h-[70vh] flex items-center z-30 bg-[#0b0e14] overflow-hidden pt-10">
         <div className="absolute inset-0 z-0">
-          <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1920&q=80" className="w-full h-full object-cover opacity-10" alt="" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0b0e14] to-transparent"></div>
+          <img src="https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?auto=format&fit=crop&w=1920&q=80" className="w-full h-full object-cover opacity-[0.07] scale-110" alt="" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e14] via-transparent to-transparent"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600/10 blur-[150px] rounded-full"></div>
         </div>
         
-        <div className="container mx-auto px-4 relative z-20">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-[0.2em] mb-4">
-              <Star className="w-2.5 h-2.5 fill-blue-400" /> {t.premium}
+        <div className="container mx-auto px-4 relative z-20 flex flex-col md:flex-row items-center gap-12">
+          <div className="max-w-3xl flex-1 text-center md:text-left">
+            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.25em] mb-6 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+              <Activity className="w-3 h-3 animate-pulse" /> {t.premium}
             </div>
-            <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter leading-none mb-6 uppercase">
-              <span className="text-white">MOON</span> <span className="text-blue-600">NIGHT</span><br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 text-3xl md:text-5xl">MARKETPLACE</span>
+            
+            <h1 className="text-5xl md:text-8xl font-black italic tracking-tighter leading-[0.85] mb-8 uppercase">
+              <span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">MOON</span><br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-cyan-400 to-purple-500 drop-shadow-[0_0_30px_rgba(34,211,238,0.3)]">NIGHT</span>
             </h1>
-            <div className="flex gap-3">
-              <button onClick={() => onNavigate('shop')} className="h-12 bg-blue-600 hover:bg-blue-700 text-white px-8 rounded-xl font-black text-xs transition-all flex items-center gap-2 uppercase tracking-widest shadow-xl">
-                {t.browse} <ChevronRight className="w-4 h-4" />
+
+            <p className="text-gray-400 font-bold uppercase tracking-[0.1em] text-sm md:text-base max-w-xl mb-10 leading-relaxed mx-auto md:mx-0">
+                The most trusted gaming marketplace. Powered by a community of <span className="text-white">15,000+ active players</span>. Instant delivery, elite support.
+            </p>
+
+            <div className="flex flex-wrap justify-center md:justify-start gap-4 mb-12">
+              {/* PRIMARY BUTTON: EXPLORE SHOP */}
+              <button 
+                onClick={() => onNavigate('shop')} 
+                className="shimmer-btn group relative h-16 bg-blue-600 hover:bg-blue-500 text-white px-12 rounded-2xl font-black text-sm transition-all flex items-center gap-4 uppercase tracking-widest shadow-[0_10px_50px_rgba(37,99,235,0.6)] hover:scale-105 active:scale-95 overflow-hidden"
+              >
+                <ShoppingCart className="w-5 h-5 relative z-10" />
+                <span className="relative z-10">{t.browse}</span>
+                <ChevronRight className="w-6 h-6 relative z-10 group-hover:translate-x-2 transition-transform duration-300" />
               </button>
-              {!isVip && (
-                  <button onClick={() => onNavigate('elite')} className="h-12 bg-yellow-600/20 border border-yellow-600/30 text-yellow-500 px-6 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-yellow-600/30 transition-all">
-                    <Crown className="w-3.5 h-3.5" /> Elite
-                  </button>
-              )}
+
+              {/* SECONDARY BUTTON: DISCORD */}
+              <a 
+                href="https://discord.gg/s4hcCn4s" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="h-16 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-10 rounded-2xl font-black text-[11px] border border-white/10 transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl active:scale-95"
+              >
+                <MessageSquare className="w-5 h-5 text-[#5865F2]" /> {t.discord}
+              </a>
             </div>
+
+            <div className="flex items-center justify-center md:justify-start gap-8 opacity-60">
+                <div className="text-center md:text-left">
+                    <p className="text-2xl font-black text-white italic tracking-tighter leading-none">15K+</p>
+                    <p className="text-[8px] text-gray-500 font-black uppercase tracking-[0.2em]">MEMBERS</p>
+                </div>
+                <div className="w-px h-8 bg-white/10"></div>
+                <div className="text-center md:text-left">
+                    <p className="text-2xl font-black text-white italic tracking-tighter leading-none">24/7</p>
+                    <p className="text-[8px] text-gray-500 font-black uppercase tracking-[0.2em]">DELIVERY</p>
+                </div>
+            </div>
+          </div>
+
+          <div className="hidden lg:block flex-shrink-0 relative group">
+              <div className="absolute inset-0 bg-blue-500/20 blur-[100px] rounded-full animate-pulse group-hover:bg-cyan-500/30 transition-colors"></div>
+              <div className="relative w-[450px] h-[450px] rounded-full overflow-hidden border-2 border-white/10 shadow-[0_0_80px_rgba(37,99,235,0.2)]">
+                  <img src={DISCORD_LOGO} className="w-full h-full object-cover scale-110 group-hover:scale-125 transition-transform duration-[2s]" alt="Moon GIF" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e14]/40 to-transparent"></div>
+              </div>
           </div>
         </div>
       </section>
 
-      {/* Compact Categories */}
-      <section className="py-8 container mx-auto px-4">
-        <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-black text-white italic uppercase tracking-tighter flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-yellow-400" /> {t.depts}
-            </h2>
-        </div>
-        <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar">
+      {/* Category Selection */}
+      <section className="py-12 container mx-auto px-4">
+        <h2 className="text-xl md:text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3 mb-8"><Sparkles className="w-5 h-5 text-yellow-400" /> {t.depts}</h2>
+        <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar">
             {[
                 { id: GameCategory.ACCOUNTS, icon: Users, label: 'Accounts', color: 'text-pink-500' },
                 { id: GameCategory.COINS, icon: Coins, label: 'Coins', color: 'text-yellow-500' },
@@ -97,31 +135,57 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
                 { id: GameCategory.BOOSTING, icon: ArrowUpCircle, label: 'Boosting', color: 'text-green-500' },
                 { id: GameCategory.GIFT_CARD, icon: Gift, label: 'Cards', color: 'text-purple-500' }
             ].map(cat => (
-                <button key={cat.id} onClick={() => { onSelectCategory(cat.id); onNavigate('shop'); }} className="min-w-[120px] bg-[#151a23] border border-gray-800 p-4 rounded-2xl flex flex-col items-center gap-2 hover:border-gray-600 transition-all shrink-0">
-                    <cat.icon className={`w-5 h-5 ${cat.color}`} />
-                    <span className="font-black text-gray-400 text-[8px] uppercase tracking-widest">{cat.label}</span>
+                <button key={cat.id} onClick={() => { onSelectCategory(cat.id); onNavigate('shop'); }} className="min-w-[140px] bg-[#151a23] border border-white/5 p-6 rounded-3xl flex flex-col items-center gap-3 hover:border-blue-500/50 hover:bg-[#1e232e] hover:-translate-y-2 transition-all shrink-0 shadow-xl group">
+                    <div className={`p-3 rounded-2xl bg-white/5 group-hover:scale-110 transition-transform ${cat.color}`}><cat.icon className="w-6 h-6" /></div>
+                    <span className="font-black text-gray-400 group-hover:text-white text-[9px] uppercase tracking-[0.25em] transition-colors">{cat.label}</span>
                 </button>
             ))}
         </div>
       </section>
 
-      {/* AI Picks - Photos made "longer" (taller) */}
-      <section className="py-8 container mx-auto px-4">
-          <h2 className="text-lg font-black text-white italic uppercase tracking-tighter mb-4 flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-purple-400" /> {t.aiTitle}
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Featured Grid */}
+      <section className="py-12 container mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+              <h2 className="text-xl md:text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3"><Cpu className="w-5 h-5 text-cyan-400" /> {t.aiTitle}</h2>
+              <button onClick={() => onNavigate('shop')} className="text-[10px] font-black uppercase text-blue-500 tracking-widest hover:text-blue-400 transition-colors">View All Inventory</button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {aiPicks.map(p => (
-                  <div key={p.id} onClick={() => { onSearch(p.name); onNavigate('shop'); }} className="bg-[#151a23] rounded-2xl border border-gray-800 overflow-hidden cursor-pointer group transition-all">
-                      <div className="h-56 bg-black relative"> {/* Increased height from h-32 to h-56 */}
-                          <img src={p.image_url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt="" />
-                      </div>
-                      <div className="p-3">
-                          <h3 className="text-white font-bold text-xs truncate mb-1">{p.name}</h3>
-                          <p className="text-yellow-400 font-black italic text-sm">{p.price.toFixed(2)} DH</p>
+                  <div key={p.id} onClick={() => { onSearch(p.name); onNavigate('shop'); }} className="bg-[#151a23] rounded-[2rem] border border-white/5 overflow-hidden cursor-pointer group transition-all hover:border-cyan-500/40 shadow-2xl hover:-translate-y-2 duration-500">
+                      <div className="aspect-[2/3] bg-black relative overflow-hidden">
+                          <img src={p.image_url} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-[0.8s]" alt="" />
+                          <div className="absolute top-3 left-3 flex flex-col gap-2 z-20">
+                             {p.is_trending && <div className="bg-red-600 text-white text-[7px] font-black px-2 py-1 rounded-md uppercase tracking-widest shadow-xl flex items-center gap-1.5"><Zap className="w-2.5 h-2.5 fill-current" /> Trending</div>}
+                             {p.is_vip && <div className="bg-yellow-500 text-black text-[7px] font-black px-2 py-1 rounded-md uppercase tracking-widest shadow-xl">Elite</div>}
+                          </div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent transition-opacity"></div>
+                          <div className="absolute bottom-0 left-0 right-0 p-4 pt-10 bg-gradient-to-t from-black via-black/60 to-transparent backdrop-blur-[2px] translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                                <p className="text-[8px] text-cyan-400 font-black uppercase tracking-[0.2em] mb-1 opacity-80">{p.category}</p>
+                                <h3 className="text-white font-black text-sm italic uppercase tracking-tighter truncate leading-tight mb-2">{p.name}</h3>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest">Price</p>
+                                        <p className="text-white font-black italic text-lg tracking-tighter">{p.price.toFixed(2)} DH</p>
+                                    </div>
+                                    <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform"><ShoppingCart className="w-4 h-4" /></div>
+                                </div>
+                          </div>
                       </div>
                   </div>
               ))}
+          </div>
+      </section>
+
+      {/* Community Section */}
+      <section className="py-24 container mx-auto px-4 text-center">
+          <div className="max-w-4xl mx-auto bg-[#1e232e] border border-white/5 rounded-[4rem] p-12 md:p-20 relative overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)]">
+               <div className="absolute top-0 right-0 p-20 opacity-5 pointer-events-none"><Activity className="w-64 h-64" /></div>
+               <div className="relative z-10 flex flex-col items-center">
+                    <div className="w-24 h-24 bg-blue-600/10 rounded-[2rem] flex items-center justify-center mb-8 border border-blue-500/20 shadow-2xl"><img src={DISCORD_LOGO} className="w-16 h-16 rounded-full" alt="" /></div>
+                    <h2 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter mb-6 leading-none">JOIN THE ELITE<br/><span className="text-blue-500">COMMUNITY</span></h2>
+                    <p className="text-gray-400 font-bold text-sm md:text-base uppercase tracking-[0.1em] mb-10 max-w-xl leading-relaxed">Access exclusive deals, community giveaways, and 24/7 support. Join 15,000+ members waiting for you.</p>
+                    <a href="https://discord.gg/s4hcCn4s" target="_blank" rel="noreferrer" className="bg-white text-black px-12 py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-[0_20px_60px_rgba(255,255,255,0.2)] hover:scale-105 transition-all flex items-center gap-4">Launch Discord App <ChevronRight className="w-4 h-4" /></a>
+               </div>
           </div>
       </section>
     </div>

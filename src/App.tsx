@@ -22,7 +22,7 @@ import { TournamentDetailsPage } from './pages/TournamentDetailsPage';
 import { LootBoxPage } from './pages/LootBoxPage';
 import { ElitePage } from './pages/ElitePage';
 import { SpinWheelPage } from './pages/SpinWheelPage';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Zap, AlertCircle, TrendingUp, Users, ShoppingBag, Bell, Activity, ArrowRight } from 'lucide-react';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -62,7 +62,6 @@ const App: React.FC = () => {
     if (page === 'dashboard-points') { setDashboardTab('points'); setCurrentPage('dashboard'); }
     else if (page === 'dashboard') { if (currentPage !== 'dashboard') setDashboardTab('overview'); setCurrentPage('dashboard'); }
     else if (page === 'shop') {
-        // When going to shop, we keep the category if it was set by HomePage, but clear search
         setSearchQuery('');
         setCurrentPage('shop');
     }
@@ -102,7 +101,30 @@ const App: React.FC = () => {
   if (isSessionLoading) return <div className="min-h-screen bg-[#0b0e14] flex items-center justify-center text-white"><Loader2 className="w-10 h-10 animate-spin text-blue-500"/></div>;
 
   return (
-    <div className="min-h-screen bg-[#0b0e14] text-white font-sans flex flex-col selection:bg-blue-600">
+    <div className="min-h-screen bg-[#0b0e14] text-white font-sans flex flex-col selection:bg-blue-600/50">
+      <style>{`
+        @keyframes marquee {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+        .animate-marquee {
+          display: inline-block;
+          white-space: nowrap;
+          animation: marquee 20s linear infinite;
+        }
+        .animate-marquee-slow {
+          display: inline-block;
+          white-space: nowrap;
+          animation: marquee 30s linear infinite;
+        }
+        .animate-marquee-fast {
+          display: inline-block;
+          white-space: nowrap;
+          animation: marquee 15s linear infinite;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+      `}</style>
+
       {currentPage !== 'admin' && (
           <Navbar 
             session={session} onNavigate={handleNavigate} cartCount={cart.length} 
@@ -122,32 +144,89 @@ const App: React.FC = () => {
         )}
         
         {currentPage === 'shop' && (
-          <div className="container mx-auto px-4 py-8 animate-fade-in">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-               <div>
-                  <h1 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none mb-1">SYSTEM SHOP</h1>
-                  <p className="text-gray-500 text-[9px] uppercase tracking-[0.2em] font-black">
-                      {searchQuery ? `Searching: "${searchQuery}"` : (selectedCategory ? `Dept: ${selectedCategory}` : 'All Global Inventory')}
+          <div className="container mx-auto px-4 py-8 animate-fade-in pb-24">
+            
+            {/* 3-LINE NOTIFICATION BAR SECTION */}
+            <div className="mb-12 space-y-2">
+                {/* Line 1: Global Status */}
+                <div className="bg-blue-600/10 border border-blue-500/20 h-8 rounded-full overflow-hidden flex items-center group">
+                    <div className="bg-blue-600 h-full px-4 flex items-center gap-2 z-10 shadow-[5px_0_15px_rgba(0,0,0,0.5)]">
+                        <Activity className="w-3 h-3 text-white animate-pulse" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-white whitespace-nowrap">Global Status</span>
+                    </div>
+                    <div className="flex-1 relative overflow-hidden">
+                        <div className="animate-marquee whitespace-nowrap py-1">
+                            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.1em] px-8">System fully operational • Instant delivery active for all digital items • 2,400+ trades completed today • New LoL accounts restocked</span>
+                            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.1em] px-8">System fully operational • Instant delivery active for all digital items • 2,400+ trades completed today • New LoL accounts restocked</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Line 2: Hot Deals / Promotions */}
+                <div className="bg-pink-600/10 border border-pink-500/20 h-8 rounded-full overflow-hidden flex items-center group">
+                    <div className="bg-pink-600 h-full px-4 flex items-center gap-2 z-10 shadow-[5px_0_15px_rgba(0,0,0,0.5)]">
+                        <Zap className="w-3 h-3 text-white fill-current" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-white whitespace-nowrap">Hot Deals</span>
+                    </div>
+                    <div className="flex-1 relative overflow-hidden">
+                        <div className="animate-marquee-slow whitespace-nowrap py-1">
+                            <span className="text-[10px] font-bold text-pink-400 uppercase tracking-[0.1em] px-8">Flash Sale: 20% OFF on all Gift Cards with code MOON20 • Elite members get double points this weekend • Refer a friend and earn 10 DH instantly</span>
+                            <span className="text-[10px] font-bold text-pink-400 uppercase tracking-[0.1em] px-8">Flash Sale: 20% OFF on all Gift Cards with code MOON20 • Elite members get double points this weekend • Refer a friend and earn 10 DH instantly</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Line 3: Community / Recent activity */}
+                <div className="bg-cyan-600/10 border border-cyan-500/20 h-8 rounded-full overflow-hidden flex items-center group">
+                    <div className="bg-cyan-600 h-full px-4 flex items-center gap-2 z-10 shadow-[5px_0_15px_rgba(0,0,0,0.5)]">
+                        <Users className="w-3 h-3 text-white" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-white whitespace-nowrap">Live Feed</span>
+                    </div>
+                    <div className="flex-1 relative overflow-hidden">
+                        <div className="animate-marquee-fast whitespace-nowrap py-1">
+                            <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.1em] px-8">User Zakaria just won 500 PTS on Spin Wheel • Welcome new Elite member: FouadGaming • Discord community reached 15,400 members!</span>
+                            <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.1em] px-8">User Zakaria just won 500 PTS on Spin Wheel • Welcome new Elite member: FouadGaming • Discord community reached 15,400 members!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* SHOP HEADER & CATEGORY GRID (3 LINES) */}
+            <div className="flex flex-col lg:flex-row justify-between items-start gap-12 mb-16">
+               <div className="max-w-md">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-blue-600/10 border border-blue-500/20 text-blue-500 text-[8px] font-black uppercase tracking-[0.2em] mb-4">
+                     <Bell className="w-3 h-3" /> Core Inventory
+                  </div>
+                  <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter leading-[0.85] mb-4">MOON<br/><span className="text-blue-500">MARKET</span></h1>
+                  <p className="text-gray-500 text-[11px] font-bold uppercase tracking-widest leading-relaxed">
+                      {searchQuery ? `SCANNING SYSTEM FOR: "${searchQuery}"` : (selectedCategory ? `ACTIVE DEPOT: ${selectedCategory.toUpperCase()}` : 'SCANNING GLOBAL INVENTORY HUBS...')}
                   </p>
                </div>
-               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full pb-1">
+
+               {/* REFINED 3-COLUMN CATEGORY GRID */}
+               <div className="w-full lg:max-w-2xl grid grid-cols-2 md:grid-cols-3 gap-3">
                   <button 
                     onClick={() => { setSelectedCategory(null); setSearchQuery(''); }} 
-                    className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase transition-all whitespace-nowrap ${!selectedCategory && !searchQuery ? 'bg-blue-600 text-white shadow-lg' : 'bg-[#151a23] text-gray-500 border border-gray-800'}`}
+                    className={`h-20 rounded-2xl border transition-all flex flex-col items-center justify-center gap-1 group shadow-2xl ${!selectedCategory && !searchQuery ? 'bg-blue-600 border-blue-400 text-white scale-[1.02]' : 'bg-[#151a23] border-white/5 text-gray-500 hover:border-blue-500/30'}`}
                   >
-                    ALL DEPTS
+                    <ShoppingBag className={`w-5 h-5 ${!selectedCategory && !searchQuery ? 'text-white' : 'text-gray-600 group-hover:text-blue-400'}`} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">All Core</span>
                   </button>
+                  
                   {Object.values(GameCategory).map(cat => (
                     <button 
                         key={cat} 
                         onClick={() => { setSelectedCategory(cat); setSearchQuery(''); }} 
-                        className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-blue-600 text-white shadow-lg' : 'bg-[#151a23] text-gray-500 border border-gray-800'}`}
+                        className={`h-20 rounded-2xl border transition-all flex flex-col items-center justify-center gap-1 group shadow-2xl relative overflow-hidden ${selectedCategory === cat ? 'bg-white/5 border-blue-500 text-blue-400' : 'bg-[#151a23] border-white/5 text-gray-500 hover:border-white/20'}`}
                     >
-                        {cat.toUpperCase()}
+                        {selectedCategory === cat && <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>}
+                        <span className={`text-[10px] font-black uppercase tracking-tighter text-center px-2 leading-tight ${selectedCategory === cat ? 'text-white' : 'group-hover:text-gray-300'}`}>{cat}</span>
+                        <span className="text-[7px] font-bold opacity-40 uppercase tracking-widest">Verified</span>
                     </button>
                   ))}
                </div>
             </div>
+            
             <ShopGrid category={selectedCategory} searchQuery={searchQuery} onProductClick={(p) => setSelectedProduct(p)} language={language} />
           </div>
         )}
@@ -155,7 +234,7 @@ const App: React.FC = () => {
         {currentPage === 'dashboard' && <Dashboard session={session} setSession={setSession} addToast={addToast} onNavigate={handleNavigate} initialOrderId={targetOrderId} initialTab={dashboardTab} onSignOut={() => handleNavigate('home')} />}
         {currentPage === 'admin' && (adminRole !== 'none' ? <AdminPanel session={session} addToast={addToast} role={adminRole} /> : <AdminLockScreen onSuccess={setAdminRole} />)}
         
-        {/* Other Pages: Placeholder Logic to maintain app structure */}
+        {/* Other Pages */}
         {currentPage === 'cart' && <CartPage cart={cart} onUpdateQty={() => {}} onRemove={() => {}} onNavigate={handleNavigate} addToast={addToast} />}
         {currentPage === 'checkout' && <CheckoutPage cart={cart} session={session} onNavigate={handleNavigate} onViewOrder={() => {}} onClearCart={() => {}} addToast={addToast} />}
         {currentPage === 'topup' && <TopUpPage session={session} onNavigate={handleNavigate} addToast={addToast} />}
