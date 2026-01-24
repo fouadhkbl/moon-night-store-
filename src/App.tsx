@@ -22,7 +22,7 @@ import { TournamentDetailsPage } from './pages/TournamentDetailsPage';
 import { LootBoxPage } from './pages/LootBoxPage';
 import { ElitePage } from './pages/ElitePage';
 import { SpinWheelPage } from './pages/SpinWheelPage';
-import { Loader2, ShoppingBag, X, Megaphone } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -61,11 +61,24 @@ const App: React.FC = () => {
     window.scrollTo(0,0); 
     if (page === 'dashboard-points') { setDashboardTab('points'); setCurrentPage('dashboard'); }
     else if (page === 'dashboard') { if (currentPage !== 'dashboard') setDashboardTab('overview'); setCurrentPage('dashboard'); }
-    else setCurrentPage(page);
-    if (page !== 'shop') { setSelectedCategory(null); setSearchQuery(''); }
+    else if (page === 'shop') {
+        // When going to shop, we keep the category if it was set by HomePage, but clear search
+        setSearchQuery('');
+        setCurrentPage('shop');
+    }
+    else {
+        setCurrentPage(page);
+        setSelectedCategory(null); 
+        setSearchQuery('');
+    }
   };
 
-  const handleSearch = (q: string) => { setSearchQuery(q); setSelectedCategory(null); setCurrentPage('shop'); window.scrollTo(0,0); };
+  const handleSearch = (q: string) => { 
+    setSearchQuery(q); 
+    setSelectedCategory(null); 
+    setCurrentPage('shop'); 
+    window.scrollTo(0,0); 
+  };
 
   const handleAddToCart = async (product: Product, quantity: number) => {
      const isGuest = session?.user?.id === 'guest-user-123';
@@ -99,7 +112,15 @@ const App: React.FC = () => {
       )}
       
       <main className="flex-grow">
-        {currentPage === 'home' && <HomePage onNavigate={handleNavigate} onSelectCategory={setSelectedCategory} onSearch={handleSearch} language={language} />}
+        {currentPage === 'home' && (
+            <HomePage 
+                onNavigate={handleNavigate} 
+                onSelectCategory={(cat) => { setSelectedCategory(cat); handleNavigate('shop'); }} 
+                onSearch={handleSearch} 
+                language={language} 
+            />
+        )}
+        
         {currentPage === 'shop' && (
           <div className="container mx-auto px-4 py-8 animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -110,18 +131,42 @@ const App: React.FC = () => {
                   </p>
                </div>
                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full pb-1">
-                  <button onClick={() => { setSelectedCategory(null); setSearchQuery(''); }} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase transition-all whitespace-nowrap ${!selectedCategory && !searchQuery ? 'bg-blue-600 text-white' : 'bg-[#151a23] text-gray-500 border border-gray-800'}`}>ALL DEPTS</button>
+                  <button 
+                    onClick={() => { setSelectedCategory(null); setSearchQuery(''); }} 
+                    className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase transition-all whitespace-nowrap ${!selectedCategory && !searchQuery ? 'bg-blue-600 text-white shadow-lg' : 'bg-[#151a23] text-gray-500 border border-gray-800'}`}
+                  >
+                    ALL DEPTS
+                  </button>
                   {Object.values(GameCategory).map(cat => (
-                    <button key={cat} onClick={() => { setSelectedCategory(cat); setSearchQuery(''); }} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-[#151a23] text-gray-500 border border-gray-800'}`}>{cat.toUpperCase()}</button>
+                    <button 
+                        key={cat} 
+                        onClick={() => { setSelectedCategory(cat); setSearchQuery(''); }} 
+                        className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-blue-600 text-white shadow-lg' : 'bg-[#151a23] text-gray-500 border border-gray-800'}`}
+                    >
+                        {cat.toUpperCase()}
+                    </button>
                   ))}
                </div>
             </div>
             <ShopGrid category={selectedCategory} searchQuery={searchQuery} onProductClick={(p) => setSelectedProduct(p)} language={language} />
           </div>
         )}
+        
         {currentPage === 'dashboard' && <Dashboard session={session} setSession={setSession} addToast={addToast} onNavigate={handleNavigate} initialOrderId={targetOrderId} initialTab={dashboardTab} onSignOut={() => handleNavigate('home')} />}
         {currentPage === 'admin' && (adminRole !== 'none' ? <AdminPanel session={session} addToast={addToast} role={adminRole} /> : <AdminLockScreen onSuccess={setAdminRole} />)}
-        {/* Other Pages: Minimal versions assumed to follow this scale */}
+        
+        {/* Other Pages: Placeholder Logic to maintain app structure */}
+        {currentPage === 'cart' && <CartPage cart={cart} onUpdateQty={() => {}} onRemove={() => {}} onNavigate={handleNavigate} addToast={addToast} />}
+        {currentPage === 'checkout' && <CheckoutPage cart={cart} session={session} onNavigate={handleNavigate} onViewOrder={() => {}} onClearCart={() => {}} addToast={addToast} />}
+        {currentPage === 'topup' && <TopUpPage session={session} onNavigate={handleNavigate} addToast={addToast} />}
+        {currentPage === 'pointsShop' && <PointsShopPage session={session} onNavigate={handleNavigate} addToast={addToast} />}
+        {currentPage === 'donate' && <DonatePage session={session} onNavigate={handleNavigate} addToast={addToast} />}
+        {currentPage === 'leaderboard' && <LeaderboardPage onNavigate={handleNavigate} />}
+        {currentPage === 'tournaments' && <TournamentsPage onNavigate={handleNavigate} onSelectTournament={setSelectedTournament as any} />}
+        {currentPage === 'tournament-details' && <TournamentDetailsPage tournament={selectedTournament} onNavigate={handleNavigate} addToast={addToast} />}
+        {currentPage === 'loot' && <LootBoxPage session={session} onNavigate={handleNavigate} addToast={addToast} />}
+        {currentPage === 'elite' && <ElitePage session={session} onNavigate={handleNavigate} addToast={addToast} />}
+        {currentPage === 'spin' && <SpinWheelPage session={session} onNavigate={handleNavigate} addToast={addToast} />}
       </main>
 
       {currentPage !== 'admin' && <Footer onNavigate={handleNavigate} session={session} addToast={addToast} />}
