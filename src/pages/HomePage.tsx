@@ -209,42 +209,30 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
 
       {/* OUR FUTURE IDEAS LIST SECTION */}
       <section className="py-24 container mx-auto px-4">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12 items-center">
-              <div className="flex-1">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-widest mb-6">
-                      <Lightbulb className="w-3.5 h-3.5" /> Project Roadmap
-                  </div>
-                  <h2 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter mb-6 leading-none">OUR FUTURE<br/><span className="text-blue-500">IDEAS</span></h2>
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-10 max-w-sm">We are constantly improving Moon Night. Here is what we have planned for the community.</p>
-                  
-                  <div className="space-y-4">
-                      {[
-                          { icon: Smartphone, title: "Mobile App Development", desc: "Native iOS & Android apps for faster trades.", status: "In Progress", color: "text-blue-400" },
-                          { icon: Rocket, title: "Auto-Delivery System", desc: "Get your account details instantly after payment.", status: "Beta Test", color: "text-green-400" },
-                          { icon: Crown, title: "VIP Private Auctions", desc: "Exclusive bidding for the rarest accounts.", status: "Planning", color: "text-yellow-400" }
-                      ].map((idea, i) => (
-                          <div key={i} className="flex gap-4 p-5 rounded-2xl bg-[#151a23] border border-white/5 hover:border-blue-500/20 transition-all group">
-                              <div className={`p-3 rounded-xl bg-white/5 ${idea.color}`}><idea.icon className="w-6 h-6" /></div>
-                              <div className="flex-1">
-                                  <div className="flex items-center justify-between mb-1">
-                                      <h4 className="text-white font-black uppercase text-sm italic">{idea.title}</h4>
-                                      <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-white/5 text-gray-500 border border-white/5">{idea.status}</span>
-                                  </div>
-                                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{idea.desc}</p>
-                              </div>
-                          </div>
-                      ))}
-                  </div>
+          <div className="max-w-4xl mx-auto text-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-widest mb-6">
+                  <Lightbulb className="w-3.5 h-3.5" /> Project Roadmap
               </div>
-              <div className="flex-1 hidden lg:block">
-                  <div className="relative">
-                      <div className="absolute inset-0 bg-blue-600/10 blur-[100px] rounded-full"></div>
-                      <img src="https://images.unsplash.com/photo-1621330396173-e41b1cafd17f?auto=format&fit=crop&w=800&q=80" className="relative z-10 w-full h-[500px] object-cover rounded-[3rem] border border-white/10 shadow-3xl grayscale hover:grayscale-0 transition-all duration-1000" alt="Future" />
-                      <div className="absolute bottom-10 left-10 z-20 bg-blue-600 p-8 rounded-3xl shadow-2xl text-white">
-                          <Trophy className="w-10 h-10 mb-4" />
-                          <p className="text-2xl font-black italic uppercase tracking-tighter">Building<br/>The Best</p>
+              <h2 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter mb-6 leading-none">OUR FUTURE<br/><span className="text-blue-500">IDEAS</span></h2>
+              <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-12 mx-auto max-w-sm">We are constantly improving Moon Night. Here is what we have planned for the community.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
+                  {[
+                      { icon: Smartphone, title: "Mobile App Development", desc: "Native iOS & Android apps for faster trades.", status: "In Progress", color: "text-blue-400" },
+                      { icon: Rocket, title: "Auto-Delivery System", desc: "Get your account details instantly after payment.", status: "Beta Test", color: "text-green-400" },
+                      { icon: Crown, title: "VIP Private Auctions", desc: "Exclusive bidding for the rarest accounts.", status: "Planning", color: "text-yellow-400" }
+                  ].map((idea, i) => (
+                      <div key={i} className="flex gap-4 p-5 rounded-2xl bg-[#151a23] border border-white/5 hover:border-blue-500/20 transition-all group">
+                          <div className={`p-3 rounded-xl bg-white/5 ${idea.color}`}><idea.icon className="w-6 h-6" /></div>
+                          <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                  <h4 className="text-white font-black uppercase text-sm italic">{idea.title}</h4>
+                                  <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-white/5 text-gray-500 border border-white/5">{idea.status}</span>
+                              </div>
+                              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{idea.desc}</p>
+                          </div>
                       </div>
-                  </div>
+                  ))}
               </div>
           </div>
       </section>

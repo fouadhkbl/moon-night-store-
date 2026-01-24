@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile, Coupon, Order, AccessLog, OrderItem, PointRedemption, RedemptionMessage, Donation, Tournament, LootBox, SpinWheelItem, OrderMessage, PointProduct } from '../../types';
+import { Product, Profile, Coupon, Order, AccessLog, OrderItem, PointRedemption, RedemptionMessage, Donation, Tournament, LootBox, SpinWheelItem, OrderMessage, PointProduct, AppSetting } from '../../types';
 import { 
   BarChart3, Package, Users, Search, Edit2, Trash2, PlusCircle, Wallet, 
   ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Globe, 
   Archive, Trophy, Gift, Eye, Heart, Swords, Save, Crown, Zap, 
   RotateCw, Loader2, Megaphone, Activity, Ticket, ShieldAlert, Key, 
-  ChevronRight, Smartphone, Monitor
+  ChevronRight, Smartphone, Monitor, Settings, Palette, Timer, AlertTriangle
 } from 'lucide-react';
 import { 
   ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, 
@@ -110,7 +110,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
                     </div>
                     <form onSubmit={handleSendMessage} className="p-4 border-t border-white/5 bg-[#1e232e] flex gap-2">
                         <input type="text" className="flex-1 bg-[#0b0e14] border border-white/5 rounded-xl px-4 py-3 text-white text-xs outline-none focus:border-blue-500" placeholder="Type transmission..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
-                        <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-xl transition-all active:scale-95" disabled={!newMessage.trim()}><Send className="w-4 h-4" /></button>
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl transition-all active:scale-95" disabled={!newMessage.trim()}><Send className="w-4 h-4" /></button>
                     </form>
                 </div>
             </div>
@@ -119,10 +119,19 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 };
 
 export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' | 'shop' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'orders' | 'coupons' | 'pointsShop' | 'redemptions' | 'liveFeed' | 'wheel' | 'lootBoxes' | 'donations' | 'tournaments'>(role === 'shop' ? 'products' : 'stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'orders' | 'coupons' | 'pointsShop' | 'redemptions' | 'liveFeed' | 'wheel' | 'lootBoxes' | 'donations' | 'tournaments' | 'settings'>(role === 'shop' ? 'products' : 'stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [pointProducts, setPointProducts] = useState<PointProduct[]>([]);
+  const [redemptions, setRedemptions] = useState<PointRedemption[]>([]);
+  const [wheelItems, setWheelItems] = useState<SpinWheelItem[]>([]);
+  const [lootBoxes, setLootBoxes] = useState<LootBox[]>([]);
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [appSettings, setAppSettings] = useState<AppSetting[]>([]);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -134,6 +143,17 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [selectedProduct, setSelectedProduct] = useState<Partial<Product> | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+  
+  const [selectedCoupon, setSelectedCoupon] = useState<Partial<Coupon> | null>(null);
+  const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [selectedPointProduct, setSelectedPointProduct] = useState<Partial<PointProduct> | null>(null);
+  const [isPointProductModalOpen, setIsPointProductModalOpen] = useState(false);
+  const [selectedTournament, setSelectedTournament] = useState<Partial<Tournament> | null>(null);
+  const [isTournamentModalOpen, setIsTournamentModalOpen] = useState(false);
+  const [selectedLootBox, setSelectedLootBox] = useState<Partial<LootBox> | null>(null);
+  const [isLootBoxModalOpen, setIsLootBoxModalOpen] = useState(false);
+  const [selectedWheelItem, setSelectedWheelItem] = useState<Partial<SpinWheelItem> | null>(null);
+  const [isWheelModalOpen, setIsWheelModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -160,6 +180,30 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         } else if (activeSection === 'orders') {
             const { data } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
             if (data) setOrders(data);
+        } else if (activeSection === 'coupons') {
+            const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+            if (data) setCoupons(data);
+        } else if (activeSection === 'pointsShop') {
+            const { data } = await supabase.from('point_products').select('*').order('cost', { ascending: true });
+            if (data) setPointProducts(data);
+        } else if (activeSection === 'redemptions') {
+            const { data } = await supabase.from('point_redemptions').select('*, profile:profiles(*), point_product:point_products(*)').order('created_at', { ascending: false });
+            if (data) setRedemptions(data);
+        } else if (activeSection === 'wheel') {
+            const { data } = await supabase.from('spin_wheel_items').select('*').order('probability', { ascending: false });
+            if (data) setWheelItems(data);
+        } else if (activeSection === 'lootBoxes') {
+            const { data } = await supabase.from('loot_boxes').select('*').order('price', { ascending: true });
+            if (data) setLootBoxes(data);
+        } else if (activeSection === 'donations') {
+            const { data } = await supabase.from('donations').select('*, profile:profiles(*)').order('created_at', { ascending: false });
+            if (data) setDonations(data);
+        } else if (activeSection === 'tournaments') {
+            const { data } = await supabase.from('tournaments').select('*').order('start_date', { ascending: false });
+            if (data) setTournaments(data);
+        } else if (activeSection === 'settings' || activeSection === 'liveFeed') {
+            const { data } = await supabase.from('app_settings').select('*').order('key', { ascending: true });
+            if (data) setAppSettings(data);
         }
     } catch (e) { console.error(e); } finally { setIsLoading(false); }
   }, [activeSection]);
@@ -173,15 +217,32 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
     fetchData();
   };
 
+  const handleUpdateRedemptionStatus = async (id: string, status: string) => {
+      await supabase.from('point_redemptions').update({ status }).eq('id', id);
+      addToast('Status Updated', `Redemption ${status}.`, 'info');
+      fetchData();
+  };
+
+  const handleUpdateSetting = async (key: string, value: string) => {
+      await supabase.from('app_settings').update({ value }).eq('key', key);
+      addToast('System Updated', `${key} saved.`, 'success');
+      fetchData();
+  };
+
   const navItems = [
     { id: 'stats', label: 'Dashboard', icon: BarChart3, role: ['full', 'limited'] },
     { id: 'products', label: 'Inventory', icon: Package, role: ['full', 'limited', 'shop'] },
     { id: 'orders', label: 'Trades', icon: ClipboardList, role: ['full', 'limited'] },
     { id: 'users', label: 'Operators', icon: Users, role: ['full'] },
     { id: 'coupons', label: 'Coupons', icon: Ticket, role: ['full'] },
+    { id: 'pointsShop', label: 'Rewards', icon: Trophy, role: ['full'] },
+    { id: 'redemptions', label: 'Point Queue', icon: Clock, role: ['full'] },
     { id: 'liveFeed', label: 'Live Feed', icon: Activity, role: ['full'] },
     { id: 'wheel', label: 'Win Wheel', icon: RotateCw, role: ['full'] },
+    { id: 'lootBoxes', label: 'Packs', icon: Package, role: ['full'] },
     { id: 'donations', label: 'Donations', icon: Heart, role: ['full'] },
+    { id: 'tournaments', label: 'Events', icon: Swords, role: ['full'] },
+    { id: 'settings', label: 'Core Config', icon: Settings, role: ['full'] },
   ];
 
   return (
@@ -227,7 +288,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                  <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
                      {navItems.find(i => i.id === activeSection)?.label || 'Console'}
                  </h2>
-                 {['products', 'users', 'orders'].includes(activeSection) && (
+                 {['products', 'users', 'orders', 'coupons', 'pointProducts'].includes(activeSection) && (
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                         <input 
@@ -248,7 +309,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                          <span className="text-[10px] font-black uppercase tracking-[0.3em]">Querying Database...</span>
                      </div>
                  ) : (
-                     <div className="animate-fade-in max-w-7xl mx-auto">
+                     <div className="animate-fade-in max-w-7xl mx-auto pb-20">
                          {activeSection === 'stats' && (
                              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                  <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-white/5 shadow-2xl relative overflow-hidden group">
@@ -257,7 +318,6 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                      <h3 className="text-5xl font-black text-white italic tracking-tighter leading-none mb-1">{totalRevenue.toFixed(2)}</h3>
                                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">DIRHAM (MAD)</p>
                                  </div>
-                                 {/* More stat cards can be added here */}
                              </div>
                          )}
 
@@ -374,7 +434,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                          <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
                                              <div className="text-left md:text-right">
                                                  <p className="text-yellow-400 font-black italic text-2xl tracking-tighter leading-none">{order.total_amount.toFixed(2)} DH</p>
-                                                 <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mt-1">Paid via {order.payment_method || 'System'}</p>
+                                                 <p className={`text-[8px] font-black uppercase tracking-widest mt-1 ${order.status === 'completed' ? 'text-green-500' : 'text-yellow-500'}`}>Paid via {order.payment_method || 'System'}</p>
                                              </div>
                                              <button onClick={() => setSelectedOrder(order)} className="p-4 bg-white/5 rounded-2xl text-gray-400 hover:text-white hover:bg-blue-600 transition-all shadow-xl group/btn">
                                                  <Eye className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
@@ -382,6 +442,325 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                          </div>
                                      </div>
                                  ))}
+                             </div>
+                         )}
+
+                         {activeSection === 'coupons' && (
+                            <div className="space-y-6">
+                                <button onClick={() => { setSelectedCoupon(null); setIsCouponModalOpen(true); }} className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-xl shadow-purple-600/20 active:scale-95 transition-all">
+                                    <PlusCircle className="w-4 h-4" /> Issue New Coupon
+                                </button>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {coupons.map(c => (
+                                        <div key={c.id} className="bg-[#1e232e] p-6 rounded-3xl border border-white/5 flex flex-col shadow-xl group hover:border-purple-500/30 transition-all">
+                                            <div className="flex justify-between items-start mb-6">
+                                                <div>
+                                                    <h3 className="text-2xl font-mono font-black text-white uppercase tracking-widest">{c.code}</h3>
+                                                    <p className="text-purple-400 text-[10px] font-black uppercase tracking-widest">Type: {c.discount_type}</p>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => { setSelectedCoupon(c); setIsCouponModalOpen(true); }} className="p-2 bg-white/5 rounded-lg text-gray-500 hover:text-blue-500 transition-colors"><Edit2 className="w-3.5 h-3.5"/></button>
+                                                    <button onClick={() => handleDelete('coupons', c.id, c.code)} className="p-2 bg-white/5 rounded-lg text-gray-500 hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5"/></button>
+                                                </div>
+                                            </div>
+                                            <div className="mt-auto flex justify-between items-end">
+                                                <div>
+                                                    <p className="text-[8px] text-gray-500 font-bold uppercase mb-1">Value</p>
+                                                    <p className="text-xl font-black text-white italic">{c.discount_value}{c.discount_type === 'percent' ? '%' : ' DH'}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[8px] text-gray-500 font-bold uppercase mb-1">Uses</p>
+                                                    <p className="text-xl font-black text-white italic">{c.usage_count} / {c.max_uses || '∞'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                         )}
+
+                         {activeSection === 'pointsShop' && (
+                            <div className="space-y-6">
+                                <button onClick={() => { setSelectedPointProduct(null); setIsPointProductModalOpen(true); }} className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-xl shadow-purple-600/20 active:scale-95 transition-all">
+                                    <PlusCircle className="w-4 h-4" /> Add Reward Item
+                                </button>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    {pointProducts.map(p => (
+                                        <div key={p.id} className="bg-[#1e232e] rounded-3xl border border-white/5 overflow-hidden flex flex-col shadow-xl group hover:border-purple-500/30 transition-all">
+                                            <div className="h-40 bg-black relative">
+                                                <img src={p.image_url} className="w-full h-full object-cover opacity-60" alt="" />
+                                                <div className="absolute top-2 right-2 flex gap-1">
+                                                    <button onClick={() => { setSelectedPointProduct(p); setIsPointProductModalOpen(true); }} className="p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:bg-blue-600 transition-all"><Edit2 className="w-3 h-3"/></button>
+                                                    <button onClick={() => handleDelete('point_products', p.id, p.name)} className="p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:bg-red-600 transition-all"><Trash2 className="w-3 h-3"/></button>
+                                                </div>
+                                            </div>
+                                            <div className="p-5 flex-1">
+                                                <h4 className="text-white font-black text-xs uppercase italic truncate mb-4">{p.name}</h4>
+                                                <div className="flex justify-between items-center mt-auto">
+                                                    <span className="text-purple-400 font-black italic text-lg tracking-tighter">{p.cost} PTS</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                         )}
+
+                         {activeSection === 'redemptions' && (
+                             <div className="bg-[#1e232e] rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+                                <table className="w-full text-left">
+                                    <thead className="bg-[#151a23] text-gray-500 text-[10px] font-black uppercase tracking-widest border-b border-white/5">
+                                        <tr>
+                                            <th className="p-5">User</th>
+                                            <th className="p-5">Reward</th>
+                                            <th className="p-5">Date</th>
+                                            <th className="p-5">Status</th>
+                                            <th className="p-5 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {redemptions.map(r => (
+                                            <tr key={r.id} className="hover:bg-white/5 transition-colors">
+                                                <td className="p-5">
+                                                    <p className="text-white font-black text-[11px] uppercase italic truncate">{r.profile?.username}</p>
+                                                    <p className="text-gray-500 text-[9px] font-bold truncate">{r.profile?.email}</p>
+                                                </td>
+                                                <td className="p-5">
+                                                    <p className="text-purple-400 font-black text-[11px] uppercase italic">{r.point_product?.name}</p>
+                                                    <p className="text-gray-500 text-[9px] font-bold">Cost: {r.cost_at_redemption} PTS</p>
+                                                </td>
+                                                <td className="p-5 text-gray-400 text-[10px] font-bold">{new Date(r.created_at).toLocaleDateString()}</td>
+                                                <td className="p-5">
+                                                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${r.status === 'completed' ? 'text-green-500 border-green-500/20' : r.status === 'pending' ? 'text-yellow-500 border-yellow-500/20' : 'text-red-500 border-red-500/20'}`}>{r.status}</span>
+                                                </td>
+                                                <td className="p-5 text-right flex gap-2 justify-end">
+                                                    {r.status === 'pending' && (
+                                                        <>
+                                                            <button onClick={() => handleUpdateRedemptionStatus(r.id, 'completed')} className="p-2 bg-green-500/10 text-green-500 rounded-lg border border-green-500/20 hover:bg-green-500 hover:text-white transition-all"><CheckCircle className="w-3.5 h-3.5"/></button>
+                                                            <button onClick={() => handleUpdateRedemptionStatus(r.id, 'rejected')} className="p-2 bg-red-500/10 text-red-500 rounded-lg border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"><X className="w-3.5 h-3.5"/></button>
+                                                        </>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                             </div>
+                         )}
+
+                         {activeSection === 'liveFeed' && (
+                             <div className="bg-[#1e232e] p-8 md:p-12 rounded-[3.5rem] border border-white/5 shadow-3xl max-w-3xl mx-auto">
+                                 <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-8 flex items-center gap-3">
+                                     <Megaphone className="w-6 h-6 text-blue-500" /> Marquee Control
+                                 </h3>
+                                 <div className="space-y-8">
+                                     <div>
+                                         <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Announcement Text</label>
+                                         <textarea 
+                                             className="w-full bg-[#0b0e14] border border-white/5 rounded-2xl p-6 text-white text-sm focus:border-blue-500 outline-none"
+                                             value={appSettings.find(s => s.key === 'live_feed_text')?.value || ''}
+                                             onChange={(e) => handleUpdateSetting('live_feed_text', e.target.value)}
+                                             rows={3}
+                                         />
+                                     </div>
+                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                         <div>
+                                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Badge Label</label>
+                                             <input 
+                                                 className="w-full bg-[#0b0e14] border border-white/5 rounded-xl p-4 text-white text-xs"
+                                                 value={appSettings.find(s => s.key === 'live_feed_badge')?.value || ''}
+                                                 onChange={(e) => handleUpdateSetting('live_feed_badge', e.target.value)}
+                                             />
+                                         </div>
+                                         <div>
+                                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Color Code</label>
+                                             <input 
+                                                 type="color"
+                                                 className="w-full h-12 bg-transparent border-none rounded-xl cursor-pointer"
+                                                 value={appSettings.find(s => s.key === 'live_feed_color')?.value || '#2563eb'}
+                                                 onChange={(e) => handleUpdateSetting('live_feed_color', e.target.value)}
+                                             />
+                                         </div>
+                                         <div>
+                                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Speed (s)</label>
+                                             <select 
+                                                 className="w-full bg-[#0b0e14] border border-white/5 rounded-xl p-4 text-white text-xs"
+                                                 value={appSettings.find(s => s.key === 'live_feed_speed')?.value || '30s'}
+                                                 onChange={(e) => handleUpdateSetting('live_feed_speed', e.target.value)}
+                                             >
+                                                 <option value="15s">Fast (15s)</option>
+                                                 <option value="30s">Normal (30s)</option>
+                                                 <option value="60s">Slow (60s)</option>
+                                             </select>
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
+                         )}
+
+                         {activeSection === 'wheel' && (
+                             <div className="space-y-6">
+                                <button onClick={() => { setSelectedWheelItem(null); setIsWheelModalOpen(true); }} className="bg-pink-600 hover:bg-pink-700 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-xl active:scale-95 transition-all">
+                                    <PlusCircle className="w-4 h-4" /> Add Wheel Slice
+                                </button>
+                                <div className="bg-[#1e232e] rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-[#151a23] text-gray-500 text-[10px] font-black uppercase tracking-widest border-b border-white/5">
+                                            <tr>
+                                                <th className="p-5">Visual</th>
+                                                <th className="p-5">Display Text</th>
+                                                <th className="p-5">Type</th>
+                                                <th className="p-5">Value</th>
+                                                <th className="p-5">Probability</th>
+                                                <th className="p-5 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {wheelItems.map(item => (
+                                                <tr key={item.id} className="hover:bg-white/5 transition-colors">
+                                                    <td className="p-5">
+                                                        <div className="w-8 h-8 rounded-full border border-white/20" style={{ backgroundColor: item.color }}></div>
+                                                    </td>
+                                                    <td className="p-5 font-black text-white text-xs uppercase">{item.text}</td>
+                                                    <td className="p-5 text-gray-400 text-[10px] font-black uppercase">{item.type}</td>
+                                                    <td className="p-5 text-white font-black italic">{item.value}</td>
+                                                    <td className="p-5">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="h-1.5 flex-1 bg-gray-800 rounded-full overflow-hidden">
+                                                                <div className="h-full bg-pink-500" style={{ width: `${item.probability}%` }}></div>
+                                                            </div>
+                                                            <span className="text-[10px] font-black text-white">{item.probability}%</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-5 text-right">
+                                                        <div className="flex gap-2 justify-end">
+                                                            <button onClick={() => { setSelectedWheelItem(item); setIsWheelModalOpen(true); }} className="p-2 bg-white/5 rounded-lg text-gray-500 hover:text-blue-500 transition-colors"><Edit2 className="w-3.5 h-3.5"/></button>
+                                                            <button onClick={() => handleDelete('spin_wheel_items', item.id, item.text)} className="p-2 bg-white/5 rounded-lg text-gray-500 hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5"/></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                             </div>
+                         )}
+
+                         {activeSection === 'lootBoxes' && (
+                             <div className="space-y-6">
+                                <button onClick={() => { setSelectedLootBox(null); setIsLootBoxModalOpen(true); }} className="bg-yellow-600 hover:bg-yellow-700 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-xl active:scale-95 transition-all">
+                                    <PlusCircle className="w-4 h-4" /> Create Pack
+                                </button>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {lootBoxes.map(l => (
+                                        <div key={l.id} className={`bg-[#1e232e] p-8 rounded-[3rem] border-2 shadow-2xl relative overflow-hidden group ${l.border_color || 'border-white/5'}`}>
+                                            <div className={`absolute inset-0 blur-[40px] opacity-10 ${l.color || 'bg-blue-500'}`}></div>
+                                            <div className="relative z-10 flex justify-between items-start mb-8">
+                                                <Package className="w-12 h-12 text-white/20" />
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => { setSelectedLootBox(l); setIsLootBoxModalOpen(true); }} className="p-2 bg-white/5 rounded-xl text-gray-500 hover:text-blue-400 transition-colors"><Edit2 className="w-4 h-4"/></button>
+                                                    <button onClick={() => handleDelete('loot_boxes', l.id, l.name)} className="p-2 bg-white/5 rounded-xl text-gray-500 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4"/></button>
+                                                </div>
+                                            </div>
+                                            <h3 className="relative z-10 text-2xl font-black text-white italic uppercase tracking-tighter mb-2">{l.name}</h3>
+                                            <p className="relative z-10 text-3xl font-black text-yellow-400 italic mb-1">{l.price} DH</p>
+                                            <p className="relative z-10 text-[10px] text-gray-500 font-bold uppercase tracking-widest">Multiplier: x{l.multiplier}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                             </div>
+                         )}
+
+                         {activeSection === 'donations' && (
+                             <div className="bg-[#1e232e] rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+                                <table className="w-full text-left">
+                                    <thead className="bg-[#151a23] text-gray-500 text-[10px] font-black uppercase tracking-widest border-b border-white/5">
+                                        <tr>
+                                            <th className="p-5">Donator</th>
+                                            <th className="p-5">Transaction ID</th>
+                                            <th className="p-5">Date</th>
+                                            <th className="p-5 text-right">Amount (MAD)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {donations.map(d => (
+                                            <tr key={d.id} className="hover:bg-white/5 transition-colors">
+                                                <td className="p-5">
+                                                    <p className="text-white font-black text-[11px] uppercase italic truncate">{d.profile?.username || 'GUEST'}</p>
+                                                    <p className="text-gray-500 text-[9px] font-bold truncate">{d.profile?.email || 'External Link'}</p>
+                                                </td>
+                                                <td className="p-5 text-gray-500 font-mono text-[10px] uppercase">{d.transaction_id || 'INTERNAL'}</td>
+                                                <td className="p-5 text-gray-400 text-[10px] font-bold">{new Date(d.created_at).toLocaleString()}</td>
+                                                <td className="p-5 text-right font-black text-red-400 text-sm italic tracking-tighter">{d.amount.toFixed(2)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                             </div>
+                         )}
+
+                         {activeSection === 'tournaments' && (
+                             <div className="space-y-6">
+                                <button onClick={() => { setSelectedTournament(null); setIsTournamentModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-xl active:scale-95 transition-all">
+                                    <PlusCircle className="w-4 h-4" /> Launch Tournament
+                                </button>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {tournaments.map(t => (
+                                        <div key={t.id} className="bg-[#1e232e] p-6 rounded-[2.5rem] border border-white/5 flex gap-6 group hover:border-blue-500/30 transition-all shadow-xl">
+                                            <div className="w-32 h-32 rounded-3xl overflow-hidden bg-gray-900 border border-white/5 shrink-0">
+                                                <img src={t.image_url} className="w-full h-full object-cover opacity-60" alt="" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h3 className="text-lg font-black text-white italic uppercase truncate">{t.title}</h3>
+                                                    <div className="flex gap-1.5">
+                                                        <button onClick={() => { setSelectedTournament(t); setIsTournamentModalOpen(true); }} className="p-2 bg-white/5 rounded-lg text-gray-500 hover:text-blue-400"><Edit2 className="w-3.5 h-3.5"/></button>
+                                                        <button onClick={() => handleDelete('tournaments', t.id, t.title)} className="p-2 bg-white/5 rounded-lg text-gray-500 hover:text-red-400"><Trash2 className="w-3.5 h-3.5"/></button>
+                                                    </div>
+                                                </div>
+                                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-4">{t.game_name} • {new Date(t.start_date).toLocaleDateString()}</p>
+                                                <div className="flex justify-between items-end">
+                                                    <div>
+                                                        <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest">Prize Pool</p>
+                                                        <p className="text-yellow-400 font-black italic">{t.prize_pool}</p>
+                                                    </div>
+                                                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${t.status === 'open' ? 'text-green-500 border-green-500/20' : 'text-gray-500 border-white/5'}`}>{t.status}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                             </div>
+                         )}
+
+                         {activeSection === 'settings' && (
+                             <div className="bg-[#1e232e] rounded-[3.5rem] border border-white/5 overflow-hidden shadow-3xl max-w-4xl mx-auto">
+                                 <div className="p-8 border-b border-white/5 bg-[#151a23]">
+                                     <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
+                                         <Settings className="w-6 h-6 text-gray-400" /> Core System Config
+                                     </h3>
+                                 </div>
+                                 <div className="divide-y divide-white/5">
+                                     {appSettings.filter(s => !s.key.includes('live_feed')).map(s => (
+                                         <div key={s.key} className="p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-white/5 transition-colors">
+                                             <div className="flex items-center gap-4">
+                                                 <div className="p-3 bg-white/5 rounded-xl"><Activity className="w-5 h-5 text-blue-500" /></div>
+                                                 <div>
+                                                     <p className="text-white font-black text-xs uppercase tracking-widest">{s.key.replace(/_/g, ' ')}</p>
+                                                     <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Global Variable</p>
+                                                 </div>
+                                             </div>
+                                             <div className="flex gap-2">
+                                                 <input 
+                                                     className="bg-[#0b0e14] border border-white/5 rounded-xl px-6 py-3 text-white text-xs font-mono w-full md:w-64 focus:border-blue-500 outline-none"
+                                                     defaultValue={s.value}
+                                                     onBlur={(e) => handleUpdateSetting(s.key, e.target.value)}
+                                                 />
+                                                 <button className="p-3 bg-blue-600 text-white rounded-xl shadow-lg"><Save className="w-4 h-4"/></button>
+                                             </div>
+                                         </div>
+                                     ))}
+                                 </div>
                              </div>
                          )}
                      </div>
@@ -404,6 +783,41 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
             <BalanceEditorModal user={selectedProfile} onClose={() => setIsBalanceModalOpen(false)} onSave={async (id, amount, points, spins) => {
                 await supabase.from('profiles').update({ wallet_balance: amount, discord_points: points, spins_count: spins }).eq('id', id);
                 setIsBalanceModalOpen(false); fetchData(); addToast('Balance Synced', 'User assets updated.', 'success');
+            }} />
+        )}
+        {isCouponModalOpen && (
+            <CouponFormModal coupon={selectedCoupon} onClose={() => setIsCouponModalOpen(false)} onSave={async (data) => {
+                if (selectedCoupon?.id) await supabase.from('coupons').update(data).eq('id', selectedCoupon.id);
+                else await supabase.from('coupons').insert(data);
+                setIsCouponModalOpen(false); fetchData(); addToast('Protocol Saved', 'Coupon updated.', 'success');
+            }} />
+        )}
+        {isPointProductModalOpen && (
+            <PointProductFormModal product={selectedPointProduct} onClose={() => setIsPointProductModalOpen(false)} onSave={async (data) => {
+                if (selectedPointProduct?.id) await supabase.from('point_products').update(data).eq('id', selectedPointProduct.id);
+                else await supabase.from('point_products').insert(data);
+                setIsPointProductModalOpen(false); fetchData(); addToast('Reward Linked', 'Item updated.', 'success');
+            }} />
+        )}
+        {isTournamentModalOpen && (
+            <TournamentFormModal tournament={selectedTournament} onClose={() => setIsTournamentModalOpen(false)} onSave={async (data) => {
+                if (selectedTournament?.id) await supabase.from('tournaments').update(data).eq('id', selectedTournament.id);
+                else await supabase.from('tournaments').insert(data);
+                setIsTournamentModalOpen(false); fetchData(); addToast('Event Broadcasted', 'Tournament details saved.', 'success');
+            }} />
+        )}
+        {isLootBoxModalOpen && (
+            <LootBoxFormModal lootBox={selectedLootBox} onClose={() => setIsLootBoxModalOpen(false)} onSave={async (data) => {
+                if (selectedLootBox?.id) await supabase.from('loot_boxes').update(data).eq('id', selectedLootBox.id);
+                else await supabase.from('loot_boxes').insert(data);
+                setIsLootBoxModalOpen(false); fetchData(); addToast('Pack Initialized', 'Loot box updated.', 'success');
+            }} />
+        )}
+        {isWheelModalOpen && (
+            <SpinWheelItemFormModal item={selectedWheelItem} onClose={() => setIsWheelModalOpen(false)} onSave={async (data) => {
+                if (selectedWheelItem?.id) await supabase.from('spin_wheel_items').update(data).eq('id', selectedWheelItem.id);
+                else await supabase.from('spin_wheel_items').insert(data);
+                setIsWheelModalOpen(false); fetchData(); addToast('Segment Calibrated', 'Wheel slice updated.', 'success');
             }} />
         )}
     </div>
