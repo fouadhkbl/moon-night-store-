@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, ShoppingBag, Trophy, Heart, Home, Swords, LogOut, Crown, Package, Zap, Sparkles, Command, RefreshCw, Loader2, Wallet, Coins, LogIn, UserPlus, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, LayoutDashboard, X, ShoppingBag, Trophy, Heart, Home, Swords, LogOut, Crown, Package, Zap, Sparkles, Command, RefreshCw, Loader2, Wallet, Coins, LogIn, UserPlus, ArrowRight, Tag, Layers } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { Product, Profile } from '../types';
+import { Product, Profile, GameCategory } from '../types';
 
 interface NavbarProps {
   session: any;
@@ -20,6 +20,7 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   
   const DISCORD_LOGO = "https://cdn.discordapp.com/attachments/1459639411728711914/1463587675897462795/moon-edite-png_1_1-ezgif.com-optimize.gif?ex=6975ab7e&is=697459fe&hm=fe3c5242f9e86f2692bfea6aece5c50b46ae757d80cc8d01c9a20ae4e6bf9e19";
@@ -62,13 +63,25 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
       if (searchTerm.trim().length >= 2) {
           setIsSearching(true);
           const timer = setTimeout(async () => {
-              const { data } = await supabase.from('products').select('*').ilike('name', `%${searchTerm}%`).eq('is_hidden', false).limit(5);
-              if (data) setSearchResults(data);
+              const { data: productData } = await supabase.from('products')
+                .select('*')
+                .or(`name.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
+                .eq('is_hidden', false)
+                .limit(5);
+              
+              if (productData) setSearchResults(productData);
+
+              const matchedCats = Object.values(GameCategory).filter(cat => 
+                cat.toLowerCase().includes(searchTerm.toLowerCase())
+              );
+              setCategorySuggestions(matchedCats);
+
               setIsSearching(false);
           }, 300);
           return () => clearTimeout(timer);
       } else {
           setSearchResults([]);
+          setCategorySuggestions([]);
       }
   }, [searchTerm]);
 
@@ -77,12 +90,36 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
       if (searchTerm.trim()) {
           onSearch(searchTerm);
           setIsSearchModalOpen(false);
+          setSearchTerm('');
       }
   };
 
   const handleResultClick = (product: Product) => {
       if (onProductSelect) onProductSelect(product);
       setIsSearchModalOpen(false);
+      setSearchTerm('');
+  };
+
+  const handleCategoryClick = (category: string) => {
+      onSearch(category);
+      setIsSearchModalOpen(false);
+      setSearchTerm('');
+  };
+
+  const highlightMatch = (text: string, query: string) => {
+    if (!query || !text) return text;
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return (
+      <>
+        {parts.map((part, i) => 
+          part.toLowerCase() === query.toLowerCase() ? (
+            <span key={i} className="text-blue-400 bg-blue-500/10 rounded px-0.5">{part}</span>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
   };
 
   const vipProgress = profile ? Math.min(100, (profile.vip_points / 5000) * 100) : 0;
@@ -148,20 +185,20 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                 {isGuest ? (
                   <div className="p-4 space-y-3">
                     <div className="text-center mb-4">
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Access Restricted</p>
-                        <p className="text-xs text-white font-bold">Sign in to unlock your vault.</p>
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Welcome back</p>
+                        <p className="text-xs text-white font-bold">Log in to view your account.</p>
                     </div>
                     <button 
                         onClick={() => handleLinkClick('dashboard')}
                         className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg"
                     >
-                        <LogIn className="w-4 h-4" /> Login Now
+                        <LogIn className="w-4 h-4" /> Log In
                     </button>
                     <button 
                         onClick={() => handleLinkClick('dashboard')}
                         className="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition-all border border-white/10"
                     >
-                        <UserPlus className="w-4 h-4" /> Register ID
+                        <UserPlus className="w-4 h-4" /> Sign Up
                     </button>
                   </div>
                 ) : profile && (
@@ -200,67 +237,95 @@ const Navbar: React.FC<NavbarProps> = ({ session, onNavigate, cartCount, onSearc
                     <input 
                         autoFocus
                         type="text" 
-                        placeholder="Search for items, games, etc..."
+                        placeholder="Search for items, categories, etc..."
                         className="flex-1 bg-transparent text-xl font-black text-white italic placeholder:text-gray-700 outline-none uppercase tracking-tighter"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                     <button 
                         type="button" 
-                        onClick={() => setIsSearchModalOpen(false)}
+                        onClick={() => { setIsSearchModalOpen(false); setSearchTerm(''); }}
                         className="p-2 bg-white/5 rounded-xl text-gray-500 hover:text-white transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </form>
 
-                <div className="p-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div className="p-4 max-h-[65vh] overflow-y-auto custom-scrollbar">
                     {isSearching ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4 text-blue-500">
                             <Loader2 className="w-10 h-10 animate-spin" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Searching Shop...</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Searching shop...</span>
                         </div>
                     ) : searchTerm.length < 2 ? (
                         <div className="py-20 text-center text-gray-600">
                             <Command className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em]">Enter at least 2 characters to begin</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em]">Enter at least 2 characters to search</p>
                         </div>
-                    ) : searchResults.length === 0 ? (
+                    ) : (searchResults.length === 0 && categorySuggestions.length === 0) ? (
                         <div className="py-20 text-center text-gray-600">
                             <X className="w-12 h-12 mx-auto mb-4 opacity-20" />
                             <p className="text-[10px] font-black uppercase tracking-[0.3em]">No items found</p>
                         </div>
                     ) : (
-                        <div className="space-y-2">
-                            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-2">Matches found</p>
-                            {searchResults.map(p => (
-                                <button 
-                                    key={p.id}
-                                    onClick={() => handleResultClick(p)}
-                                    className="w-full p-4 rounded-2xl bg-[#0b0e14]/50 border border-white/5 hover:border-blue-500/30 hover:bg-[#1e232e] transition-all flex items-center gap-4 group"
-                                >
-                                    <div className="w-12 h-12 rounded-xl bg-gray-900 overflow-hidden border border-white/5">
-                                        <img src={p.image_url} className="w-full h-full object-cover" alt="" />
+                        <div className="space-y-6">
+                            {categorySuggestions.length > 0 && (
+                                <div>
+                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-3 flex items-center gap-2">
+                                        <Layers className="w-3 h-3" /> Categories
+                                    </p>
+                                    <div className="flex flex-wrap gap-2 px-4">
+                                        {categorySuggestions.map(cat => (
+                                            <button 
+                                                key={cat}
+                                                onClick={() => handleCategoryClick(cat)}
+                                                className="px-4 py-2 rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-400 font-black uppercase text-[9px] tracking-widest hover:bg-blue-600 hover:text-white transition-all active:scale-95"
+                                            >
+                                                {highlightMatch(cat, searchTerm)}
+                                            </button>
+                                        ))}
                                     </div>
-                                    <div className="flex-1 text-left">
-                                        <h4 className="text-white font-black uppercase italic tracking-tighter group-hover:text-blue-400 transition-colors">{p.name}</h4>
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase">{p.category} • {p.platform}</p>
+                                </div>
+                            )}
+
+                            {searchResults.length > 0 && (
+                                <div>
+                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest px-4 mb-3 flex items-center gap-2">
+                                        <Tag className="w-3 h-3" /> Products
+                                    </p>
+                                    <div className="space-y-2">
+                                        {searchResults.map(p => (
+                                            <button 
+                                                key={p.id}
+                                                onClick={() => handleResultClick(p)}
+                                                className="w-full p-4 rounded-2xl bg-[#0b0e14]/50 border border-white/5 hover:border-blue-500/30 hover:bg-[#1e232e] transition-all flex items-center gap-4 group"
+                                            >
+                                                <div className="w-12 h-12 rounded-xl bg-gray-900 overflow-hidden border border-white/5">
+                                                    <img src={p.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="" />
+                                                </div>
+                                                <div className="flex-1 text-left min-w-0">
+                                                    <h4 className="text-white font-black uppercase italic tracking-tighter group-hover:text-blue-400 transition-colors truncate">
+                                                        {highlightMatch(p.name, searchTerm)}
+                                                    </h4>
+                                                    <p className="text-[9px] text-gray-500 font-bold uppercase mb-1">
+                                                        {highlightMatch(p.category, searchTerm)} • {p.platform}
+                                                    </p>
+                                                    <p className="text-[8px] text-gray-600 font-medium truncate italic">
+                                                        {highlightMatch(p.description, searchTerm)}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <p className="text-yellow-400 font-black italic">{p.price.toFixed(2)} DH</p>
+                                                    <div className="flex items-center justify-end gap-1 text-blue-500 group-hover:translate-x-1 transition-transform">
+                                                        <span className="text-[8px] font-black uppercase tracking-widest">Select</span>
+                                                        <ArrowRight className="w-3 h-3" />
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        ))}
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-yellow-400 font-black italic">{p.price.toFixed(2)} DH</p>
-                                        <div className="flex items-center justify-end gap-1 text-blue-500 group-hover:translate-x-1 transition-transform">
-                                            <span className="text-[8px] font-black uppercase tracking-widest">View</span>
-                                            <ArrowRight className="w-3 h-3" />
-                                        </div>
-                                    </div>
-                                </button>
-                            ))}
-                            <button 
-                                onClick={handleGlobalSearchSubmit}
-                                className="w-full p-4 mt-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-600/20"
-                            >
-                                <Search className="w-4 h-4" /> Show all results for "{searchTerm}"
-                            </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

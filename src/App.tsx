@@ -154,18 +154,19 @@ const App: React.FC = () => {
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
         .custom-shop-scrollbar::-webkit-scrollbar {
-          height: 4px;
+          height: 6px;
         }
         .custom-shop-scrollbar::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.02);
-          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 20px;
         }
         .custom-shop-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(59, 130, 246, 0.3);
-          border-radius: 10px;
+          background: rgba(37, 99, 235, 0.4);
+          border-radius: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
         }
         .custom-shop-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(59, 130, 246, 0.6);
+          background: rgba(37, 99, 235, 0.7);
         }
 
         .ambient-bg {
@@ -269,39 +270,39 @@ const App: React.FC = () => {
                     </div>
                 </div>
 
-                {/* HORIZONTAL CATEGORY BELT */}
+                {/* HORIZONTAL CATEGORY BELT - Improved Spacing & Fixed PC Scroll */}
                 <div className="sticky top-16 z-40 mb-10">
-                   <div className="bg-[#151a23]/90 backdrop-blur-3xl border border-white/5 rounded-2xl flex items-center shadow-2xl overflow-hidden">
-                      <div className="px-5 border-r border-white/5 hidden md:flex items-center gap-2 text-blue-500 flex-shrink-0">
-                         <Filter className="w-3.5 h-3.5" />
-                         <span className="text-[9px] font-black uppercase tracking-widest">Categories</span>
+                   <div className="bg-[#151a23]/90 backdrop-blur-3xl border border-white/5 rounded-2xl flex items-center shadow-2xl">
+                      <div className="px-4 py-4 border-r border-white/5 hidden md:flex items-center gap-3 text-blue-500 flex-shrink-0">
+                         <Filter className="w-4 h-4" />
+                         <span className="text-[10px] font-black uppercase tracking-widest">Protocol</span>
                       </div>
-                      <div className="flex-1 flex items-center gap-1 overflow-x-auto custom-shop-scrollbar px-3 py-2">
+                      <div className="flex-1 flex items-center gap-1 overflow-x-auto custom-shop-scrollbar py-3.5 px-2">
                         <button 
                             onClick={() => { setSelectedCategory(null); setSearchQuery(''); }} 
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0 group ${!selectedCategory && !searchQuery ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+                            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0 group ${!selectedCategory && !searchQuery ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                         >
-                            <ShoppingBag className="w-3.5 h-3.5" />
-                            <span className="text-[9px] font-black uppercase tracking-widest">All Items</span>
+                            <ShoppingBag className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.15em]">Global Feed</span>
                         </button>
                         
                         {Object.values(GameCategory).map(cat => (
                             <button 
                                 key={cat} 
                                 onClick={() => { setSelectedCategory(cat); setSearchQuery(''); }} 
-                                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0 group relative ${selectedCategory === cat ? 'text-blue-400 bg-blue-400/5' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+                                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0 group relative ${selectedCategory === cat ? 'text-blue-400 bg-blue-500/10' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
                             >
-                                <div className={`w-1 h-1 rounded-full transition-all ${selectedCategory === cat ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,1)] scale-100' : 'bg-gray-700 scale-0 group-hover:scale-100'}`}></div>
-                                <span className="text-[9px] font-black uppercase tracking-widest">{cat}</span>
+                                <div className={`w-1.5 h-1.5 rounded-full transition-all ${selectedCategory === cat ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,1)] scale-100' : 'bg-gray-700 scale-0 group-hover:scale-100'}`}></div>
+                                <span className="text-[10px] font-black uppercase tracking-[0.15em]">{cat}</span>
                                 {selectedCategory === cat && (
-                                    <div className="absolute -bottom-2 left-4 right-4 h-0.5 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                                    <div className="absolute -bottom-[1px] left-6 right-6 h-0.5 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
                                 )}
                             </button>
                         ))}
                       </div>
-                      <div className="px-5 border-l border-white/5 flex items-center flex-shrink-0">
-                         <div className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg">
-                            <Search className="w-3.5 h-3.5 text-gray-500" />
+                      <div className="px-4 flex items-center flex-shrink-0 gap-3 border-l border-white/5 ml-1">
+                         <div className="w-9 h-9 flex items-center justify-center bg-white/5 rounded-xl text-gray-500 hover:text-blue-400 transition-colors cursor-pointer border border-white/5">
+                            <Search className="w-4 h-4" />
                          </div>
                       </div>
                    </div>

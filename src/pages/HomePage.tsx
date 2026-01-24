@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar, Crown, TrendingUp, Sparkles, ShoppingCart, Zap, ShieldCheck, Headphones, Cpu, Scan, Activity, MessageSquare, Target } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar, Crown, TrendingUp, Sparkles, ShoppingCart, Zap, ShieldCheck, Headphones, Cpu, Scan, Activity, MessageSquare, Target, Terminal, Lightbulb, Smartphone, Rocket, MessageCircle } from 'lucide-react';
 import { GameCategory, Product } from '../types';
 import { supabase } from '../supabaseClient';
 
@@ -53,6 +53,13 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
           transform: skewX(-20deg);
           animation: shimmer 3s infinite;
         }
+        .terminal-glow {
+            text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.3) 50%);
+            background-size: 100% 4px;
+        }
       `}</style>
 
       {/* Hero Section */}
@@ -94,27 +101,45 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
               </a>
             </div>
 
-            {/* NEW INTERACTIVE SECTION: COMMUNITY GOAL */}
-            <div className="bg-[#1e232e]/60 backdrop-blur-xl border border-white/5 p-8 rounded-[3rem] shadow-3xl max-w-xl mx-auto md:mx-0 overflow-hidden relative group">
-                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity"><Target className="w-20 h-20 text-blue-400" /></div>
+            <div className="bg-[#0b0e14] border border-green-500/20 p-6 md:p-8 rounded-2xl shadow-[0_0_30px_rgba(34,197,94,0.05)] max-w-xl mx-auto md:mx-0 overflow-hidden relative group">
+                <div className="scanline absolute inset-0 opacity-10 pointer-events-none"></div>
                 <div className="relative z-10">
                     <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-[11px] font-black text-blue-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                           <Activity className="w-4 h-4" /> Global Milestone
-                        </h4>
-                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full">Ends in 04h 12m</span>
-                    </div>
-                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-4 leading-none">Reach 50 Trade Orders</h3>
-                    <div className="space-y-3">
-                        <div className="h-3 w-full bg-[#0b0e14] rounded-full overflow-hidden p-0.5 border border-white/5">
-                            <div className="h-full bg-gradient-to-r from-blue-600 via-cyan-400 to-blue-500 rounded-full transition-all duration-[2000ms] shadow-[0_0_15px_rgba(34,211,234,0.4)]" style={{ width: '64%' }}></div>
+                        <div className="flex items-center gap-2">
+                            <Activity className="w-3.5 h-3.5 text-green-500" />
+                            <h4 className="text-[10px] font-black text-green-500 uppercase tracking-[0.2em] terminal-glow">
+                                WEEKLY COMMUNITY PROGRESS
+                            </h4>
                         </div>
-                        <div className="flex justify-between items-center text-[10px] font-black uppercase">
-                            <p className="text-gray-500">Current Progress: <span className="text-white">32/50</span></p>
-                            <p className="text-cyan-400 animate-pulse">Lunar Reward: +15% Points</p>
+                        <span className="text-[8px] text-green-900 font-bold bg-green-500/10 px-2 py-0.5 rounded border border-green-500/20">LIVE UPDATE</span>
+                    </div>
+                    
+                    <div className="space-y-4 text-left">
+                        <div className="flex items-start gap-3">
+                            <p className="text-[11px] font-bold text-green-500/80 uppercase">Goal: 200 Total Orders This Week</p>
+                        </div>
+                        
+                        <div className="relative">
+                            <div className="h-2 w-full bg-green-900/20 rounded-full overflow-hidden border border-green-500/10">
+                                <div className="h-full bg-green-500 transition-all duration-[3000ms] shadow-[0_0_15px_rgba(34,197,94,0.4)]" style={{ width: '64%' }}></div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center text-[10px]">
+                            <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                                <span className="text-green-500/60 font-black uppercase">Current: 128 / 200</span>
+                            </div>
+                            <span className="text-green-500/40 font-bold uppercase tracking-tight">Weekly reward at 100%</span>
                         </div>
                     </div>
-                    <button onClick={() => onNavigate('shop')} className="mt-6 w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[9px] font-black uppercase tracking-[0.3em] text-gray-300 transition-all border border-white/10">Contribute to Goal</button>
+                    
+                    <button 
+                        onClick={() => onNavigate('shop')} 
+                        className="mt-6 w-full py-3 bg-green-500/10 hover:bg-green-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-green-500 border border-green-500/20 transition-all"
+                    >
+                        GO TO SHOP
+                    </button>
                 </div>
             </div>
           </div>
@@ -153,7 +178,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
       <section className="py-12 container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
               <h2 className="text-xl md:text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3"><Cpu className="w-5 h-5 text-cyan-400" /> {t.aiTitle}</h2>
-              <button onClick={() => onNavigate('shop')} className="text-[10px] font-black uppercase text-blue-500 tracking-widest hover:text-blue-400 transition-colors">View All Inventory</button>
+              <button onClick={() => onNavigate('shop')} className="text-[10px] font-black uppercase text-blue-500 tracking-widest hover:text-blue-400 transition-colors">View All Items</button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {aiPicks.map(p => (
@@ -179,6 +204,48 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
                       </div>
                   </div>
               ))}
+          </div>
+      </section>
+
+      {/* OUR FUTURE IDEAS LIST SECTION */}
+      <section className="py-24 container mx-auto px-4">
+          <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12 items-center">
+              <div className="flex-1">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-widest mb-6">
+                      <Lightbulb className="w-3.5 h-3.5" /> Project Roadmap
+                  </div>
+                  <h2 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter mb-6 leading-none">OUR FUTURE<br/><span className="text-blue-500">IDEAS</span></h2>
+                  <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-10 max-w-sm">We are constantly improving Moon Night. Here is what we have planned for the community.</p>
+                  
+                  <div className="space-y-4">
+                      {[
+                          { icon: Smartphone, title: "Mobile App Development", desc: "Native iOS & Android apps for faster trades.", status: "In Progress", color: "text-blue-400" },
+                          { icon: Rocket, title: "Auto-Delivery System", desc: "Get your account details instantly after payment.", status: "Beta Test", color: "text-green-400" },
+                          { icon: Crown, title: "VIP Private Auctions", desc: "Exclusive bidding for the rarest accounts.", status: "Planning", color: "text-yellow-400" }
+                      ].map((idea, i) => (
+                          <div key={i} className="flex gap-4 p-5 rounded-2xl bg-[#151a23] border border-white/5 hover:border-blue-500/20 transition-all group">
+                              <div className={`p-3 rounded-xl bg-white/5 ${idea.color}`}><idea.icon className="w-6 h-6" /></div>
+                              <div className="flex-1">
+                                  <div className="flex items-center justify-between mb-1">
+                                      <h4 className="text-white font-black uppercase text-sm italic">{idea.title}</h4>
+                                      <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-white/5 text-gray-500 border border-white/5">{idea.status}</span>
+                                  </div>
+                                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{idea.desc}</p>
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+              <div className="flex-1 hidden lg:block">
+                  <div className="relative">
+                      <div className="absolute inset-0 bg-blue-600/10 blur-[100px] rounded-full"></div>
+                      <img src="https://images.unsplash.com/photo-1621330396173-e41b1cafd17f?auto=format&fit=crop&w=800&q=80" className="relative z-10 w-full h-[500px] object-cover rounded-[3rem] border border-white/10 shadow-3xl grayscale hover:grayscale-0 transition-all duration-1000" alt="Future" />
+                      <div className="absolute bottom-10 left-10 z-20 bg-blue-600 p-8 rounded-3xl shadow-2xl text-white">
+                          <Trophy className="w-10 h-10 mb-4" />
+                          <p className="text-2xl font-black italic uppercase tracking-tighter">Building<br/>The Best</p>
+                      </div>
+                  </div>
+              </div>
           </div>
       </section>
 
