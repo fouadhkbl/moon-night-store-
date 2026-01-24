@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar, Crown, TrendingUp, Sparkles, ShoppingCart, Zap, ShieldCheck, Headphones, Cpu, Scan, Activity, MessageSquare } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Star, Coins, Key, Sword, ArrowUpCircle, Gift, Users, Trophy, Swords, Calendar, Crown, TrendingUp, Sparkles, ShoppingCart, Zap, ShieldCheck, Headphones, Cpu, Scan, Activity, MessageSquare, Target } from 'lucide-react';
 import { GameCategory, Product } from '../types';
 import { supabase } from '../supabaseClient';
 
@@ -56,7 +56,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
       `}</style>
 
       {/* Hero Section */}
-      <section className="relative min-h-[70vh] flex items-center z-30 bg-[#0b0e14] overflow-hidden pt-10">
+      <section className="relative min-h-[85vh] flex items-center z-30 bg-[#0b0e14] overflow-hidden pt-10">
         <div className="absolute inset-0 z-0">
           <img src="https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?auto=format&fit=crop&w=1920&q=80" className="w-full h-full object-cover opacity-[0.07] scale-110" alt="" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e14] via-transparent to-transparent"></div>
@@ -71,15 +71,10 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
             
             <h1 className="text-5xl md:text-8xl font-black italic tracking-tighter leading-[0.85] mb-8 uppercase">
               <span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">MOON</span><br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-cyan-400 to-purple-500 drop-shadow-[0_0_30px_rgba(34,211,238,0.3)]">NIGHT</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-cyan-400 to-purple-500 drop-shadow-[0_0_30px_rgba(34,211,234,0.3)]">NIGHT</span>
             </h1>
 
-            <p className="text-gray-400 font-bold uppercase tracking-[0.1em] text-sm md:text-base max-w-xl mb-10 leading-relaxed mx-auto md:mx-0">
-                The most trusted gaming marketplace. Powered by a community of <span className="text-white">15,000+ active players</span>. Instant delivery, elite support.
-            </p>
-
-            <div className="flex flex-wrap justify-center md:justify-start gap-4 mb-12">
-              {/* PRIMARY BUTTON: EXPLORE SHOP */}
+            <div className="flex flex-wrap justify-center md:justify-start gap-4 mb-10">
               <button 
                 onClick={() => onNavigate('shop')} 
                 className="shimmer-btn group relative h-16 bg-blue-600 hover:bg-blue-500 text-white px-12 rounded-2xl font-black text-sm transition-all flex items-center gap-4 uppercase tracking-widest shadow-[0_10px_50px_rgba(37,99,235,0.6)] hover:scale-105 active:scale-95 overflow-hidden"
@@ -89,7 +84,6 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
                 <ChevronRight className="w-6 h-6 relative z-10 group-hover:translate-x-2 transition-transform duration-300" />
               </button>
 
-              {/* SECONDARY BUTTON: DISCORD */}
               <a 
                 href="https://discord.gg/s4hcCn4s" 
                 target="_blank" 
@@ -100,15 +94,27 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
               </a>
             </div>
 
-            <div className="flex items-center justify-center md:justify-start gap-8 opacity-60">
-                <div className="text-center md:text-left">
-                    <p className="text-2xl font-black text-white italic tracking-tighter leading-none">15K+</p>
-                    <p className="text-[8px] text-gray-500 font-black uppercase tracking-[0.2em]">MEMBERS</p>
-                </div>
-                <div className="w-px h-8 bg-white/10"></div>
-                <div className="text-center md:text-left">
-                    <p className="text-2xl font-black text-white italic tracking-tighter leading-none">24/7</p>
-                    <p className="text-[8px] text-gray-500 font-black uppercase tracking-[0.2em]">DELIVERY</p>
+            {/* NEW INTERACTIVE SECTION: COMMUNITY GOAL */}
+            <div className="bg-[#1e232e]/60 backdrop-blur-xl border border-white/5 p-8 rounded-[3rem] shadow-3xl max-w-xl mx-auto md:mx-0 overflow-hidden relative group">
+                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity"><Target className="w-20 h-20 text-blue-400" /></div>
+                <div className="relative z-10">
+                    <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-[11px] font-black text-blue-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                           <Activity className="w-4 h-4" /> Global Milestone
+                        </h4>
+                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full">Ends in 04h 12m</span>
+                    </div>
+                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-4 leading-none">Reach 50 Trade Orders</h3>
+                    <div className="space-y-3">
+                        <div className="h-3 w-full bg-[#0b0e14] rounded-full overflow-hidden p-0.5 border border-white/5">
+                            <div className="h-full bg-gradient-to-r from-blue-600 via-cyan-400 to-blue-500 rounded-full transition-all duration-[2000ms] shadow-[0_0_15px_rgba(34,211,234,0.4)]" style={{ width: '64%' }}></div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase">
+                            <p className="text-gray-500">Current Progress: <span className="text-white">32/50</span></p>
+                            <p className="text-cyan-400 animate-pulse">Lunar Reward: +15% Points</p>
+                        </div>
+                    </div>
+                    <button onClick={() => onNavigate('shop')} className="mt-6 w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[9px] font-black uppercase tracking-[0.3em] text-gray-300 transition-all border border-white/10">Contribute to Goal</button>
                 </div>
             </div>
           </div>
