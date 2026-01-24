@@ -1,190 +1,18 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-// Added PointProduct to types import
 import { Product, Profile, Coupon, Order, AccessLog, OrderItem, PointRedemption, RedemptionMessage, Donation, Tournament, LootBox, SpinWheelItem, OrderMessage, PointProduct } from '../../types';
-// Added Ticket to lucide-react import
-import { BarChart3, Package, Users, Search, Edit2, Trash2, PlusCircle, Wallet, ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Globe, Archive, Trophy, Gift, Eye, Heart, Swords, Save, Crown, Zap, RotateCw, Loader2, Megaphone, Activity, Ticket } from 'lucide-react';
-import { ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, TournamentFormModal, ReferralEditorModal, LootBoxFormModal, SpinWheelItemFormModal } from './AdminModals';
-
-const VisitHistoryModal = ({ logs, onClose }: { logs: AccessLog[], onClose: () => void }) => {
-    return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-2xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col max-h-[85vh]">
-                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151a23] rounded-t-3xl">
-                     <div className="flex items-center gap-3">
-                        <div className="bg-cyan-500/20 p-2 rounded-xl text-cyan-400 border border-cyan-500/30">
-                            <Globe className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Daily Visitors</h3>
-                            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{logs.length} entries today</p>
-                        </div>
-                     </div>
-                     <button onClick={onClose} className="text-gray-500 hover:text-white transition"><X /></button>
-                </div>
-                <div className="p-6 overflow-y-auto custom-scrollbar">
-                     {logs.length === 0 ? (
-                         <p className="text-center py-10 text-gray-500 font-bold uppercase tracking-widest">No visits recorded yet.</p>
-                     ) : (
-                         <table className="w-full text-left">
-                             <thead className="text-gray-500 text-[10px] font-black uppercase tracking-widest border-b border-gray-800">
-                                 <tr>
-                                     <th className="pb-3">Time</th>
-                                     <th className="pb-3">IP Address</th>
-                                     <th className="pb-3 text-right">User ID</th>
-                                 </tr>
-                             </thead>
-                             <tbody className="divide-y divide-gray-800">
-                                 {logs.map(log => (
-                                     <tr key={log.id} className="hover:bg-white/5 transition-colors">
-                                         <td className="py-4 text-xs font-mono text-gray-400">
-                                             {new Date(log.created_at).toLocaleTimeString()}
-                                         </td>
-                                         <td className="py-4 text-sm font-bold text-white">
-                                             {log.ip_address}
-                                         </td>
-                                         <td className="py-4 text-xs font-mono text-gray-500 text-right">
-                                             {log.user_id ? <span className="text-blue-400">Logged In</span> : 'Guest'}
-                                         </td>
-                                     </tr>
-                                 ))}
-                             </tbody>
-                         </table>
-                     )}
-                </div>
-                <div className="p-4 border-t border-gray-800 bg-[#151a23] rounded-b-3xl">
-                    <button onClick={onClose} className="w-full bg-[#0b0e14] hover:bg-gray-900 border border-gray-800 text-white font-black py-3 rounded-xl transition-all uppercase tracking-widest text-xs">Close Log</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const AdminRedemptionModal = ({ redemption, currentUser, onClose }: { redemption: PointRedemption, currentUser: Profile, onClose: () => void }) => {
-    const [messages, setMessages] = useState<RedemptionMessage[]>([]);
-    const [newMessage, setNewMessage] = useState('');
-    const [status, setStatus] = useState(redemption.status);
-    const messagesEndRef = useRef<null | HTMLDivElement>(null);
-
-    const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
-
-    useEffect(() => {
-        const fetchDetails = async () => {
-            const { data: msgData } = await supabase.from('redemption_messages').select('*').eq('redemption_id', redemption.id).order('created_at', { ascending: true });
-            if (msgData) setMessages(msgData);
-            scrollToBottom();
-        };
-        fetchDetails();
-
-        const channel = supabase.channel(`admin_redemption_chat:${redemption.id}`)
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'redemption_messages', filter: `redemption_id=eq.${redemption.id}` }, (payload) => {
-                const newMsg = payload.new as RedemptionMessage;
-                setMessages(prev => {
-                    if (prev.some(m => m.id === newMsg.id)) return prev;
-                    return [...prev, newMsg];
-                });
-                scrollToBottom();
-            })
-            .subscribe();
-        return () => { supabase.removeChannel(channel); };
-    }, [redemption.id]);
-
-    useEffect(() => { scrollToBottom(); }, [messages]);
-
-    const handleSendMessage = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newMessage.trim()) return;
-        const msgText = newMessage.trim();
-        setNewMessage('');
-
-        const tempId = `temp-admin-r-${Date.now()}`;
-        const optimisicMsg: RedemptionMessage = {
-            id: tempId,
-            redemption_id: redemption.id,
-            sender_id: currentUser.id,
-            message: msgText,
-            created_at: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, optimisicMsg]);
-        scrollToBottom();
-
-        const { data, error } = await supabase.from('redemption_messages').insert({
-            redemption_id: redemption.id,
-            sender_id: currentUser.id,
-            message: msgText
-        }).select().single();
-
-        if (error) setMessages(prev => prev.filter(m => m.id !== tempId));
-        else if (data) setMessages(prev => prev.map(m => m.id === tempId ? data : m));
-    };
-
-    const handleUpdateStatus = async (newStatus: string) => {
-        await supabase.from('point_redemptions').update({ status: newStatus }).eq('id', redemption.id);
-        setStatus(newStatus);
-    };
-
-    return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-5xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
-                <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto">
-                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-4">Redemption Details</h3>
-                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6">
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">User</p>
-                        <p className="text-white font-bold">{redemption.profile?.username} <span className="text-gray-500 text-xs">({redemption.profile?.email})</span></p>
-                    </div>
-                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6 flex gap-4">
-                        <img src={redemption.point_product?.image_url} className="w-16 h-16 rounded-lg object-cover" alt=""/>
-                        <div>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Reward</p>
-                            <p className="text-white font-bold">{redemption.point_product?.name}</p>
-                            <p className="text-purple-400 text-xs font-black italic">{redemption.cost_at_redemption} Points</p>
-                        </div>
-                    </div>
-                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6">
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Status</p>
-                        <div className="flex gap-2">
-                             <button onClick={() => handleUpdateStatus('pending')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Pending</button>
-                             <button onClick={() => handleUpdateStatus('delivered')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'delivered' ? 'bg-green-500 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Delivered</button>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="mt-8 w-full py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:bg-gray-800 transition uppercase text-xs font-black tracking-widest">Close</button>
-                </div>
-                <div className="w-full md:w-7/12 flex flex-col h-full bg-[#1e232e]">
-                    <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-[#1e232e]">
-                        <span className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2"><MessageSquare className="w-4 h-4 text-purple-500"/> Chat with User</span>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0b0e14]/30 custom-scrollbar">
-                         {messages.length === 0 && <p className="text-center text-gray-600 text-xs py-10 uppercase font-bold tracking-widest">No messages yet.</p>}
-                         {messages.map(msg => {
-                             const isMe = msg.sender_id === currentUser.id;
-                             return (
-                                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                     <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${isMe ? 'bg-purple-600 text-white rounded-tr-none' : 'bg-[#2a303c] text-white border border-gray-700 rounded-tl-none'}`}>
-                                         {msg.message}
-                                     </div>
-                                 </div>
-                             );
-                         })}
-                         <div ref={messagesEndRef} />
-                    </div>
-                    <form onSubmit={handleSendMessage} className="p-4 bg-[#1e232e] border-t border-gray-800 flex gap-2">
-                        <input 
-                            type="text" 
-                            className="flex-1 bg-[#0b0e14] border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-purple-500 outline-none"
-                            placeholder="Send credentials/code..."
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                        />
-                        <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-xl transition-all" disabled={!newMessage.trim()}>
-                            <Send className="w-5 h-5" />
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    );
-};
+import { 
+  BarChart3, Package, Users, Search, Edit2, Trash2, PlusCircle, Wallet, 
+  ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Globe, 
+  Archive, Trophy, Gift, Eye, Heart, Swords, Save, Crown, Zap, 
+  RotateCw, Loader2, Megaphone, Activity, Ticket, ShieldAlert, Key, 
+  ChevronRight, Smartphone, Monitor
+} from 'lucide-react';
+import { 
+  ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, 
+  TournamentFormModal, ReferralEditorModal, LootBoxFormModal, SpinWheelItemFormModal 
+} from './AdminModals';
 
 const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
     const [messages, setMessages] = useState<OrderMessage[]>([]);
@@ -193,9 +21,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
     const [status, setStatus] = useState(order.status);
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
+    const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -206,35 +32,23 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
             scrollToBottom();
         };
         fetchDetails();
-
         const channel = supabase.channel(`admin_chat:${order.id}`)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_messages', filter: `order_id=eq.${order.id}` }, (payload) => {
                 const newMsg = payload.new as OrderMessage;
-                setMessages(prev => {
-                    if (prev.some(m => m.id === newMsg.id)) return prev;
-                    return [...prev, newMsg];
-                });
+                setMessages(prev => prev.some(m => m.id === newMsg.id) ? prev : [...prev, newMsg]);
                 scrollToBottom();
             })
             .subscribe();
-
         return () => { supabase.removeChannel(channel); };
     }, [order.id]);
-
-    useEffect(() => { scrollToBottom(); }, [messages]);
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newMessage.trim()) return;
         const msgText = newMessage.trim();
         setNewMessage(''); 
-        const tempId = `temp-admin-${Date.now()}`;
-        const optimisicMsg: OrderMessage = { id: tempId, order_id: order.id, sender_id: currentUser.id, message: msgText, created_at: new Date().toISOString() };
-        setMessages(prev => [...prev, optimisicMsg]);
-        scrollToBottom();
-        const { data, error } = await supabase.from('order_messages').insert({ order_id: order.id, sender_id: currentUser.id, message: msgText }).select().single();
-        if (error) { setMessages(prev => prev.filter(m => m.id !== tempId)); } 
-        else if (data) { setMessages(prev => prev.map(m => m.id === tempId ? data : m)); }
+        const { data } = await supabase.from('order_messages').insert({ order_id: order.id, sender_id: currentUser.id, message: msgText }).select().single();
+        if (data) setMessages(prev => [...prev, data]);
     };
 
     const handleUpdateStatus = async (newStatus: string) => {
@@ -243,19 +57,61 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
     };
 
     return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-[#1e232e] w-full max-w-5xl rounded-3xl border border-gray-800 shadow-2xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
-                <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-gray-800 overflow-y-auto custom-scrollbar">
-                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-4">Order #{order.id.slice(0, 6)}</h3>
-                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6"><p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Customer</p><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">{order.profile?.username?.charAt(0)}</div><div><p className="text-white font-bold text-sm">{order.profile?.username}</p><p className="text-xs text-gray-500">{order.profile?.email}</p></div></div></div>
-                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6"><p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Order Status</p><div className="flex gap-2"><button onClick={() => handleUpdateStatus('pending')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Pending</button><button onClick={() => handleUpdateStatus('completed')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'completed' ? 'bg-green-500 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Completed</button><button onClick={() => handleUpdateStatus('canceled')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${status === 'canceled' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>Canceled</button></div></div>
-                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-gray-800 mb-6"><p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Archive className="w-3 h-3"/> Purchased Items</p><div className="space-y-3">{items.map(item => (<div key={item.id} className="flex gap-3 items-center"><div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-900 flex-shrink-0 border border-gray-800"><img src={item.product?.image_url} className="w-full h-full object-cover" alt="" /></div><div className="min-w-0"><p className="text-white font-bold text-xs truncate leading-tight">{item.product?.name || 'Item Removed'}</p><p className="text-white font-bold text-[10px]">Qty: {item.quantity} <span className="text-gray-600">|</span> <span className="text-yellow-400">{item.price_at_purchase.toFixed(2)} DH</span></p></div></div>))}</div></div>
-                    <button onClick={onClose} className="mt-8 w-full py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:bg-gray-800 transition uppercase text-xs font-black tracking-widest">Close</button>
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-5xl rounded-[2.5rem] border border-white/5 shadow-3xl flex flex-col md:flex-row overflow-hidden h-[85vh]">
+                <div className="w-full md:w-5/12 p-6 bg-[#151a23] border-r border-white/5 overflow-y-auto custom-scrollbar">
+                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-6 flex items-center gap-2">
+                        <Package className="w-5 h-5 text-blue-500" /> Order #{order.id.slice(0, 8)}
+                    </h3>
+                    <div className="space-y-4">
+                        <div className="bg-[#0b0e14] p-4 rounded-2xl border border-white/5">
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Customer Identity</p>
+                            <p className="text-white font-bold text-sm truncate">{order.profile?.username || 'Unknown'}</p>
+                            <p className="text-gray-500 text-[10px] truncate">{order.profile?.email}</p>
+                        </div>
+                        <div className="bg-[#0b0e14] p-4 rounded-2xl border border-white/5">
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Status Control</p>
+                            <div className="flex gap-2">
+                                {['pending', 'completed', 'canceled'].map(s => (
+                                    <button key={s} onClick={() => handleUpdateStatus(s)} className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${status === s ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/5 text-gray-500 hover:text-white'}`}>{s}</button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="bg-[#0b0e14] p-4 rounded-2xl border border-white/5">
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Inventory Manifest</p>
+                            <div className="space-y-3">
+                                {items.map(item => (
+                                    <div key={item.id} className="flex gap-3 items-center bg-white/5 p-2 rounded-xl">
+                                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-900 shrink-0 border border-white/10">
+                                            <img src={item.product?.image_url} className="w-full h-full object-cover" alt="" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-white font-bold text-[10px] truncate uppercase">{item.product?.name || 'Item Removed'}</p>
+                                            <p className="text-yellow-400 font-bold text-[9px]">QTY: {item.quantity} • {item.price_at_purchase.toFixed(2)} DH</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="mt-8 w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition uppercase text-[10px] font-black tracking-widest">Terminate View</button>
                 </div>
                 <div className="w-full md:w-7/12 flex flex-col h-full bg-[#1e232e]">
-                    <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-[#1e232e]"><span className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2"><MessageSquare className="w-4 h-4 text-purple-500"/> Live Chat with Customer</span></div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0b0e14]/30 custom-scrollbar">{messages.map(msg => (<div key={msg.id} className={`flex ${msg.sender_id === currentUser.id ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.sender_id === currentUser.id ? 'bg-purple-600 text-white rounded-tr-none' : 'bg-[#2a303c] text-white border border-gray-700 rounded-tl-none'}`}>{msg.message}</div></div>))}<div ref={messagesEndRef} /></div>
-                    <form onSubmit={handleSendMessage} className="p-4 bg-[#1e232e] border-t border-gray-800 flex gap-2"><input type="text" className="flex-1 bg-[#0b0e14] border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:border-purple-500 outline-none" placeholder="Message user..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} /><button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-xl transition-all" disabled={!newMessage.trim()}><Send className="w-5 h-5" /></button></form>
+                    <div className="p-4 border-b border-white/5 bg-[#1e232e] flex justify-between items-center">
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-500"/> Core Sync Channel</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0b0e14]/40 custom-scrollbar">
+                         {messages.map(msg => (
+                             <div key={msg.id} className={`flex ${msg.sender_id === currentUser.id ? 'justify-end' : 'justify-start'}`}>
+                                 <div className={`max-w-[85%] p-3 rounded-2xl text-xs ${msg.sender_id === currentUser.id ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-[#151a23] text-white border border-white/5 rounded-tl-none'}`}>{msg.message}</div>
+                             </div>
+                         ))}
+                         <div ref={messagesEndRef} />
+                    </div>
+                    <form onSubmit={handleSendMessage} className="p-4 border-t border-white/5 bg-[#1e232e] flex gap-2">
+                        <input type="text" className="flex-1 bg-[#0b0e14] border border-white/5 rounded-xl px-4 py-3 text-white text-xs outline-none focus:border-blue-500" placeholder="Type transmission..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-xl transition-all active:scale-95" disabled={!newMessage.trim()}><Send className="w-4 h-4" /></button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -263,280 +119,293 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 };
 
 export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' | 'shop' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'coupons' | 'orders' | 'points' | 'pointsShop' | 'redemptions' | 'donations' | 'tournaments' | 'system' | 'lootBoxes' | 'wheel' | 'liveFeed'>(role === 'shop' ? 'products' : 'stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'orders' | 'coupons' | 'pointsShop' | 'redemptions' | 'liveFeed' | 'wheel' | 'lootBoxes' | 'donations' | 'tournaments'>(role === 'shop' ? 'products' : 'stats');
   const [products, setProducts] = useState<Product[]>([]);
-  // Fix: PointProduct type now imported correctly
-  const [pointProducts, setPointProducts] = useState<PointProduct[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [pointRedemptions, setPointRedemptions] = useState<PointRedemption[]>([]);
-  const [donations, setDonations] = useState<Donation[]>([]);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [logs, setLogs] = useState<AccessLog[]>([]);
-  const [lootBoxes, setLootBoxes] = useState<LootBox[]>([]);
-  const [wheelItems, setWheelItems] = useState<SpinWheelItem[]>([]);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Settings for Live Feed
-  const [lfText, setLfText] = useState('');
-  const [lfBadge, setLfBadge] = useState('');
-  const [lfColor, setLfColor] = useState('');
-  const [lfSpeed, setLfSpeed] = useState('');
-  
-  // Modals States
-  const [visitHistoryOpen, setVisitHistoryOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Partial<Product> | null>(null);
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
-  const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
-  const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
-  const [selectedCoupon, setSelectedCoupon] = useState<Partial<Coupon> | null>(null);
-  const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [selectedRedemption, setSelectedRedemption] = useState<PointRedemption | null>(null);
-  // Fix: PointProduct type now imported correctly
-  const [selectedPointProduct, setSelectedPointProduct] = useState<Partial<PointProduct> | null>(null);
-  const [isPointProductModalOpen, setIsPointProductModalOpen] = useState(false);
-  const [selectedTournament, setSelectedTournament] = useState<Partial<Tournament> | null>(null);
-  const [isTournamentModalOpen, setIsTournamentModalOpen] = useState(false);
-  const [selectedLootBox, setSelectedLootBox] = useState<Partial<LootBox> | null>(null);
-  const [isLootBoxModalOpen, setIsLootBoxModalOpen] = useState(false);
-  const [selectedWheelItem, setSelectedWheelItem] = useState<Partial<SpinWheelItem> | null>(null);
-  const [isWheelItemModalOpen, setIsWheelItemModalOpen] = useState(false);
-  
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [totalRevenue, setTotalRevenue] = useState(0);
   const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
 
+  // Modal States
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Partial<Product> | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+
   useEffect(() => {
-      const getProfile = async () => {
-          if (session?.user?.id) {
-              const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-              setCurrentUserProfile(data);
-          }
-      }
-      getProfile();
+    const fetchUser = async () => {
+        if (session?.user?.id) {
+            const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+            if (data) setCurrentUserProfile(data);
+        }
+    };
+    fetchUser();
   }, [session]);
 
   const fetchData = useCallback(async () => {
-      setIsLoading(true);
-      try {
-        if (activeSection === 'products') {
+    setIsLoading(true);
+    try {
+        if (activeSection === 'stats') {
+            const { data: revenueData } = await supabase.from('orders').select('total_amount').eq('status', 'completed');
+            if (revenueData) setTotalRevenue(revenueData.reduce((sum, o) => sum + Number(o.total_amount), 0));
+        } else if (activeSection === 'products') {
             const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-            if(data) setProducts(data);
+            if (data) setProducts(data);
         } else if (activeSection === 'users') {
             const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-            if(data) setProfiles(data);
+            if (data) setProfiles(data);
         } else if (activeSection === 'orders') {
             const { data } = await supabase.from('orders').select('*, profile:profiles(*)').order('created_at', { ascending: false });
-            if(data) setOrders(data);
-        } else if (activeSection === 'coupons') {
-            const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
-            if(data) setCoupons(data);
-        } else if (activeSection === 'pointsShop') {
-            const { data } = await supabase.from('point_products').select('*').order('created_at', { ascending: false });
-            if(data) setPointProducts(data);
-        } else if (activeSection === 'redemptions') {
-            const { data } = await supabase.from('point_redemptions').select('*, profile:profiles(*), point_product:point_products(*)').order('created_at', { ascending: false });
-            if(data) setPointRedemptions(data);
-        } else if (activeSection === 'donations') {
-            const { data } = await supabase.from('donations').select('*, profile:profiles(*)').order('created_at', { ascending: false });
-            if(data) setDonations(data);
-        } else if (activeSection === 'tournaments') {
-            const { data } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
-            if(data) setTournaments(data);
-        } else if (activeSection === 'lootBoxes') {
-            const { data } = await supabase.from('loot_boxes').select('*').order('price', { ascending: true });
-            if(data) setLootBoxes(data);
-        } else if (activeSection === 'wheel') {
-            const { data } = await supabase.from('spin_wheel_items').select('*').order('created_at', { ascending: false });
-            if(data) setWheelItems(data);
-        } else if (activeSection === 'liveFeed') {
-            const { data } = await supabase.from('app_settings').select('*').in('key', ['live_feed_text', 'live_feed_badge', 'live_feed_color', 'live_feed_speed']);
-            if (data) {
-                data.forEach(s => {
-                    if (s.key === 'live_feed_text') setLfText(s.value);
-                    if (s.key === 'live_feed_badge') setLfBadge(s.value);
-                    if (s.key === 'live_feed_color') setLfColor(s.value);
-                    if (s.key === 'live_feed_speed') setLfSpeed(s.value);
-                });
-            }
-        } else if (activeSection === 'stats') {
-            const { data: logData } = await supabase.from('access_logs').select('*').order('created_at', { ascending: false }).limit(100);
-            if (logData) setLogs(logData);
-            const { data: revenueData } = await supabase.from('orders').select('total_amount').eq('status', 'completed');
-            if (revenueData) {
-                const total = revenueData.reduce((sum, o) => sum + o.total_amount, 0);
-                setTotalRevenue(total);
-            }
+            if (data) setOrders(data);
         }
-      } catch (e) { console.error(e); } finally { setIsLoading(false); }
+    } catch (e) { console.error(e); } finally { setIsLoading(false); }
   }, [activeSection]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleDelete = async (table: string, id: string, name: string) => {
-      if(!window.confirm(`Delete ${name}?`)) return;
-      await supabase.from(table).delete().eq('id', id);
-      addToast('Deleted', `${name} deleted successfully.`, 'success');
-      fetchData();
-  };
-
-  const handleSaveProduct = async (formData: any) => {
-      if (selectedProduct?.id) await supabase.from('products').update(formData).eq('id', selectedProduct.id);
-      else await supabase.from('products').insert(formData);
-      setIsProductModalOpen(false); fetchData(); addToast('Saved', 'Product updated.', 'success');
-  };
-
-  const handleSaveUserBalance = async (id: string, amount: number, points: number, spins: number) => {
-      await supabase.from('profiles').update({ wallet_balance: amount, discord_points: points, spins_count: spins }).eq('id', id);
-      setIsBalanceModalOpen(false); fetchData(); addToast('Saved', 'User assets updated.', 'success');
-  };
-
-  const handleSaveReferral = async (id: string, code: string, earnings: number) => {
-      await supabase.from('profiles').update({ referral_code: code, referral_earnings: earnings }).eq('id', id);
-      setIsReferralModalOpen(false); fetchData(); addToast('Saved', 'Referral updated.', 'success');
-  };
-
-  const handleSaveCoupon = async (formData: any) => {
-      if (selectedCoupon?.id) await supabase.from('coupons').update(formData).eq('id', selectedCoupon.id);
-      else await supabase.from('coupons').insert(formData);
-      setIsCouponModalOpen(false); fetchData(); addToast('Saved', 'Coupon updated.', 'success');
-  };
-
-  const handleSavePointProduct = async (formData: any) => {
-      if (selectedPointProduct?.id) await supabase.from('point_products').update(formData).eq('id', selectedPointProduct.id);
-      else await supabase.from('point_products').insert(formData);
-      setIsPointProductModalOpen(false); fetchData(); addToast('Saved', 'Reward updated.', 'success');
-  };
-
-  const handleSaveTournament = async (formData: any) => {
-      if (selectedTournament?.id) await supabase.from('tournaments').update(formData).eq('id', selectedTournament.id);
-      else await supabase.from('tournaments').insert(formData);
-      setIsTournamentModalOpen(false); fetchData(); addToast('Saved', 'Tournament updated.', 'success');
-  };
-
-  const handleSaveLootBox = async (formData: any) => {
-      if (selectedLootBox?.id) await supabase.from('loot_boxes').update(formData).eq('id', selectedLootBox.id);
-      else await supabase.from('loot_boxes').insert(formData);
-      setIsLootBoxModalOpen(false); fetchData(); addToast('Saved', 'Loot Box updated.', 'success');
-  };
-
-  const handleSaveWheelItem = async (formData: any) => {
-      if (selectedWheelItem?.id) await supabase.from('spin_wheel_items').update(formData).eq('id', selectedWheelItem.id);
-      else await supabase.from('spin_wheel_items').insert(formData);
-      setIsWheelItemModalOpen(false); fetchData(); addToast('Saved', 'Wheel item updated.', 'success');
-  };
-
-  // Fixed the error: Cannot find name 'view'.
-  const handleSaveLiveFeed = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setIsLoading(true);
-      const settings = [
-          { key: 'live_feed_text', value: lfText },
-          { key: 'live_feed_badge', value: lfBadge },
-          { key: 'live_feed_color', value: lfColor },
-          { key: 'live_feed_speed', value: lfSpeed },
-      ];
-      for (const s of settings) {
-          await supabase.from('app_settings').upsert({ key: s.key, value: s.value });
-      }
-      setIsLoading(false);
-      addToast('Success', 'Live Feed updated across system.', 'success');
+    if (!window.confirm(`Permanently delete ${name}?`)) return;
+    await supabase.from(table).delete().eq('id', id);
+    addToast('Entry Purged', 'Database record deleted.', 'success');
+    fetchData();
   };
 
   const navItems = [
-      { id: 'stats', label: 'Overview', icon: BarChart3, role: ['full', 'limited'] },
-      { id: 'products', label: 'Products', icon: Package, role: ['full', 'limited', 'shop'] },
-      { id: 'orders', label: 'Orders', icon: ClipboardList, role: ['full', 'limited'] },
-      { id: 'users', label: 'Users', icon: Users, role: ['full'] },
-      // Fix: Ticket icon now imported correctly
-      { id: 'coupons', label: 'Coupons', icon: Ticket, role: ['full'] },
-      { id: 'pointsShop', label: 'Points Shop', icon: Trophy, role: ['full'] },
-      { id: 'redemptions', label: 'Redemptions', icon: Gift, role: ['full', 'limited'] },
-      { id: 'tournaments', label: 'Tournaments', icon: Swords, role: ['full'] },
-      { id: 'lootBoxes', label: 'Loot Boxes', icon: Package, role: ['full'] },
-      { id: 'wheel', label: 'Spin Wheel', icon: RotateCw, role: ['full'] },
-      { id: 'liveFeed', label: 'Live Feed', icon: Activity, role: ['full'] },
-      { id: 'donations', label: 'Donations', icon: Heart, role: ['full'] },
+    { id: 'stats', label: 'Dashboard', icon: BarChart3, role: ['full', 'limited'] },
+    { id: 'products', label: 'Inventory', icon: Package, role: ['full', 'limited', 'shop'] },
+    { id: 'orders', label: 'Trades', icon: ClipboardList, role: ['full', 'limited'] },
+    { id: 'users', label: 'Operators', icon: Users, role: ['full'] },
+    { id: 'coupons', label: 'Coupons', icon: Ticket, role: ['full'] },
+    { id: 'liveFeed', label: 'Live Feed', icon: Activity, role: ['full'] },
+    { id: 'wheel', label: 'Win Wheel', icon: RotateCw, role: ['full'] },
+    { id: 'donations', label: 'Donations', icon: Heart, role: ['full'] },
   ];
 
   return (
     <div className="flex h-screen bg-[#0b0e14] overflow-hidden">
-        <div className="w-20 md:w-64 bg-[#1e232e] border-r border-gray-800 flex flex-col flex-shrink-0">
-             <div className="p-6 border-b border-gray-800 flex items-center gap-3"><div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black italic">A</div><span className="text-white font-black italic text-lg hidden md:block uppercase tracking-tighter">Admin Panel</span></div>
-             <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">{navItems.filter(i => i.role.includes(role)).map(item => (<button key={item.id} onClick={() => setActiveSection(item.id as any)} className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all group ${activeSection === item.id ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:bg-[#151a23] hover:text-white'}`}><item.icon className="w-5 h-5 flex-shrink-0" /><span className="text-xs font-bold uppercase tracking-widest hidden md:block">{item.label}</span></button>))}</div>
+        <style>{`
+            .gold-metallic {
+                background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 45%, #b38728 70%, #fbf5b7 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+        `}</style>
+
+        {/* Sidebar */}
+        <div className="w-20 md:w-64 bg-[#1e232e] border-r border-white/5 flex flex-col flex-shrink-0">
+             <div className="p-6 border-b border-white/5 flex items-center gap-3">
+                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black italic shadow-[0_0_15px_rgba(37,99,235,0.4)]">M</div>
+                 <span className="text-white font-black italic text-lg hidden md:block uppercase tracking-tighter">ADMIN <span className="text-blue-500">CORE</span></span>
+             </div>
+             <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
+                 {navItems.filter(i => i.role.includes(role)).map(item => (
+                     <button key={item.id} onClick={() => setActiveSection(item.id as any)} className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all group ${activeSection === item.id ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>
+                         <item.icon className={`w-4 h-4 flex-shrink-0 ${activeSection === item.id ? 'text-white' : 'group-hover:text-blue-400'}`} />
+                         <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">{item.label}</span>
+                     </button>
+                 ))}
+             </div>
+             <div className="p-4 bg-[#151a23]/50 border-t border-white/5">
+                 <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-lg bg-gray-800 border border-white/10 overflow-hidden shrink-0">
+                         <img src={currentUserProfile?.avatar_url} className="w-full h-full object-cover" alt="" />
+                     </div>
+                     <div className="hidden md:block min-w-0">
+                         <p className="text-[10px] font-black text-white truncate uppercase italic">{currentUserProfile?.username}</p>
+                         <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Master Auth</p>
+                     </div>
+                 </div>
+             </div>
         </div>
 
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
-             <div className="h-20 border-b border-gray-800 bg-[#1e232e] px-6 flex items-center justify-between flex-shrink-0"><h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{navItems.find(i => i.id === activeSection)?.label}</h2>{['products', 'users', 'orders'].includes(activeSection) && (<div className="relative hidden md:block"><Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" /><input type="text" placeholder="Search..." className="bg-[#0b0e14] border border-gray-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 w-64" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>)}</div>
-             <div className="flex-1 overflow-y-auto p-6 bg-[#0b0e14]">
-                 {isLoading ? (<div className="flex items-center justify-center h-full"><Loader2 className="w-12 h-12 animate-spin text-blue-500" /></div>) : (
-                 <>
-                 {activeSection === 'stats' && (
-                     <div className="space-y-6">
-                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                             <div className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 shadow-xl"><div className="flex justify-between items-start mb-4"><div className="p-3 bg-blue-600/20 rounded-xl text-blue-400"><Globe className="w-6 h-6"/></div><button onClick={() => setVisitHistoryOpen(true)} className="text-xs text-gray-500 hover:text-white underline">View Log</button></div><h3 className="text-3xl font-black text-white italic">{logs.length}</h3><p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Recent Visitors</p></div>
-                             <div className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 shadow-xl"><div className="flex justify-between items-start mb-4"><div className="p-3 bg-green-600/20 rounded-xl text-green-400"><ClipboardList className="w-6 h-6"/></div></div><h3 className="text-3xl font-black text-white italic">{orders.length}</h3><p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Orders Processed</p></div>
-                             <div className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 shadow-xl"><div className="flex justify-between items-start mb-4"><div className="p-3 bg-purple-600/20 rounded-xl text-purple-400"><Wallet className="w-6 h-6"/></div></div><h3 className="text-3xl font-black text-white italic">{totalRevenue.toFixed(2)} DH</h3><p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Revenue</p></div>
-                         </div>
-                     </div>
-                 )}
-
-                 {activeSection === 'products' && (
-                     <div className="space-y-6">
-                         <button onClick={() => { setSelectedProduct(null); setIsProductModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg"><PlusCircle className="w-4 h-4" /> Add Product</button>
-                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">{products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())).map(product => (<div key={product.id} className="bg-[#1e232e] rounded-2xl border border-gray-800 overflow-hidden group hover:border-blue-500/50 transition-all"><div className="relative h-40 bg-gray-900"><img src={product.image_url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt={product.name} /><div className="absolute top-2 right-2 flex gap-1"><button onClick={() => { setSelectedProduct(product); setIsProductModalOpen(true); }} className="p-2 bg-black/60 rounded-lg text-white hover:bg-blue-600 transition"><Edit2 className="w-3 h-3"/></button><button onClick={() => handleDelete('products', product.id, product.name)} className="p-2 bg-black/60 rounded-lg text-white hover:bg-red-600 transition"><Trash2 className="w-3 h-3"/></button></div></div><div className="p-4"><h3 className="font-bold text-white text-sm truncate">{product.name}</h3><p className="text-gray-500 text-xs mb-2">{product.category}</p><div className="flex justify-between items-center"><span className="text-yellow-400 font-mono font-bold">{product.price.toFixed(2)} DH</span><span className="text-gray-600 text-xs">Stock: {product.stock}</span></div></div></div>))}</div>
-                     </div>
-                 )}
-
-                 {activeSection === 'liveFeed' && (
-                    <div className="max-w-2xl bg-[#1e232e] p-8 rounded-[2.5rem] border border-gray-800 shadow-2xl">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="p-3 bg-blue-600/20 rounded-xl text-blue-500 border border-blue-500/20"><Activity className="w-6 h-6" /></div>
-                            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Live Feed Config</h3>
-                        </div>
-                        <form onSubmit={handleSaveLiveFeed} className="space-y-6">
-                            <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-2">Feed Text Content</label><textarea className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none h-24" value={lfText} onChange={e => setLfText(e.target.value)} placeholder="Type the scrolling message..." /></div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-2">Badge Text</label><input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white" value={lfBadge} onChange={e => setLfBadge(e.target.value)} /></div>
-                                <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-2">Accent Color (Hex)</label><input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-mono" value={lfColor} onChange={e => setLfColor(e.target.value)} /></div>
-                            </div>
-                            <div><label className="block text-[10px] font-black text-gray-500 uppercase mb-2">Scroll Speed (e.g., 30s, 60s)</label><input type="text" className="w-full bg-[#0b0e14] border border-gray-800 rounded-xl p-4 text-white font-mono" value={lfSpeed} onChange={e => setLfSpeed(e.target.value)} /></div>
-                            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl transition-all shadow-xl shadow-blue-600/20 flex items-center justify-center gap-2 uppercase tracking-widest text-xs"><Save className="w-4 h-4" /> Deploy Updates</button>
-                        </form>
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+             <div className="h-16 border-b border-white/5 bg-[#1e232e] px-6 flex items-center justify-between flex-shrink-0 relative z-10">
+                 <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
+                     {navItems.find(i => i.id === activeSection)?.label || 'Console'}
+                 </h2>
+                 {['products', 'users', 'orders'].includes(activeSection) && (
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                        <input 
+                            type="text" 
+                            placeholder="Global Filter..." 
+                            className="bg-[#0b0e14] border border-white/5 rounded-xl pl-9 pr-4 py-2 text-[10px] font-bold text-white uppercase tracking-widest focus:outline-none focus:border-blue-500 w-48 md:w-64 transition-all"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                        />
                     </div>
                  )}
+             </div>
 
-                 {activeSection === 'users' && (
-                     <div className="bg-[#1e232e] rounded-3xl border border-gray-800 overflow-hidden"><table className="w-full text-left"><thead className="bg-[#151a23] text-gray-500 text-[10px] font-black uppercase tracking-widest border-b border-gray-800"><tr><th className="p-4">User</th><th className="p-4">Balance</th><th className="p-4">Points</th><th className="p-4">Spins</th><th className="p-4">Referrals</th><th className="p-4 text-right">Actions</th></tr></thead><tbody className="divide-y divide-gray-800">{profiles.filter(u => u.username?.toLowerCase().includes(searchTerm.toLowerCase()) || u.email?.toLowerCase().includes(searchTerm.toLowerCase())).map(user => (<tr key={user.id} className="hover:bg-white/5"><td className="p-4"><div className="flex items-center gap-3"><div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white">{user.username?.charAt(0)}</div><div><p className="text-white font-bold text-xs">{user.username}</p><p className="text-gray-500 text-[10px]">{user.email}</p></div></div></td><td className="p-4 font-mono text-green-400 text-sm font-bold">{user.wallet_balance.toFixed(2)}</td><td className="p-4 font-mono text-purple-400 text-sm font-bold">{user.discord_points}</td><td className="p-4 font-mono text-pink-400 text-sm font-bold">{user.spins_count || 0}</td><td className="p-4 font-mono text-gray-400 text-sm">{user.referral_code || '-'}</td><td className="p-4 text-right flex justify-end gap-2"><button onClick={() => { setSelectedProfile(user); setIsBalanceModalOpen(true); }} className="p-2 bg-gray-800 rounded-lg text-blue-400 hover:bg-blue-600 hover:text-white transition"><Wallet className="w-4 h-4" /></button><button onClick={() => { setSelectedProfile(user); setIsReferralModalOpen(true); }} className="p-2 bg-gray-800 rounded-lg text-green-400 hover:bg-green-600 hover:text-white transition"><Users className="w-4 h-4" /></button></td></tr>))}</tbody></table></div>
-                 )}
+             <div className="flex-1 overflow-y-auto p-6 bg-[#0b0e14] relative">
+                 {isLoading ? (
+                     <div className="flex flex-col items-center justify-center h-full gap-4 text-blue-500">
+                         <Loader2 className="w-10 h-10 animate-spin" />
+                         <span className="text-[10px] font-black uppercase tracking-[0.3em]">Querying Database...</span>
+                     </div>
+                 ) : (
+                     <div className="animate-fade-in max-w-7xl mx-auto">
+                         {activeSection === 'stats' && (
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                 <div className="bg-[#1e232e] p-8 rounded-[2rem] border border-white/5 shadow-2xl relative overflow-hidden group">
+                                     <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:rotate-12 transition-transform duration-700"><Wallet className="w-20 h-20" /></div>
+                                     <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.3em] mb-3">Verified Revenue</p>
+                                     <h3 className="text-5xl font-black text-white italic tracking-tighter leading-none mb-1">{totalRevenue.toFixed(2)}</h3>
+                                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">DIRHAM (MAD)</p>
+                                 </div>
+                                 {/* More stat cards can be added here */}
+                             </div>
+                         )}
 
-                 {activeSection === 'orders' && (
-                     <div className="space-y-4">{orders.map(order => (<div key={order.id} className="bg-[#1e232e] p-6 rounded-2xl border border-gray-800 flex justify-between items-center"><div><p className="text-white font-bold text-sm mb-1">Order #{order.id.slice(0, 8)}</p><p className="text-gray-500 text-xs mb-2">{new Date(order.created_at).toLocaleString()} • {order.profile?.email}</p><span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border ${order.status === 'completed' ? 'bg-green-500/10 text-green-500 border-green-500/20' : order.status === 'canceled' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'}`}>{order.status}</span></div><div className="text-right"><p className="text-white font-black italic text-xl mb-3">{order.total_amount.toFixed(2)} DH</p><button onClick={() => setSelectedOrder(order)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition">View Details</button></div></div>))}</div>
-                 )}
-                 
-                 {activeSection === 'wheel' && (
-                     <div className="space-y-6"><button onClick={() => { setSelectedWheelItem(null); setIsWheelItemModalOpen(true); }} className="bg-pink-600 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2">New Segment</button><div className="space-y-3">{wheelItems.map(item => (<div key={item.id} className="bg-[#1e232e] p-4 rounded-2xl border border-gray-800 flex items-center gap-4 group"><div className="w-4 h-4 rounded-full" style={{ background: item.color }}></div><div className="flex-1"><p className="text-white font-bold text-sm">{item.text}</p><p className="text-[10px] text-gray-500 uppercase font-bold">{item.probability}% Chance • {item.type} {item.value > 0 ? `(${item.value})` : ''}</p></div><div className="flex gap-2 opacity-0 group-hover:opacity-100 transition"><button onClick={() => { setSelectedWheelItem(item); setIsWheelItemModalOpen(true); }}><Edit2 className="w-4 h-4 text-gray-400 hover:text-white"/></button><button onClick={() => handleDelete('spin_wheel_items', item.id, item.text)}><Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500"/></button></div></div>))}</div></div>
-                 )}
-                 </>
+                         {activeSection === 'products' && (
+                             <div className="space-y-6">
+                                 <button onClick={() => { setSelectedProduct(null); setIsProductModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-xl shadow-blue-600/20 active:scale-95 transition-all">
+                                     <PlusCircle className="w-4 h-4" /> Add Inventory Item
+                                 </button>
+                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                     {products.filter(p => (p.name || '').toLowerCase().includes(searchTerm.toLowerCase())).map(product => (
+                                         <div key={product.id} className="bg-[#1e232e] rounded-3xl border border-white/5 overflow-hidden group hover:border-blue-500/50 transition-all flex flex-col shadow-xl">
+                                             <div className="relative h-44 bg-black overflow-hidden">
+                                                 <img src={product.image_url} className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700" alt="" />
+                                                 <div className="absolute top-2 right-2 flex gap-1.5">
+                                                     <button onClick={() => { setSelectedProduct(product); setIsProductModalOpen(true); }} className="p-2 bg-black/60 backdrop-blur-md rounded-xl text-white hover:bg-blue-600 transition-all"><Edit2 className="w-3 h-3"/></button>
+                                                     <button onClick={() => handleDelete('products', product.id, product.name)} className="p-2 bg-black/60 backdrop-blur-md rounded-xl text-white hover:bg-red-600 transition-all"><Trash2 className="w-3 h-3"/></button>
+                                                 </div>
+                                                 <div className="absolute bottom-3 left-3 flex gap-1">
+                                                     {product.is_vip && <span className="bg-yellow-500 text-black text-[7px] font-black px-1.5 py-0.5 rounded uppercase">Elite</span>}
+                                                     {product.is_trending && <span className="bg-red-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase">Hot</span>}
+                                                 </div>
+                                             </div>
+                                             <div className="p-5 flex-1 flex flex-col">
+                                                 <p className="text-[8px] text-blue-400 font-black uppercase tracking-widest mb-1">{product.category}</p>
+                                                 <h4 className="text-white font-black text-[11px] uppercase italic tracking-tighter mb-4 line-clamp-1">{product.name}</h4>
+                                                 <div className="mt-auto flex justify-between items-center">
+                                                     <span className="text-yellow-400 font-black italic text-lg tracking-tighter">{product.price.toFixed(2)} DH</span>
+                                                     <span className="text-[8px] font-black text-gray-500 uppercase">Stock: {product.stock}</span>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     ))}
+                                 </div>
+                             </div>
+                         )}
+
+                         {activeSection === 'users' && (
+                             <div className="bg-[#1e232e] rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+                                 <div className="overflow-x-auto">
+                                     <table className="w-full text-left">
+                                         <thead className="bg-[#151a23] text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] border-b border-white/5">
+                                             <tr>
+                                                 <th className="p-5">Operator</th>
+                                                 <th className="p-5">Wallet (MAD)</th>
+                                                 <th className="p-5">Discord Points</th>
+                                                 <th className="p-5">Rank XP</th>
+                                                 <th className="p-5 text-right">Actions</th>
+                                             </tr>
+                                         </thead>
+                                         <tbody className="divide-y divide-white/5">
+                                             {profiles.filter(u => 
+                                                 (u.username || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                                 (u.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                             ).map(user => (
+                                                 <tr key={user.id} className="hover:bg-white/5 transition-colors">
+                                                     <td className="p-5">
+                                                         <div className="flex items-center gap-3">
+                                                             <div className="w-9 h-9 rounded-xl bg-gray-800 border border-white/10 overflow-hidden flex items-center justify-center text-xs font-black text-white italic shadow-lg">
+                                                                 {user.avatar_url ? <img src={user.avatar_url} className="w-full h-full object-cover" alt=""/> : user.username?.charAt(0)}
+                                                             </div>
+                                                             <div className="min-w-0">
+                                                                 <p className="text-white font-black text-[11px] uppercase italic truncate">{user.username}</p>
+                                                                 <p className="text-gray-500 text-[9px] truncate font-bold">{user.email}</p>
+                                                             </div>
+                                                         </div>
+                                                     </td>
+                                                     <td className="p-5 font-black text-green-400 text-sm tracking-tighter italic">{user.wallet_balance.toFixed(2)}</td>
+                                                     <td className="p-5 font-black text-purple-400 text-sm tracking-tighter italic">{user.discord_points.toLocaleString()}</td>
+                                                     <td className="p-5">
+                                                         <div className="flex items-center gap-2">
+                                                             <span className="text-[10px] font-black text-blue-400 uppercase italic">LVL {Math.floor((user.vip_points || 0) / 1000) + 1}</span>
+                                                             {user.vip_level > 0 && <Crown className="w-3 h-3 text-yellow-500" />}
+                                                         </div>
+                                                     </td>
+                                                     <td className="p-5 text-right">
+                                                         <button onClick={() => { setSelectedProfile(user); setIsBalanceModalOpen(true); }} className="p-2.5 bg-white/5 rounded-xl text-blue-500 hover:bg-blue-600 hover:text-white transition-all shadow-lg active:scale-90">
+                                                             <Wallet className="w-4 h-4" />
+                                                         </button>
+                                                     </td>
+                                                 </tr>
+                                             ))}
+                                         </tbody>
+                                     </table>
+                                 </div>
+                             </div>
+                         )}
+
+                         {activeSection === 'orders' && (
+                             <div className="space-y-4">
+                                 {orders.filter(o => 
+                                     o.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                     (o.profile?.username || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                 ).map(order => (
+                                     <div key={order.id} className="bg-[#1e232e] p-6 rounded-[2rem] border border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 group hover:border-blue-500/30 transition-all shadow-xl">
+                                         <div className="flex items-center gap-6">
+                                             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all ${
+                                                 order.status === 'completed' ? 'bg-green-500/10 border-green-500/20 text-green-500' : 
+                                                 order.status === 'pending' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500' : 
+                                                 'bg-red-500/10 border-red-500/20 text-red-500'
+                                             }`}>
+                                                 <Zap className="w-6 h-6" />
+                                             </div>
+                                             <div>
+                                                 <p className="text-white font-black italic uppercase tracking-tighter text-lg leading-none mb-1.5">Trade ID #{order.id.slice(0, 8)}</p>
+                                                 <div className="flex items-center gap-4">
+                                                     <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{new Date(order.created_at).toLocaleDateString()}</span>
+                                                     <span className={`text-[8px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded border ${
+                                                         order.status === 'completed' ? 'text-green-500 border-green-500/20' : 'text-yellow-500 border-yellow-500/20'
+                                                     }`}>{order.status}</span>
+                                                     <span className="text-[9px] text-blue-400 font-black uppercase italic">{order.profile?.username}</span>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                         <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
+                                             <div className="text-left md:text-right">
+                                                 <p className="text-yellow-400 font-black italic text-2xl tracking-tighter leading-none">{order.total_amount.toFixed(2)} DH</p>
+                                                 <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mt-1">Paid via {order.payment_method || 'System'}</p>
+                                             </div>
+                                             <button onClick={() => setSelectedOrder(order)} className="p-4 bg-white/5 rounded-2xl text-gray-400 hover:text-white hover:bg-blue-600 transition-all shadow-xl group/btn">
+                                                 <Eye className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
+                                             </button>
+                                         </div>
+                                     </div>
+                                 ))}
+                             </div>
+                         )}
+                     </div>
                  )}
              </div>
         </div>
 
-        {visitHistoryOpen && <VisitHistoryModal logs={logs} onClose={() => setVisitHistoryOpen(false)} />}
-        {selectedOrder && currentUserProfile && <AdminOrderModal order={selectedOrder} currentUser={currentUserProfile} onClose={() => setSelectedOrder(null)} />}
-        {selectedRedemption && currentUserProfile && <AdminRedemptionModal redemption={selectedRedemption} currentUser={currentUserProfile} onClose={() => setSelectedRedemption(null)} />}
-        
-        {isProductModalOpen && <ProductFormModal product={selectedProduct} onClose={() => setIsProductModalOpen(false)} onSave={handleSaveProduct} />}
-        {isBalanceModalOpen && selectedProfile && <BalanceEditorModal user={selectedProfile} onClose={() => setIsBalanceModalOpen(false)} onSave={handleSaveUserBalance} />}
-        {isReferralModalOpen && selectedProfile && <ReferralEditorModal user={selectedProfile} onClose={() => setIsReferralModalOpen(false)} onSave={handleSaveReferral} />}
-        {isCouponModalOpen && <CouponFormModal coupon={selectedCoupon} onClose={() => setIsCouponModalOpen(false)} onSave={handleSaveCoupon} />}
-        {isPointProductModalOpen && <PointProductFormModal product={selectedPointProduct} onClose={() => setIsPointProductModalOpen(false)} onSave={handleSavePointProduct} />}
-        {isTournamentModalOpen && <TournamentFormModal tournament={selectedTournament} onClose={() => setIsTournamentModalOpen(false)} onSave={handleSaveTournament} />}
-        {isLootBoxModalOpen && <LootBoxFormModal lootBox={selectedLootBox} onClose={() => setIsLootBoxModalOpen(false)} onSave={handleSaveLootBox} />}
-        {isWheelItemModalOpen && <SpinWheelItemFormModal item={selectedWheelItem} onClose={() => setIsWheelItemModalOpen(false)} onSave={handleSaveWheelItem} />}
+        {/* Modals */}
+        {selectedOrder && currentUserProfile && (
+            <AdminOrderModal order={selectedOrder} currentUser={currentUserProfile} onClose={() => setSelectedOrder(null)} />
+        )}
+        {isProductModalOpen && (
+            <ProductFormModal product={selectedProduct} onClose={() => setIsProductModalOpen(false)} onSave={async (formData) => {
+                if (selectedProduct?.id) await supabase.from('products').update(formData).eq('id', selectedProduct.id);
+                else await supabase.from('products').insert(formData);
+                setIsProductModalOpen(false); fetchData(); addToast('Manifest Updated', 'Inventory updated.', 'success');
+            }} />
+        )}
+        {isBalanceModalOpen && selectedProfile && (
+            <BalanceEditorModal user={selectedProfile} onClose={() => setIsBalanceModalOpen(false)} onSave={async (id, amount, points, spins) => {
+                await supabase.from('profiles').update({ wallet_balance: amount, discord_points: points, spins_count: spins }).eq('id', id);
+                setIsBalanceModalOpen(false); fetchData(); addToast('Balance Synced', 'User assets updated.', 'success');
+            }} />
+        )}
     </div>
   );
 };
