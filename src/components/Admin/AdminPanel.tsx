@@ -1,15 +1,14 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Product, Profile, Coupon, Order, AccessLog, OrderItem, PointRedemption, RedemptionMessage, Donation, Tournament, LootBox, SpinWheelItem, OrderMessage, PointProduct, AppSetting } from '../../types';
+import { Product, Profile, Coupon, Order, AccessLog, OrderItem, PointRedemption, Donation, Tournament, LootBox, SpinWheelItem, OrderMessage, PointProduct, AppSetting } from '../../types';
 import { 
   BarChart3, Package, Users, Search, Edit2, Trash2, PlusCircle, Wallet, 
   ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Globe, 
   Archive, Trophy, Gift, Eye, Heart, Swords, Save, Crown, Zap, 
   RotateCw, Loader2, Megaphone, Activity, Ticket, ShieldAlert, Key, 
   ChevronRight, Smartphone, Monitor, Settings, Palette, Timer, AlertTriangle, Terminal, MonitorSmartphone,
-  // Added RefreshCw to the imports to fix the 'Cannot find name RefreshCw' error
-  RefreshCw
+  RefreshCw, MousePointer2
 } from 'lucide-react';
 import { 
   ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, 
@@ -140,6 +139,13 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
 
+  // Marquee Local States (to fix lag)
+  const [announceText, setAnnounceText] = useState('');
+  const [announceBadge, setAnnounceBadge] = useState('');
+  const [announceColor, setAnnounceColor] = useState('#2563eb');
+  const [announceSpeed, setAnnounceSpeed] = useState('30s');
+  const [isSavingAnnounce, setIsSavingAnnounce] = useState(false);
+
   // Modal States
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -209,7 +215,15 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
             if (data) setAccessLogs(data);
         } else if (activeSection === 'settings' || activeSection === 'liveFeed') {
             const { data } = await supabase.from('app_settings').select('*').order('key', { ascending: true });
-            if (data) setAppSettings(data);
+            if (data) {
+                setAppSettings(data);
+                if (activeSection === 'liveFeed') {
+                    setAnnounceText(data.find(s => s.key === 'live_feed_text')?.value || '');
+                    setAnnounceBadge(data.find(s => s.key === 'live_feed_badge')?.value || '');
+                    setAnnounceColor(data.find(s => s.key === 'live_feed_color')?.value || '#2563eb');
+                    setAnnounceSpeed(data.find(s => s.key === 'live_feed_speed')?.value || '30s');
+                }
+            }
         }
     } catch (e) { console.error(e); } finally { setIsLoading(false); }
   }, [activeSection]);
@@ -232,9 +246,23 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const handleUpdateSetting = async (key: string, value: string) => {
       await supabase.from('app_settings').update({ value }).eq('key', key);
       addToast('System Updated', `${key} saved.`, 'success');
-      // Re-fetch to sync local appSettings state
-      const { data } = await supabase.from('app_settings').select('*').order('key', { ascending: true });
-      if (data) setAppSettings(data);
+      // Update local state without full refetch if possible
+      setAppSettings(prev => prev.map(s => s.key === key ? { ...s, value } : s));
+  };
+
+  const handleSaveAnnounce = async () => {
+    setIsSavingAnnounce(true);
+    try {
+        await supabase.from('app_settings').update({ value: announceText }).eq('key', 'live_feed_text');
+        await supabase.from('app_settings').update({ value: announceBadge }).eq('key', 'live_feed_badge');
+        await supabase.from('app_settings').update({ value: announceColor }).eq('key', 'live_feed_color');
+        await supabase.from('app_settings').update({ value: announceSpeed }).eq('key', 'live_feed_speed');
+        addToast('Broadcast Updated', 'Live feed settings deployed.', 'success');
+    } catch (e) {
+        addToast('Sync Error', 'Failed to update announce.', 'error');
+    } finally {
+        setIsSavingAnnounce(false);
+    }
   };
 
   const navItems = [
@@ -558,50 +586,78 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                          )}
 
                          {activeSection === 'liveFeed' && (
-                             <div className="bg-[#1e232e] p-8 md:p-12 rounded-[3.5rem] border border-white/5 shadow-3xl max-w-3xl mx-auto">
-                                 <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-8 flex items-center gap-3">
-                                     <Megaphone className="w-6 h-6 text-blue-500" /> Marquee Control
-                                 </h3>
+                             <div className="bg-[#1e232e] p-8 md:p-12 rounded-[3.5rem] border border-white/5 shadow-3xl max-w-3xl mx-auto animate-fade-in">
+                                 <div className="flex items-center justify-between mb-8">
+                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
+                                        <Megaphone className="w-6 h-6 text-blue-500" /> Marquee Control
+                                    </h3>
+                                    <div className="bg-green-500/10 text-green-500 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border border-green-500/20 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div> Live System
+                                    </div>
+                                 </div>
                                  <div className="space-y-8">
                                      <div>
                                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Announcement Text</label>
                                          <textarea 
-                                             className="w-full bg-[#0b0e14] border border-white/5 rounded-2xl p-6 text-white text-sm focus:border-blue-500 outline-none"
-                                             value={appSettings.find(s => s.key === 'live_feed_text')?.value || ''}
-                                             onChange={(e) => handleUpdateSetting('live_feed_text', e.target.value)}
+                                             className="w-full bg-[#0b0e14] border border-white/5 rounded-2xl p-6 text-white text-sm focus:border-blue-500 outline-none transition-all placeholder:text-gray-700"
+                                             value={announceText}
+                                             onChange={(e) => setAnnounceText(e.target.value)}
                                              rows={3}
+                                             placeholder="Enter announcement matrix..."
                                          />
                                      </div>
                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                          <div>
                                              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Badge Label</label>
                                              <input 
-                                                 className="w-full bg-[#0b0e14] border border-white/5 rounded-xl p-4 text-white text-xs"
-                                                 value={appSettings.find(s => s.key === 'live_feed_badge')?.value || ''}
-                                                 onChange={(e) => handleUpdateSetting('live_feed_badge', e.target.value)}
+                                                 className="w-full bg-[#0b0e14] border border-white/5 rounded-xl p-4 text-white text-xs outline-none focus:border-blue-500"
+                                                 value={announceBadge}
+                                                 onChange={(e) => setAnnounceBadge(e.target.value)}
                                              />
                                          </div>
                                          <div>
-                                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Color Code</label>
-                                             <input 
-                                                 type="color"
-                                                 className="w-full h-12 bg-transparent border-none rounded-xl cursor-pointer"
-                                                 value={appSettings.find(s => s.key === 'live_feed_color')?.value || '#2563eb'}
-                                                 onChange={(e) => handleUpdateSetting('live_feed_color', e.target.value)}
-                                             />
+                                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Color Hex Code</label>
+                                             <div className="flex gap-2">
+                                                <input 
+                                                    type="color"
+                                                    className="w-12 h-12 bg-transparent border-none rounded-xl cursor-pointer"
+                                                    value={announceColor}
+                                                    onChange={(e) => setAnnounceColor(e.target.value)}
+                                                />
+                                                <input 
+                                                    className="flex-1 bg-[#0b0e14] border border-white/5 rounded-xl p-4 text-white text-[10px] font-mono outline-none focus:border-blue-500"
+                                                    value={announceColor}
+                                                    onChange={(e) => setAnnounceColor(e.target.value)}
+                                                />
+                                             </div>
                                          </div>
                                          <div>
-                                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Speed (s)</label>
+                                             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Speed (Duration)</label>
                                              <select 
-                                                 className="w-full bg-[#0b0e14] border border-white/5 rounded-xl p-4 text-white text-xs"
-                                                 value={appSettings.find(s => s.key === 'live_feed_speed')?.value || '30s'}
-                                                 onChange={(e) => handleUpdateSetting('live_feed_speed', e.target.value)}
+                                                 className="w-full bg-[#0b0e14] border border-white/5 rounded-xl p-4 text-white text-xs outline-none focus:border-blue-500"
+                                                 value={announceSpeed}
+                                                 onChange={(e) => setAnnounceSpeed(e.target.value)}
                                              >
-                                                 <option value="15s">Fast (15s)</option>
-                                                 <option value="30s">Normal (30s)</option>
-                                                 <option value="60s">Slow (60s)</option>
+                                                 <option value="15s">Emergency (15s)</option>
+                                                 <option value="30s">Standard (30s)</option>
+                                                 <option value="60s">Slow Scroll (60s)</option>
                                              </select>
                                          </div>
+                                     </div>
+
+                                     <button 
+                                        onClick={handleSaveAnnounce}
+                                        disabled={isSavingAnnounce}
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest shadow-2xl shadow-blue-600/30 transition-all active:scale-95 disabled:opacity-50"
+                                     >
+                                        {isSavingAnnounce ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> Deploy Announcement</>}
+                                     </button>
+
+                                     <div className="bg-[#151a23] p-4 rounded-2xl border border-white/5 flex items-start gap-4">
+                                        <Activity className="w-5 h-5 text-blue-400 shrink-0" />
+                                        <p className="text-[10px] text-gray-500 font-bold leading-relaxed uppercase tracking-wide">
+                                            Updating these settings will instantly synchronize the top marquee for all active users across the platform. Use sparingly for critical updates.
+                                        </p>
                                      </div>
                                  </div>
                              </div>
@@ -748,48 +804,53 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                     <h3 className="text-sm font-black text-white italic uppercase tracking-tighter flex items-center gap-2">
                                         <Terminal className="w-4 h-4 text-green-500" /> Access Protocol History
                                     </h3>
-                                    <button onClick={fetchData} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-500">
-                                        <RefreshCw className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest hidden sm:block">Live Tracking Enabled</span>
+                                        <button onClick={fetchData} className="p-2 hover:bg-white/10 rounded-xl transition-all text-gray-400 hover:text-white border border-white/5 active:rotate-180 duration-500">
+                                            <RefreshCw className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="overflow-x-auto">
+                                <div className="overflow-x-auto custom-scrollbar">
                                     <table className="w-full text-left">
                                         <thead className="bg-[#0b0e14]/50 text-gray-500 text-[10px] font-black uppercase tracking-widest border-b border-white/5">
                                             <tr>
                                                 <th className="p-5">Identity</th>
                                                 <th className="p-5">IP Address</th>
-                                                <th className="p-5">Device / OS</th>
-                                                <th className="p-5 text-right">Timestamp</th>
+                                                <th className="p-5">Interaction Matrix</th>
+                                                <th className="p-5 text-right">Sync Time</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-white/5">
+                                        <tbody className="divide-y divide-white/5 font-mono">
                                             {accessLogs.filter(log => 
                                                 log.ip_address.includes(searchTerm) || 
                                                 (log.profile?.username || 'Guest').toLowerCase().includes(searchTerm.toLowerCase())
                                             ).map(log => (
-                                                <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                                                <tr key={log.id} className="hover:bg-blue-600/5 transition-colors group">
                                                     <td className="p-5">
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${log.user_id ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : 'bg-gray-800 text-gray-500 border border-white/10'}`}>
+                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[9px] font-black shadow-inner ${log.user_id ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : 'bg-gray-800 text-gray-500 border border-white/10'}`}>
                                                                 {log.user_id ? 'OP' : 'VS'}
                                                             </div>
                                                             <div>
-                                                                <p className="text-white font-black text-[11px] uppercase italic">{log.profile?.username || 'GUEST VISITOR'}</p>
-                                                                <p className="text-gray-500 text-[8px] font-bold uppercase">{log.user_id ? 'Authenticated' : 'Anonymous'}</p>
+                                                                <p className="text-white font-black text-[11px] uppercase italic leading-none mb-1 group-hover:text-blue-400 transition-colors">{log.profile?.username || 'GUEST VISITOR'}</p>
+                                                                <p className="text-gray-500 text-[7px] font-bold uppercase tracking-widest">{log.user_id ? 'Identity Verified' : 'Anonymous Payload'}</p>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="p-5">
-                                                        <span className="font-mono text-[11px] text-green-400 bg-green-500/5 px-2 py-1 rounded border border-green-500/10">{log.ip_address}</span>
+                                                        <span className="font-mono text-[11px] text-green-400 bg-green-500/5 px-2 py-1 rounded border border-green-500/10 group-hover:bg-green-500/10 transition-all">{log.ip_address}</span>
                                                     </td>
                                                     <td className="p-5">
                                                         <div className="flex items-center gap-2 text-gray-400 max-w-xs">
-                                                            <MonitorSmartphone className="w-3.5 h-3.5 shrink-0" />
-                                                            <span className="text-[9px] font-bold truncate uppercase">{log.user_agent || 'Unknown Payload'}</span>
+                                                            <MonitorSmartphone className="w-3 h-3 shrink-0 opacity-50" />
+                                                            <span className="text-[9px] font-bold truncate uppercase opacity-60 group-hover:opacity-100 transition-opacity">{log.user_agent || 'Encrypted Source'}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="p-5 text-right font-bold text-gray-500 text-[10px]">
-                                                        {new Date(log.created_at).toLocaleString()}
+                                                    <td className="p-5 text-right font-bold text-gray-600 text-[10px] italic">
+                                                        {new Date(log.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}
+                                                        <br/>
+                                                        <span className="text-[8px] opacity-40">{new Date(log.created_at).toLocaleDateString()}</span>
                                                     </td>
                                                 </tr>
                                             ))}
