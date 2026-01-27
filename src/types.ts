@@ -144,7 +144,9 @@ export interface AccessLog {
     id: string;
     ip_address: string;
     user_id?: string;
+    user_agent?: string;
     created_at: string;
+    profile?: Profile;
 }
 
 export interface PointTransaction {

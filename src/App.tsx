@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import { Product, CartItem, GameCategory, Tournament } from './types';
 import Navbar from './components/Navbar';
@@ -54,19 +54,36 @@ const App: React.FC = () => {
   const addToast = (title: string, message: string, type: 'success'|'error'|'info' = 'info') => {
      const id = Math.random().toString(36).substr(2, 9);
      setToasts(prev => [...prev, { id, title, message, type }]);
-     setTimeout(() => toasts.filter(t => t.id !== id), 4000);
+     setTimeout(() => setToasts(curr => curr.filter(t => t.id !== id)), 4000);
   };
+
+  // IP Logging Logic
+  const logAuditEntry = useCallback(async (userId?: string) => {
+    try {
+      const res = await fetch('https://api64.ipify.org?format=json');
+      const { ip } = await res.json();
+      await supabase.from('access_logs').insert({
+        ip_address: ip,
+        user_id: userId || null,
+        user_agent: navigator.userAgent
+      });
+    } catch (e) {
+      console.error("Audit log failed:", e);
+    }
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s || { user: { id: 'guest-user-123', email: 'guest@moonnight.com' } });
+      const guestSess = { user: { id: 'guest-user-123', email: 'guest@moonnight.com' } };
+      setSession(s || guestSess);
+      logAuditEntry(s?.user?.id);
       setIsSessionLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s || { user: { id: 'guest-user-123', email: 'guest@moonnight.com' } });
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [logAuditEntry]);
 
   // Fetch Live Feed Settings
   useEffect(() => {

@@ -7,7 +7,9 @@ import {
   ClipboardList, MessageSquare, Send, X, CheckCircle, Clock, Globe, 
   Archive, Trophy, Gift, Eye, Heart, Swords, Save, Crown, Zap, 
   RotateCw, Loader2, Megaphone, Activity, Ticket, ShieldAlert, Key, 
-  ChevronRight, Smartphone, Monitor, Settings, Palette, Timer, AlertTriangle
+  ChevronRight, Smartphone, Monitor, Settings, Palette, Timer, AlertTriangle, Terminal, MonitorSmartphone,
+  // Added RefreshCw to the imports to fix the 'Cannot find name RefreshCw' error
+  RefreshCw
 } from 'lucide-react';
 import { 
   ProductFormModal, BalanceEditorModal, CouponFormModal, PointProductFormModal, 
@@ -119,7 +121,7 @@ const AdminOrderModal = ({ order, currentUser, onClose }: { order: Order, curren
 };
 
 export const AdminPanel = ({ session, addToast, role }: { session: any, addToast: any, role: 'full' | 'limited' | 'shop' }) => {
-  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'orders' | 'coupons' | 'pointsShop' | 'redemptions' | 'liveFeed' | 'wheel' | 'lootBoxes' | 'donations' | 'tournaments' | 'settings'>(role === 'shop' ? 'products' : 'stats');
+  const [activeSection, setActiveSection] = useState<'stats' | 'products' | 'users' | 'orders' | 'coupons' | 'pointsShop' | 'redemptions' | 'liveFeed' | 'wheel' | 'lootBoxes' | 'donations' | 'tournaments' | 'settings' | 'auditLogs'>(role === 'shop' ? 'products' : 'stats');
   const [products, setProducts] = useState<Product[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -131,6 +133,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const [donations, setDonations] = useState<Donation[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [appSettings, setAppSettings] = useState<AppSetting[]>([]);
+  const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -201,6 +204,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
         } else if (activeSection === 'tournaments') {
             const { data } = await supabase.from('tournaments').select('*').order('start_date', { ascending: false });
             if (data) setTournaments(data);
+        } else if (activeSection === 'auditLogs') {
+            const { data } = await supabase.from('access_logs').select('*, profile:profiles(username, email)').order('created_at', { ascending: false }).limit(200);
+            if (data) setAccessLogs(data);
         } else if (activeSection === 'settings' || activeSection === 'liveFeed') {
             const { data } = await supabase.from('app_settings').select('*').order('key', { ascending: true });
             if (data) setAppSettings(data);
@@ -226,7 +232,9 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
   const handleUpdateSetting = async (key: string, value: string) => {
       await supabase.from('app_settings').update({ value }).eq('key', key);
       addToast('System Updated', `${key} saved.`, 'success');
-      fetchData();
+      // Re-fetch to sync local appSettings state
+      const { data } = await supabase.from('app_settings').select('*').order('key', { ascending: true });
+      if (data) setAppSettings(data);
   };
 
   const navItems = [
@@ -237,11 +245,12 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
     { id: 'coupons', label: 'Coupons', icon: Ticket, role: ['full'] },
     { id: 'pointsShop', label: 'Rewards', icon: Trophy, role: ['full'] },
     { id: 'redemptions', label: 'Point Queue', icon: Clock, role: ['full'] },
-    { id: 'liveFeed', label: 'Live Feed', icon: Activity, role: ['full'] },
+    { id: 'liveFeed', label: 'Announce', icon: Megaphone, role: ['full'] },
     { id: 'wheel', label: 'Win Wheel', icon: RotateCw, role: ['full'] },
     { id: 'lootBoxes', label: 'Packs', icon: Package, role: ['full'] },
     { id: 'donations', label: 'Donations', icon: Heart, role: ['full'] },
     { id: 'tournaments', label: 'Events', icon: Swords, role: ['full'] },
+    { id: 'auditLogs', label: 'Audit Logs', icon: Terminal, role: ['full'] },
     { id: 'settings', label: 'Core Config', icon: Settings, role: ['full'] },
   ];
 
@@ -288,7 +297,7 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                  <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">
                      {navItems.find(i => i.id === activeSection)?.label || 'Console'}
                  </h2>
-                 {['products', 'users', 'orders', 'coupons', 'pointProducts'].includes(activeSection) && (
+                 {['products', 'users', 'orders', 'coupons', 'pointProducts', 'auditLogs'].includes(activeSection) && (
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                         <input 
@@ -731,6 +740,63 @@ export const AdminPanel = ({ session, addToast, role }: { session: any, addToast
                                     ))}
                                 </div>
                              </div>
+                         )}
+
+                         {activeSection === 'auditLogs' && (
+                            <div className="bg-[#1e232e] rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+                                <div className="p-6 border-b border-white/5 bg-[#151a23] flex justify-between items-center">
+                                    <h3 className="text-sm font-black text-white italic uppercase tracking-tighter flex items-center gap-2">
+                                        <Terminal className="w-4 h-4 text-green-500" /> Access Protocol History
+                                    </h3>
+                                    <button onClick={fetchData} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-500">
+                                        <RefreshCw className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-[#0b0e14]/50 text-gray-500 text-[10px] font-black uppercase tracking-widest border-b border-white/5">
+                                            <tr>
+                                                <th className="p-5">Identity</th>
+                                                <th className="p-5">IP Address</th>
+                                                <th className="p-5">Device / OS</th>
+                                                <th className="p-5 text-right">Timestamp</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {accessLogs.filter(log => 
+                                                log.ip_address.includes(searchTerm) || 
+                                                (log.profile?.username || 'Guest').toLowerCase().includes(searchTerm.toLowerCase())
+                                            ).map(log => (
+                                                <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                                                    <td className="p-5">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${log.user_id ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : 'bg-gray-800 text-gray-500 border border-white/10'}`}>
+                                                                {log.user_id ? 'OP' : 'VS'}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-white font-black text-[11px] uppercase italic">{log.profile?.username || 'GUEST VISITOR'}</p>
+                                                                <p className="text-gray-500 text-[8px] font-bold uppercase">{log.user_id ? 'Authenticated' : 'Anonymous'}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-5">
+                                                        <span className="font-mono text-[11px] text-green-400 bg-green-500/5 px-2 py-1 rounded border border-green-500/10">{log.ip_address}</span>
+                                                    </td>
+                                                    <td className="p-5">
+                                                        <div className="flex items-center gap-2 text-gray-400 max-w-xs">
+                                                            <MonitorSmartphone className="w-3.5 h-3.5 shrink-0" />
+                                                            <span className="text-[9px] font-bold truncate uppercase">{log.user_agent || 'Unknown Payload'}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-5 text-right font-bold text-gray-500 text-[10px]">
+                                                        {new Date(log.created_at).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                          )}
 
                          {activeSection === 'settings' && (
