@@ -209,6 +209,26 @@ export interface Tournament {
   created_at: string;
 }
 
+export interface TournamentRequirement {
+  id: string;
+  tournament_id: string;
+  label: string;
+  field_type: 'text' | 'number' | 'discord';
+  is_required: boolean;
+}
+
+export interface TournamentApplication {
+  id: string;
+  user_id: string;
+  tournament_id: string;
+  status: string;
+  admin_message: string;
+  form_data: any;
+  created_at: string;
+  tournament?: Tournament;
+  profile?: Profile;
+}
+
 export enum GameCategory {
   ACCOUNTS = 'Accounts',
   COINS = 'Coins',

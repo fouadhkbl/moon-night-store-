@@ -10,6 +10,7 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [aiPicks, setAiPicks] = useState<Product[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
+  const [hasActiveApplication, setHasActiveApplication] = useState(false);
 
   const DISCORD_LOGO = "https://cdn.discordapp.com/attachments/1459639411728711914/1463587675897462795/moon-edite-png_1_1-ezgif.com-optimize.gif?ex=6975ab7e&is=697459fe&hm=fe3c5242f9e86f2692bfea6aece5c50b46ae757d80cc8d01c9a20ae4e6bf9e19";
 
@@ -19,6 +20,9 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
           if (user) {
               const { data } = await supabase.from('profiles').select('vip_level').eq('id', user.id).single();
               if (data && data.vip_level > 0) setIsVip(true);
+
+              const { data: appData } = await supabase.from('tournament_applications').select('id').eq('user_id', user.id).maybeSingle();
+              if (appData) setHasActiveApplication(true);
           }
           const { data: products } = await supabase.from('products').select('*').eq('is_trending', true).eq('is_hidden', false).limit(4).order('created_at', { ascending: false });
           if (products) setTrendingProducts(products);
@@ -91,14 +95,23 @@ export const HomePage = ({ onNavigate, onSelectCategory, onSearch, language }: {
                 <ChevronRight className="w-6 h-6 relative z-10 group-hover:translate-x-2 transition-transform duration-300" />
               </button>
 
-              <a 
-                href="https://discord.gg/s4hcCn4s" 
-                target="_blank" 
-                rel="noreferrer" 
-                className="h-16 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-10 rounded-2xl font-black text-[11px] border border-white/10 transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl active:scale-95"
-              >
-                <MessageSquare className="w-5 h-5 text-[#5865F2]" /> {t.discord}
-              </a>
+              {hasActiveApplication ? (
+                <button 
+                    onClick={() => onNavigate('dashboard-events')} 
+                    className="h-16 bg-cyan-600/10 hover:bg-cyan-600/20 text-cyan-400 px-10 rounded-2xl font-black text-[11px] border border-cyan-500/30 transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl active:scale-95 animate-pulse"
+                >
+                    <Target className="w-5 h-5" /> Enlistment Status
+                </button>
+              ) : (
+                <a 
+                    href="https://discord.gg/s4hcCn4s" 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="h-16 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-10 rounded-2xl font-black text-[11px] border border-white/10 transition-all flex items-center gap-3 uppercase tracking-widest shadow-xl active:scale-95"
+                >
+                    <MessageSquare className="w-5 h-5 text-[#5865F2]" /> {t.discord}
+                </a>
+              )}
             </div>
 
             <div className="bg-[#0b0e14] border border-green-500/20 p-6 md:p-8 rounded-2xl shadow-[0_0_30px_rgba(34,197,94,0.05)] max-w-xl mx-auto md:mx-0 overflow-hidden relative group">

@@ -19,6 +19,7 @@ import { DonatePage } from './pages/DonatePage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { TournamentsPage } from './pages/TournamentsPage';
 import { TournamentDetailsPage } from './pages/TournamentDetailsPage';
+import { TournamentApplyPage } from './pages/TournamentApplyPage';
 import { LootBoxPage } from './pages/LootBoxPage';
 import { ElitePage } from './pages/ElitePage';
 import { SpinWheelPage } from './pages/SpinWheelPage';
@@ -41,7 +42,7 @@ const App: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [toasts, setToasts] = useState<any[]>([]);
   const [targetOrderId, setTargetOrderId] = useState<string | null>(null);
-  const [dashboardTab, setDashboardTab] = useState<'overview' | 'orders' | 'wallet' | 'points'>('overview');
+  const [dashboardTab, setDashboardTab] = useState<'overview' | 'orders' | 'wallet' | 'points' | 'events'>('overview');
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [isActivityOpen, setIsActivityOpen] = useState(false);
 
@@ -111,6 +112,7 @@ const App: React.FC = () => {
   const handleNavigate = (page: string) => { 
     window.scrollTo(0,0); 
     if (page === 'dashboard-points') { setDashboardTab('points'); setCurrentPage('dashboard'); }
+    else if (page === 'dashboard-events') { setDashboardTab('events'); setCurrentPage('dashboard'); }
     else if (page === 'dashboard') { if (currentPage !== 'dashboard') setDashboardTab('overview'); setCurrentPage('dashboard'); }
     else if (page === 'shop') {
         setSearchQuery('');
@@ -307,7 +309,7 @@ const App: React.FC = () => {
                             <button 
                                 key={cat} 
                                 onClick={() => { setSelectedCategory(cat); setSearchQuery(''); }} 
-                                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0 group relative ${selectedCategory === cat ? 'text-blue-400 bg-blue-500/10' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+                                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0 group relative ${selectedCategory === cat ? 'text-blue-400 bg-blue-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                             >
                                 <div className={`w-1.5 h-1.5 rounded-full transition-all ${selectedCategory === cat ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,1)] scale-100' : 'bg-gray-700 scale-0 group-hover:scale-100'}`}></div>
                                 <span className="text-[10px] font-black uppercase tracking-[0.15em]">{cat}</span>
@@ -368,6 +370,7 @@ const App: React.FC = () => {
             {currentPage === 'leaderboard' && <LeaderboardPage onNavigate={handleNavigate} />}
             {currentPage === 'tournaments' && <TournamentsPage onNavigate={handleNavigate} onSelectTournament={setSelectedTournament as any} />}
             {currentPage === 'tournament-details' && <TournamentDetailsPage tournament={selectedTournament} onNavigate={handleNavigate} addToast={addToast} />}
+            {currentPage === 'tournament-apply' && <TournamentApplyPage tournament={selectedTournament} session={session} onNavigate={handleNavigate} addToast={addToast} />}
             {currentPage === 'loot' && <LootBoxPage session={session} onNavigate={handleNavigate} addToast={addToast} />}
             {currentPage === 'elite' && <ElitePage session={session} onNavigate={handleNavigate} addToast={addToast} />}
             {currentPage === 'spin' && <SpinWheelPage session={session} onNavigate={handleNavigate} addToast={addToast} />}

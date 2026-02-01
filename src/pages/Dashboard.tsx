@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { Profile, Order, OrderItem, OrderMessage } from '../types';
+import { Profile, Order, OrderItem, OrderMessage, TournamentApplication } from '../types';
 import { LoginForm, SignupForm } from '../components/Auth/AuthForms';
 import { 
   Wallet, LogIn, LogOut, MessageSquare, 
   Send, X, Clock, CheckCircle, Coins, LayoutDashboard, 
   ClipboardList, Copy, Users, Crown, Timer, Loader2, Edit3, 
   ChevronRight, Zap, Activity, UserPlus, User, ShieldCheck,
-  Smartphone, Monitor, Globe, ShoppingCart, Plus
+  Smartphone, Monitor, Globe, ShoppingCart, Plus, Swords, AlertCircle
 } from 'lucide-react';
 
 const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, currentUser: Profile, onClose: () => void }) => {
@@ -152,11 +152,12 @@ const OrderDetailsModal = ({ order, currentUser, onClose }: { order: Order, curr
 };
 
 export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession, initialOrderId, initialTab }: { 
-    session: any, addToast: any, onSignOut: () => void, onNavigate: (p: string) => void, setSession: (s: any) => void, initialOrderId?: string | null, initialTab?: 'overview' | 'orders' | 'wallet' | 'points'
+    session: any, addToast: any, onSignOut: () => void, onNavigate: (p: string) => void, setSession: (s: any) => void, initialOrderId?: string | null, initialTab?: 'overview' | 'orders' | 'wallet' | 'points' | 'events'
 }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wallet' | 'points' | 'referrals'>(initialTab || 'overview');
+  const [applications, setApplications] = useState<TournamentApplication[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wallet' | 'points' | 'referrals' | 'events'>(initialTab || 'overview');
   const [authMode, setAuthMode] = useState<'none' | 'login' | 'signup'>('none');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [referralCount, setReferralCount] = useState(0);
@@ -192,6 +193,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
             }
             const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('referred_by', session.user.id);
             setReferralCount(count || 0);
+            
             const { data: oData } = await supabase.from('orders').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
             if (oData) {
                 setOrders(oData);
@@ -200,6 +202,9 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                     if (target) { setSelectedOrder(target); setActiveTab('orders'); }
                 }
             }
+
+            const { data: appData } = await supabase.from('tournament_applications').select('*, tournament:tournaments(*)').eq('user_id', session.user.id).order('created_at', { ascending: false });
+            if (appData) setApplications(appData);
         }
     }
     setLoading(false);
@@ -349,6 +354,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                     {[
                         { id: 'overview', icon: LayoutDashboard, label: 'Control Center', color: 'blue' },
                         { id: 'orders', icon: ClipboardList, label: 'Trade History', color: 'blue' },
+                        { id: 'events', icon: Swords, label: 'My Tournaments', color: 'blue' },
                         { id: 'wallet', icon: Wallet, label: 'Digital Vault', color: 'blue' },
                         { id: 'points', icon: Coins, label: 'Loyalty Matrix', color: 'purple' },
                         { id: 'referrals', icon: Users, label: 'Affiliates', color: 'green' }
@@ -395,6 +401,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                     {[
                         { id: 'overview', icon: LayoutDashboard, label: 'Control' },
                         { id: 'orders', icon: ClipboardList, label: 'Trades' },
+                        { id: 'events', icon: Swords, label: 'Battles' },
                         { id: 'wallet', icon: Wallet, label: 'Vault' },
                         { id: 'points', icon: Coins, label: 'Rewards' },
                         { id: 'referrals', icon: Users, label: 'Partners' }
@@ -486,6 +493,55 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                         </div>
                     )}
 
+                    {activeTab === 'events' && (
+                        <div className="space-y-4 animate-fade-in">
+                            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Event Enlistment Status</h3>
+                            {applications.length === 0 ? (
+                                <div className="p-12 border-2 border-dashed border-white/5 rounded-[2rem] text-center text-gray-600 uppercase text-[10px] font-black tracking-widest">No active tournament applications found.</div>
+                            ) : (
+                                applications.map(app => (
+                                    <div key={app.id} className="bg-[#1e232e] p-6 rounded-2xl border border-white/5 shadow-xl group">
+                                        <div className="flex items-center justify-between gap-6 mb-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-900 border border-white/5">
+                                                    <img src={app.tournament?.image_url} className="w-full h-full object-cover" alt="" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[9px] text-blue-500 font-black uppercase tracking-[0.2em] mb-1">{app.tournament?.game_name}</p>
+                                                    <h4 className="text-lg font-black text-white italic uppercase leading-none">{app.tournament?.title}</h4>
+                                                </div>
+                                            </div>
+                                            <div className={`px-4 py-2 rounded-xl border font-black uppercase text-[10px] tracking-widest flex items-center gap-2 ${
+                                                app.status === 'approved' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                                app.status === 'rejected' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                                'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                            }`}>
+                                                {app.status === 'pending' && <Clock className="w-4 h-4 animate-spin" />}
+                                                {app.status}
+                                            </div>
+                                        </div>
+                                        
+                                        {app.admin_message && (
+                                            <div className="bg-[#0b0e14] p-5 rounded-2xl border border-white/5 flex gap-4">
+                                                <div className="p-2 bg-blue-600/10 rounded-lg h-fit"><MessageSquare className="w-4 h-4 text-blue-500" /></div>
+                                                <div>
+                                                    <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest mb-1">Message from Admin</p>
+                                                    <p className="text-sm text-gray-300 font-medium leading-relaxed italic">"{app.admin_message}"</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {!app.admin_message && app.status === 'pending' && (
+                                            <div className="flex items-center gap-3 text-[10px] text-gray-600 font-bold uppercase tracking-widest px-2">
+                                                <AlertCircle className="w-4 h-4" /> Awaiting staff validation of your data.
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                            <button onClick={() => onNavigate('tournaments')} className="w-full py-4 bg-white/5 hover:bg-blue-600 text-gray-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Explore Other Events</button>
+                        </div>
+                    )}
+
                     {activeTab === 'orders' && (
                         <div className="space-y-4 animate-fade-in">
                             <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Trade History</h3>
@@ -520,7 +576,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                                 <div className="absolute top-0 right-0 p-8 opacity-10"><Wallet className="w-40 h-40" /></div>
                                 <p className="text-blue-400 font-black uppercase text-[10px] tracking-widest mb-2 relative z-10">Available Solde</p>
                                 <h3 className="text-6xl font-black text-white italic tracking-tighter relative z-10">{profile?.wallet_balance.toFixed(2)} DH</h3>
-                                <button onClick={() => onNavigate('topup')} className="mt-8 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 relative z-10 shadow-xl shadow-blue-600/30 transition-all">
+                                <button onClick={() => onNavigate('topup')} className="mt-8 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 relative z-10 shadow-xl shadow-blue-600/30 transition-all">
                                     <Plus className="w-4 h-4" /> Add Funds
                                 </button>
                             </div>
@@ -534,7 +590,7 @@ export const Dashboard = ({ session, addToast, onSignOut, onNavigate, setSession
                                 <p className="text-purple-400 font-black uppercase text-[10px] tracking-widest mb-2 relative z-10">Discord Points Matrix</p>
                                 <h3 className="text-6xl font-black text-white italic tracking-tighter relative z-10">{profile?.discord_points.toLocaleString()} PTS</h3>
                                 <div className="flex gap-4 mt-8 relative z-10">
-                                    <button onClick={() => onNavigate('pointsShop')} className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 shadow-xl shadow-purple-600/30 transition-all">
+                                    <button onClick={() => onNavigate('pointsShop')} className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 shadow-xl shadow-purple-600/30 transition-all">
                                         <ShoppingCart className="w-3.5 h-3.5 md:w-4 h-4" /> Point Shop
                                     </button>
                                     <button onClick={() => onNavigate('spin')} className="bg-white/5 hover:bg-white/10 text-white px-8 py-3.5 rounded-xl border border-white/10 font-black uppercase text-[10px] tracking-widest flex items-center gap-2 transition-all">

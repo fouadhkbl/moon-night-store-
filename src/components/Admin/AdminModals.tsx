@@ -1,7 +1,115 @@
 
-import React, { useState } from 'react';
-import { DollarSign, Loader2, Save, X, Ticket, Zap, Coins, RotateCw, Package, ChevronRight } from 'lucide-react';
-import { Profile, Product, GameCategory, Coupon, PointProduct, Tournament, LootBox, SpinWheelItem } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { DollarSign, Loader2, Save, X, Ticket, Zap, Coins, RotateCw, Package, ChevronRight, Plus, Trash2, Settings } from 'lucide-react';
+import { Profile, Product, GameCategory, Coupon, PointProduct, Tournament, LootBox, SpinWheelItem, TournamentRequirement } from '../../types';
+import { supabase } from '../../supabaseClient';
+
+export const RequirementEditorModal = ({ tournamentId, onClose }: { tournamentId: string, onClose: () => void }) => {
+    const [requirements, setRequirements] = useState<TournamentRequirement[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        const fetch = async () => {
+            const { data } = await supabase.from('tournament_requirements').select('*').eq('tournament_id', tournamentId);
+            if (data) setRequirements(data);
+            setLoading(false);
+        };
+        fetch();
+    }, [tournamentId]);
+
+    const handleAdd = () => {
+        setRequirements([...requirements, { id: 'new-' + Date.now(), tournament_id: tournamentId, label: '', field_type: 'text', is_required: true }]);
+    };
+
+    const handleRemove = (id: string) => {
+        setRequirements(requirements.filter(r => r.id !== id));
+    };
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        // Clear existing and re-insert for simplicity or update/insert
+        await supabase.from('tournament_requirements').delete().eq('tournament_id', tournamentId);
+        const toInsert = requirements.map(r => ({
+            tournament_id: tournamentId,
+            label: r.label,
+            field_type: r.field_type,
+            is_required: r.is_required
+        }));
+        if (toInsert.length > 0) await supabase.from('tournament_requirements').insert(toInsert);
+        setIsSaving(false);
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-fade-in">
+            <div className="bg-[#1e232e] w-full max-w-lg rounded-[2.5rem] border border-white/5 shadow-3xl p-8 animate-slide-up">
+                <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
+                        <Settings className="w-6 h-6 text-blue-500" /> Form Design
+                    </h2>
+                    <button onClick={onClose} className="p-2 bg-white/5 rounded-full text-gray-500 hover:text-white transition-colors"><X className="w-5 h-5"/></button>
+                </div>
+
+                <div className="space-y-4 mb-10 max-h-96 overflow-y-auto custom-scrollbar pr-2">
+                    {requirements.map((req, idx) => (
+                        <div key={req.id} className="bg-[#0b0e14] p-4 rounded-2xl border border-white/5 space-y-3">
+                            <div className="flex gap-2">
+                                <input 
+                                    className="flex-1 bg-[#151a23] border border-white/5 rounded-xl px-4 py-2 text-white text-xs font-bold outline-none focus:border-blue-500" 
+                                    placeholder="Field Label (e.g. Discord Tag)" 
+                                    value={req.label}
+                                    onChange={(e) => {
+                                        const newReqs = [...requirements];
+                                        newReqs[idx].label = e.target.value;
+                                        setRequirements(newReqs);
+                                    }}
+                                />
+                                <button onClick={() => handleRemove(req.id)} className="p-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"><Trash2 className="w-4 h-4"/></button>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <select 
+                                    className="bg-[#151a23] text-gray-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl outline-none"
+                                    value={req.field_type}
+                                    onChange={(e) => {
+                                        const newReqs = [...requirements];
+                                        newReqs[idx].field_type = e.target.value as any;
+                                        setRequirements(newReqs);
+                                    }}
+                                >
+                                    <option value="text">Text Input</option>
+                                    <option value="number">Number</option>
+                                    <option value="discord">Discord ID</option>
+                                </select>
+                                <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={req.is_required}
+                                        onChange={(e) => {
+                                            const newReqs = [...requirements];
+                                            newReqs[idx].is_required = e.target.checked;
+                                            setRequirements(newReqs);
+                                        }}
+                                    /> Required
+                                </label>
+                            </div>
+                        </div>
+                    ))}
+                    <button onClick={handleAdd} className="w-full py-4 border-2 border-dashed border-white/5 rounded-2xl text-[10px] font-black uppercase text-gray-500 hover:text-blue-500 hover:border-blue-500/30 transition-all flex items-center justify-center gap-2">
+                        <Plus className="w-4 h-4" /> Add Application Field
+                    </button>
+                </div>
+
+                <div className="flex gap-3">
+                    <button onClick={onClose} className="flex-1 bg-white/5 py-4 rounded-xl font-bold uppercase text-xs text-gray-400">Cancel</button>
+                    <button onClick={handleSave} disabled={isSaving} className="flex-1 bg-blue-600 py-4 rounded-xl font-black uppercase text-xs text-white shadow-xl shadow-blue-600/30">
+                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Apply Protocol'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export const BalanceEditorModal = ({ user, onClose, onSave }: { user: Profile, onClose: () => void, onSave: (id: string, amount: number, points: number, spins: number) => void }) => {
   const [amount, setAmount] = useState<string>(user.wallet_balance.toString());
